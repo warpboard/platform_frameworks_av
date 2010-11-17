@@ -1129,9 +1129,19 @@ struct MyHandler : public AHandler {
             CHECK(GetAttribute((*it).c_str(), "url", &val));
 
             size_t trackIndex = 0;
-            while (trackIndex < mTracks.size()
-                    && !(val == mTracks.editItemAt(trackIndex).mURL)) {
-                ++trackIndex;
+            while (trackIndex < mTracks.size()) {
+                size_t startpos = 0;
+                if (mTracks.editItemAt(trackIndex).mURL.size() >= val.size()) {
+                    startpos = mTracks.editItemAt(trackIndex).mURL.size() - val.size();
+                }
+                // Use AString::find in order to allow the url in the RTP-Info to be a
+                // truncated variant (example: "url=trackID=1") of the complete SETUP url
+                if (mTracks.editItemAt(trackIndex).mURL.find(val.c_str(), startpos) == -1) {
+                    ++trackIndex;
+                } else {
+                    // Found track
+                    break;
+                }
             }
             CHECK_LT(trackIndex, mTracks.size());
 
