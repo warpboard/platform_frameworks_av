@@ -24,6 +24,61 @@
 
 namespace android {
 
+static const char UNKNOWN_STRING[] = "???";
+
+/*
+ * Verifies that "bytes" points to valid "modified UTF-8" data.
+ */
+static bool isUtfString(const char* bytes)
+{
+    if (bytes == NULL) {
+        return true;
+    }
+
+    unsigned char utf8;
+    while ((utf8 = *bytes++)) {
+        // Switch on the high four bits.
+        switch (utf8 >> 4) {
+            case 0x00:
+            case 0x01:
+            case 0x02:
+            case 0x03:
+            case 0x04:
+            case 0x05:
+            case 0x06:
+            case 0x07:
+                // Bit pattern 0xxx. No need for any extra bytes.
+                break;
+            case 0x08:
+            case 0x09:
+            case 0x0a:
+            case 0x0b:
+            case 0x0f:
+                /*
+                 * Bit pattern 10xx or 1111, which are illegal start bytes.
+                 * Note: 1111 is valid for normal UTF-8, but not the
+                 * modified UTF-8 used here.
+                 */
+                return false;
+            case 0x0e:
+                // Bit pattern 1110, so there are two additional bytes.
+                utf8 = *(bytes++);
+                if ((utf8 & 0xc0) != 0x80)
+                    return false;
+                // Fall through to take care of the final byte.
+            case 0x0c:
+            case 0x0d:
+                // Bit pattern 110x, so there is one additional byte.
+                utf8 = *(bytes++);
+                if ((utf8 & 0xc0) != 0x80)
+                    return false;
+                break;
+        }
+    }
+
+    return true;
+}
+
 MediaScannerClient::MediaScannerClient()
     :   mNames(NULL),
         mValues(NULL),
@@ -85,6 +140,9 @@ status_t MediaScannerClient::addStringTag(const char* name, const char* value)
             return OK;
         }
         // else fall through
+    } else if (!isUtfString(value)) {
+        // The string contains non-UTF8 characters, so exchange the string with UNKNOWN_STRING
+        return handleStringTag(name, UNKNOWN_STRING);
     }
 
     // autodetection is not necessary, so no need to cache the values
@@ -182,7 +240,7 @@ void MediaScannerClient::convertValues(uint32_t encoding)
                     &source, (const char *)dest, NULL, NULL, NULL, NULL, TRUE, TRUE, &status);
             if (U_FAILURE(status)) {
                 ALOGE("ucnv_convertEx failed: %d", status);
-                mValues->setEntry(i, "???");
+                mValues->setEntry(i, UNKNOWN_STRING);
             } else {
                 // zero terminate
                 *target = 0;
@@ -199,6 +257,8 @@ void MediaScannerClient::convertValues(uint32_t encoding)
 
 void MediaScannerClient::endFile()
 {
+    // Handle non-UTF8 characters in metadata.
+    // For asian languages, try to convert from native encoding to UTF8
     if (mLocaleEncoding != kEncodingNone) {
         int size = mNames->size();
         uint32_t encoding = kEncodingAll;
@@ -210,6 +270,13 @@ void MediaScannerClient::endFile()
         // if the locale encoding matches, then assume we have a native encoding.
         if (encoding & mLocaleEncoding)
             convertValues(mLocaleEncoding);
+        else {
+            // We need to check the strings for non-UTF8 characters
+            for (int i = 0; i < size; i++) {
+                if (!isUtfString(mValues->getEntry(i)))
+                    mValues->setEntry(i, UNKNOWN_STRING);
+            }
+        }
 
         // finally, push all name/value pairs to the client
         for (int i = 0; i < mNames->size(); i++) {
