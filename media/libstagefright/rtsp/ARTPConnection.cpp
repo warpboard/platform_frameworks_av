@@ -117,7 +117,7 @@ void ARTPConnection::MakePortPair(
 
     bumpSocketBufferSize(*rtcpSocket);
 
-    unsigned start = (rand() * 1000)/ RAND_MAX + 15550;
+    unsigned start = (rand() % 1000) + 15550;
     start &= ~1;
 
     for (unsigned port = start; port < 65536; port += 2) {
