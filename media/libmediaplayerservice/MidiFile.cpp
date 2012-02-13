@@ -515,6 +515,14 @@ int MidiFile::render() {
             case EAS_STATE_STOPPED:
             {
                 ALOGV("MidiFile::render - stopped");
+
+                Mutex::Autolock lock(mMutex);
+                if (mExit) {
+                    break;
+                }
+                // Reset position to allow play from stopped state
+                EAS_Locate(mEasData, mEasHandle, 0, false);
+
                 sendEvent(MEDIA_PLAYBACK_COMPLETE);
                 break;
             }
