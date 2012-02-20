@@ -117,12 +117,17 @@ static bool IsHTTPLiveURL(const char *url) {
 void NuPlayer::setDataSource(
         const char *url, const KeyedVector<String8, String8> *headers) {
     sp<AMessage> msg = new AMessage(kWhatSetDataSource, id());
+    size_t len = strlen(url);
 
     sp<Source> source;
     if (IsHTTPLiveURL(url)) {
         source = new HTTPLiveSource(url, headers, mUIDValid, mUID);
     } else if (!strncasecmp(url, "rtsp://", 7)) {
         source = new RTSPSource(url, headers, mUIDValid, mUID);
+    } else if ((!strncasecmp(url, "http://", 7) || !strncasecmp(url, "https://", 8))
+                    && ((len >= 4 && !strcasecmp(".sdp", &url[len - 4]))
+                    || strstr(url, ".sdp?"))) {
+        source = new RTSPSource(url, headers, mUIDValid, mUID, true);
     } else {
         source = new GenericSource(url, headers, mUIDValid, mUID);
     }
