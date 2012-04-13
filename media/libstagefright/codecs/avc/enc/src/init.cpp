@@ -144,10 +144,12 @@ AVCEnc_Status  SetEncodeParam(AVCHandle* avcHandle, AVCEncParams* encParam,
         seqParam->mb_adaptive_frame_field_flag = FALSE;
         seqParam->direct_8x8_inference_flag = FALSE; /* default */
         seqParam->frame_cropping_flag = FALSE;
-        seqParam->frame_crop_bottom_offset = 0;
         seqParam->frame_crop_left_offset = 0;
-        seqParam->frame_crop_right_offset = 0;
         seqParam->frame_crop_top_offset = 0;
+        seqParam->frame_crop_bottom_offset = 8 * video->FrameHeightInMbs - (encParam->height + 1)/2;
+        seqParam->frame_crop_right_offset  = 8 * video->PicWidthInMbs    - (encParam->width  + 1)/2;
+        if (seqParam->frame_crop_bottom_offset || seqParam->frame_crop_right_offset)
+            seqParam->frame_cropping_flag = TRUE;
         seqParam->vui_parameters_present_flag = FALSE; /* default */
     }
     else if (extS) // use external SPS and PPS
