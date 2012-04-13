@@ -236,7 +236,7 @@ LOOP_SAD2:
 #elif (NUMBER==1)
 LOOP_SAD1:
 #endif
-    __asm__ volatile("BIC  %0, %0, #3": "=r"(ref));
+    __asm__ volatile("BIC  %0, %0, #3": "+r"(ref));
     /****** process 8 pixels ******/
     x11 = *((int32*)(ref + 12));
     x12 = *((int32*)(ref + 16));
@@ -249,7 +249,7 @@ LOOP_SAD1:
         "BIC   %0, %0, %1, lsl #24\n\t"
         "MVN   %1, %1, lsr #8\n\t"
         "BIC   %1, %1, %2, lsl #24"
-        : "=&r"(x10), "=&r"(x11)
+        : "+r"(x10), "+r"(x11)
         : "r"(x12)
     );
 #elif (SHIFT==16)
@@ -258,7 +258,7 @@ LOOP_SAD1:
         "BIC   %0, %0, %1, lsl #16\n\t"
         "MVN   %1, %1, lsr #16\n\t"
         "BIC   %1, %1, %2, lsl #16"
-        : "=&r"(x10), "=&r"(x11)
+        : "+r"(x10), "+r"(x11)
         : "r"(x12)
     );
 #elif (SHIFT==24)
@@ -267,7 +267,7 @@ LOOP_SAD1:
         "BIC   %0, %0, %1, lsl #8\n\t"
         "MVN   %1, %1, lsr #24\n\t"
         "BIC   %1, %1, %2, lsl #8"
-        : "=&r"(x10), "=&r"(x11)
+        : "+r"(x10), "+r"(x11)
         : "r"(x12)
     );
 #endif
@@ -294,7 +294,7 @@ LOOP_SAD1:
         "BIC   %0, %0, %1, lsl #24\n\t"
         "MVN   %1, %1, lsr #8\n\t"
         "BIC   %1, %1, %2, lsl #24"
-        : "=&r"(x10), "=&r"(x11)
+        : "+r"(x10), "+r"(x11)
         : "r"(x12)
     );
 #elif (SHIFT==16)
@@ -303,7 +303,7 @@ LOOP_SAD1:
         "BIC   %0, %0, %1, lsl #16\n\t"
         "MVN   %1, %1, lsr #16\n\t"
         "BIC   %1, %1, %2, lsl #16"
-        : "=&r"(x10), "=&r"(x11)
+        : "+r"(x10), "+r"(x11)
         : "r"(x12)
     );
 #elif (SHIFT==24)
@@ -312,11 +312,11 @@ LOOP_SAD1:
         "BIC   %0, %0, %1, lsl #8\n\t"
         "MVN   %1, %1, lsr #24\n\t"
         "BIC   %1, %1, %2, lsl #8"
-        : "=&r"(x10), "=&r"(x11)
+        : "+r"(x10), "+r"(x11)
         : "r"(x12)
     );
 #endif
-    __asm__ volatile("LDR   %0, [%1], #16": "=&r"(x12), "=r"(blk));
+    __asm__ volatile("LDR   %0, [%1], #16": "=&r"(x12), "+r"(blk));
 
     /* process x11 & x14 */
     x11 = sad_4pixelN(x11, x14, x9);
