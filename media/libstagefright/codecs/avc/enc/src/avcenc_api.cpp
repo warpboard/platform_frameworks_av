@@ -26,7 +26,7 @@
 /*  Return   : AVCENC_SUCCESS if succeed, AVCENC_FAIL if fail.              */
 /*  Modified :                                                              */
 /* ======================================================================== */
-OSCL_EXPORT_REF AVCEnc_Status PVAVCEncGetNALType(unsigned char *bitstream, int size,
+AVCEnc_Status PVAVCEncGetNALType(unsigned char *bitstream, int size,
         int *nal_type, int *nal_ref_idc)
 {
     int forbidden_zero_bit;
@@ -53,7 +53,7 @@ OSCL_EXPORT_REF AVCEnc_Status PVAVCEncGetNALType(unsigned char *bitstream, int s
 /*  Return   : AVCENC_SUCCESS for success.                                  */
 /*  Modified :                                                              */
 /* ======================================================================== */
-OSCL_EXPORT_REF AVCEnc_Status PVAVCEncInitialize(AVCHandle *avcHandle, AVCEncParams *encParam,
+AVCEnc_Status PVAVCEncInitialize(AVCHandle *avcHandle, AVCEncParams *encParam,
         void* extSPS, void* extPPS)
 {
     AVCEnc_Status status;
@@ -251,7 +251,7 @@ OSCL_EXPORT_REF AVCEnc_Status PVAVCEncInitialize(AVCHandle *avcHandle, AVCEncPar
 /*  Modified :   size                                                       */
 /* ======================================================================== */
 
-OSCL_EXPORT_REF AVCEnc_Status PVAVCEncGetMaxOutputBufferSize(AVCHandle *avcHandle, int* size)
+AVCEnc_Status PVAVCEncGetMaxOutputBufferSize(AVCHandle *avcHandle, int* size)
 {
     AVCEncObject *encvid = (AVCEncObject*)avcHandle->AVCObject;
 
@@ -273,7 +273,7 @@ OSCL_EXPORT_REF AVCEnc_Status PVAVCEncGetMaxOutputBufferSize(AVCHandle *avcHandl
 /*  Return   : AVCENC_SUCCESS for success.                                  */
 /*  Modified :                                                              */
 /* ======================================================================== */
-OSCL_EXPORT_REF AVCEnc_Status PVAVCEncSetInput(AVCHandle *avcHandle, AVCFrameIO *input)
+AVCEnc_Status PVAVCEncSetInput(AVCHandle *avcHandle, AVCFrameIO *input)
 {
     AVCEncObject *encvid = (AVCEncObject*)avcHandle->AVCObject;
     AVCCommonObj *video = encvid->common;
@@ -365,7 +365,7 @@ RECALL_INITFRAME:
 /*  Return   : AVCENC_SUCCESS for success.                                  */
 /*  Modified :                                                              */
 /* ======================================================================== */
-OSCL_EXPORT_REF AVCEnc_Status PVAVCEncodeNAL(AVCHandle *avcHandle, unsigned char *buffer, unsigned int *buf_nal_size, int *nal_type)
+AVCEnc_Status PVAVCEncodeNAL(AVCHandle *avcHandle, unsigned char *buffer, unsigned int *buf_nal_size, int *nal_type)
 {
     AVCEncObject *encvid = (AVCEncObject*)avcHandle->AVCObject;
     AVCCommonObj *video = encvid->common;
@@ -518,7 +518,7 @@ OSCL_EXPORT_REF AVCEnc_Status PVAVCEncodeNAL(AVCHandle *avcHandle, unsigned char
 /*  Return   : Pointer to the internal overrun buffer.                      */
 /*  Modified :                                                              */
 /* ======================================================================== */
-OSCL_EXPORT_REF uint8* PVAVCEncGetOverrunBuffer(AVCHandle* avcHandle)
+uint8* PVAVCEncGetOverrunBuffer(AVCHandle* avcHandle)
 {
     AVCEncObject *encvid = (AVCEncObject*)avcHandle->AVCObject;
     AVCEncBitstream *bitstream = encvid->bitstream;
@@ -547,7 +547,7 @@ OSCL_EXPORT_REF uint8* PVAVCEncGetOverrunBuffer(AVCHandle* avcHandle)
 /*  Return   : AVCENC_SUCCESS for success.                                  */
 /*  Modified :                                                              */
 /* ======================================================================== */
-OSCL_EXPORT_REF AVCEnc_Status PVAVCEncGetRecon(AVCHandle *avcHandle, AVCFrameIO *recon)
+AVCEnc_Status PVAVCEncGetRecon(AVCHandle *avcHandle, AVCFrameIO *recon)
 {
     AVCEncObject *encvid = (AVCEncObject*)avcHandle->AVCObject;
     AVCCommonObj *video = encvid->common;
@@ -572,11 +572,8 @@ OSCL_EXPORT_REF AVCEnc_Status PVAVCEncGetRecon(AVCHandle *avcHandle, AVCFrameIO 
     return AVCENC_SUCCESS;
 }
 
-OSCL_EXPORT_REF AVCEnc_Status PVAVCEncReleaseRecon(AVCHandle *avcHandle, AVCFrameIO *recon)
+AVCEnc_Status PVAVCEncReleaseRecon(AVCHandle *avcHandle, AVCFrameIO *recon)
 {
-    OSCL_UNUSED_ARG(avcHandle);
-    OSCL_UNUSED_ARG(recon);
-
     return AVCENC_SUCCESS; //for now
 }
 
@@ -588,7 +585,7 @@ OSCL_EXPORT_REF AVCEnc_Status PVAVCEncReleaseRecon(AVCHandle *avcHandle, AVCFram
 /*  Return   : AVCENC_SUCCESS for success.                                  */
 /*  Modified :                                                              */
 /* ======================================================================== */
-OSCL_EXPORT_REF void    PVAVCCleanUpEncoder(AVCHandle *avcHandle)
+void    PVAVCCleanUpEncoder(AVCHandle *avcHandle)
 {
     AVCEncObject *encvid = (AVCEncObject*) avcHandle->AVCObject;
     AVCCommonObj *video;
@@ -681,43 +678,28 @@ OSCL_EXPORT_REF void    PVAVCCleanUpEncoder(AVCHandle *avcHandle)
     return ;
 }
 
-OSCL_EXPORT_REF AVCEnc_Status PVAVCEncUpdateBitRate(AVCHandle *avcHandle, uint32 bitrate)
+AVCEnc_Status PVAVCEncUpdateBitRate(AVCHandle *avcHandle, uint32 bitrate)
 {
-    OSCL_UNUSED_ARG(avcHandle);
-    OSCL_UNUSED_ARG(bitrate);
-
     return AVCENC_FAIL;
 }
 
-OSCL_EXPORT_REF AVCEnc_Status PVAVCEncUpdateFrameRate(AVCHandle *avcHandle, uint32 num, uint32 denom)
+AVCEnc_Status PVAVCEncUpdateFrameRate(AVCHandle *avcHandle, uint32 num, uint32 denom)
 {
-    OSCL_UNUSED_ARG(avcHandle);
-    OSCL_UNUSED_ARG(num);
-    OSCL_UNUSED_ARG(denom);
-
     return AVCENC_FAIL;
 }
 
-OSCL_EXPORT_REF AVCEnc_Status PVAVCEncUpdateIDRInterval(AVCHandle *avcHandle, int IDRInterval)
+AVCEnc_Status PVAVCEncUpdateIDRInterval(AVCHandle *avcHandle, int IDRInterval)
 {
-    OSCL_UNUSED_ARG(avcHandle);
-    OSCL_UNUSED_ARG(IDRInterval);
-
     return AVCENC_FAIL;
 }
 
-OSCL_EXPORT_REF AVCEnc_Status PVAVCEncIDRRequest(AVCHandle *avcHandle)
+AVCEnc_Status PVAVCEncIDRRequest(AVCHandle *avcHandle)
 {
-    OSCL_UNUSED_ARG(avcHandle);
-
     return AVCENC_FAIL;
 }
 
-OSCL_EXPORT_REF AVCEnc_Status PVAVCEncUpdateIMBRefresh(AVCHandle *avcHandle, int numMB)
+AVCEnc_Status PVAVCEncUpdateIMBRefresh(AVCHandle *avcHandle, int numMB)
 {
-    OSCL_UNUSED_ARG(avcHandle);
-    OSCL_UNUSED_ARG(numMB);
-
     return AVCENC_FAIL;
 }
 

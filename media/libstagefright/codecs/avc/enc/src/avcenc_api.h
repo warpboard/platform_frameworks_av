@@ -194,7 +194,7 @@ extern "C"
              AVCENC_MEMORY_FAIL for memory allocation failure,
              AVCENC_FAIL for generic failure."
     */
-    OSCL_IMPORT_REF AVCEnc_Status PVAVCEncInitialize(AVCHandle *avcHandle, AVCEncParams *encParam, void* extSPS, void* extPPS);
+    AVCEnc_Status PVAVCEncInitialize(AVCHandle *avcHandle, AVCEncParams *encParam, void* extSPS, void* extPPS);
 
 
     /**
@@ -209,7 +209,7 @@ extern "C"
     \return "AVCENC_SUCCESS for success, AVCENC_UNINITIALIZED when level is not known.
     */
 
-    OSCL_IMPORT_REF AVCEnc_Status PVAVCEncGetMaxOutputBufferSize(AVCHandle *avcHandle, int* size);
+    AVCEnc_Status PVAVCEncGetMaxOutputBufferSize(AVCHandle *avcHandle, int* size);
 
     /**
     Users call this function to provide an input structure to the encoder library which will keep
@@ -226,7 +226,7 @@ extern "C"
             AVCENC_NO_PICTURE if the input frame coding timestamp is too early, users must
             get next frame or adjust the coding timestamp."
     */
-    OSCL_IMPORT_REF AVCEnc_Status PVAVCEncSetInput(AVCHandle *avcHandle, AVCFrameIO *input);
+    AVCEnc_Status PVAVCEncSetInput(AVCHandle *avcHandle, AVCFrameIO *input);
 
     /**
     This function is called to encode a NAL unit which can be an SPS NAL, a PPS NAL or
@@ -245,7 +245,7 @@ extern "C"
              AVCENC_PICTURE_READY for the completion of a frame encoding,
              AVCENC_FAIL for failure (this should not occur, though)."
     */
-    OSCL_IMPORT_REF AVCEnc_Status PVAVCEncodeNAL(AVCHandle *avcHandle, uint8 *buffer, uint *buf_nal_size, int *nal_type);
+    AVCEnc_Status PVAVCEncodeNAL(AVCHandle *avcHandle, uint8 *buffer, uint *buf_nal_size, int *nal_type);
 
     /**
     This function sniffs the nal_unit_type such that users can call corresponding APIs.
@@ -255,7 +255,7 @@ extern "C"
     \param "nal_unit_type" "Pointer to the return value of nal unit type."
     \return "AVCENC_SUCCESS if success, AVCENC_FAIL otherwise."
     */
-    OSCL_IMPORT_REF AVCEnc_Status PVAVCEncGetNALType(uint8 *bitstream, int size, int *nal_type, int *nal_ref_idc);
+    AVCEnc_Status PVAVCEncGetNALType(uint8 *bitstream, int size, int *nal_type, int *nal_ref_idc);
 
     /**
     This function returns the pointer to internal overrun buffer. Users can call this to query
@@ -263,7 +263,7 @@ extern "C"
     \param "avcHandle"  "Pointer to the handle."
     \return "Pointer to overrun buffer if it is used, otherwise, NULL."
     */
-    OSCL_IMPORT_REF uint8* PVAVCEncGetOverrunBuffer(AVCHandle* avcHandle);
+    uint8* PVAVCEncGetOverrunBuffer(AVCHandle* avcHandle);
 
     /**
     This function returns the reconstructed frame of the most recently encoded frame.
@@ -273,7 +273,7 @@ extern "C"
     \param "output"     "Pointer to the input structure."
     \return "AVCENC_SUCCESS for success, AVCENC_NO_PICTURE if no picture to be outputted."
     */
-    OSCL_IMPORT_REF AVCEnc_Status PVAVCEncGetRecon(AVCHandle *avcHandle, AVCFrameIO *recon);
+    AVCEnc_Status PVAVCEncGetRecon(AVCHandle *avcHandle, AVCFrameIO *recon);
 
     /**
     This function is used to return the recontructed frame back to the AVC encoder library
@@ -285,7 +285,7 @@ extern "C"
     \param "output"      "Pointer to the AVCFrameIO structure."
     \return "AVCENC_SUCCESS for success, AVCENC_FAIL for fail for id not found."
     */
-    OSCL_IMPORT_REF AVCEnc_Status PVAVCEncReleaseRecon(AVCHandle *avcHandle, AVCFrameIO *recon);
+    AVCEnc_Status PVAVCEncReleaseRecon(AVCHandle *avcHandle, AVCFrameIO *recon);
 
     /**
     This function performs clean up operation including memory deallocation.
@@ -294,7 +294,7 @@ extern "C"
     and free them accordingly.
     \param "avcHandle"  "Handle to the AVC encoder library object."
     */
-    OSCL_IMPORT_REF void    PVAVCCleanUpEncoder(AVCHandle *avcHandle);
+    void    PVAVCCleanUpEncoder(AVCHandle *avcHandle);
 
     /**
     This function extracts statistics of the current frame. If the encoder has not finished
@@ -309,11 +309,11 @@ extern "C"
     These functions are used for the modification of encoding parameters.
     To be polished.
     */
-    OSCL_IMPORT_REF AVCEnc_Status PVAVCEncUpdateBitRate(AVCHandle *avcHandle, uint32 bitrate);
-    OSCL_IMPORT_REF AVCEnc_Status PVAVCEncUpdateFrameRate(AVCHandle *avcHandle, uint32 num, uint32 denom);
-    OSCL_IMPORT_REF AVCEnc_Status PVAVCEncUpdateIDRInterval(AVCHandle *avcHandle, int IDRInterval);
-    OSCL_IMPORT_REF AVCEnc_Status PVAVCEncIDRRequest(AVCHandle *avcHandle);
-    OSCL_IMPORT_REF AVCEnc_Status PVAVCEncUpdateIMBRefresh(AVCHandle *avcHandle, int numMB);
+    AVCEnc_Status PVAVCEncUpdateBitRate(AVCHandle *avcHandle, uint32 bitrate);
+    AVCEnc_Status PVAVCEncUpdateFrameRate(AVCHandle *avcHandle, uint32 num, uint32 denom);
+    AVCEnc_Status PVAVCEncUpdateIDRInterval(AVCHandle *avcHandle, int IDRInterval);
+    AVCEnc_Status PVAVCEncIDRRequest(AVCHandle *avcHandle);
+    AVCEnc_Status PVAVCEncUpdateIMBRefresh(AVCHandle *avcHandle, int numMB);
 
 
 #ifdef __cplusplus

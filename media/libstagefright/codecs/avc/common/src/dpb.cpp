@@ -105,7 +105,7 @@ AVCStatus InitDPB(AVCHandle *avcHandle, AVCCommonObj *video, int FrameHeightInMb
     return AVC_SUCCESS;
 }
 
-OSCL_EXPORT_REF AVCStatus AVCConfigureSequence(AVCHandle *avcHandle, AVCCommonObj *video, bool padding)
+AVCStatus AVCConfigureSequence(AVCHandle *avcHandle, AVCCommonObj *video, bool padding)
 {
     void *userData = avcHandle->userData;
     AVCDecPicBuffer *dpb = video->decPicBuf;
@@ -202,7 +202,7 @@ OSCL_EXPORT_REF AVCStatus AVCConfigureSequence(AVCHandle *avcHandle, AVCCommonOb
     return AVC_SUCCESS;
 }
 
-OSCL_EXPORT_REF AVCStatus CleanUpDPB(AVCHandle *avcHandle, AVCCommonObj *video)
+AVCStatus CleanUpDPB(AVCHandle *avcHandle, AVCCommonObj *video)
 {
     AVCDecPicBuffer *dpb = video->decPicBuf;
     int ii;
@@ -229,7 +229,7 @@ OSCL_EXPORT_REF AVCStatus CleanUpDPB(AVCHandle *avcHandle, AVCCommonObj *video)
     return AVC_SUCCESS;
 }
 
-OSCL_EXPORT_REF AVCStatus DPBInitBuffer(AVCHandle *avcHandle, AVCCommonObj *video)
+AVCStatus DPBInitBuffer(AVCHandle *avcHandle, AVCCommonObj *video)
 {
     AVCDecPicBuffer *dpb = video->decPicBuf;
     int ii, status;
@@ -263,7 +263,7 @@ OSCL_EXPORT_REF AVCStatus DPBInitBuffer(AVCHandle *avcHandle, AVCCommonObj *vide
     return AVC_SUCCESS;
 }
 
-OSCL_EXPORT_REF void DPBInitPic(AVCCommonObj *video, int CurrPicNum)
+void DPBInitPic(AVCCommonObj *video, int CurrPicNum)
 {
     int offset = 0;
     int offsetc = 0;
@@ -313,7 +313,7 @@ OSCL_EXPORT_REF void DPBInitPic(AVCCommonObj *video, int CurrPicNum)
 }
 
 /* to release skipped frame after encoding */
-OSCL_EXPORT_REF void DPBReleaseCurrentFrame(AVCHandle *avcHandle, AVCCommonObj *video)
+void DPBReleaseCurrentFrame(AVCHandle *avcHandle, AVCCommonObj *video)
 {
     AVCDecPicBuffer *dpb = video->decPicBuf;
     int ii;
@@ -338,7 +338,7 @@ OSCL_EXPORT_REF void DPBReleaseCurrentFrame(AVCHandle *avcHandle, AVCCommonObj *
 }
 
 /* see subclause 8.2.5.1 */
-OSCL_EXPORT_REF AVCStatus StorePictureInDPB(AVCHandle *avcHandle, AVCCommonObj *video)
+AVCStatus StorePictureInDPB(AVCHandle *avcHandle, AVCCommonObj *video)
 {
     AVCStatus status;
     AVCDecPicBuffer *dpb = video->decPicBuf;

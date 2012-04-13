@@ -71,10 +71,6 @@ int AVCFindHalfPelMB(AVCEncObject *encvid, uint8 *cur, AVCMV *mot, uint8 *ncand,
     int yq[8] = { -1, -1, 0, 1, 1, 1, 0, -1};
     int h, hmin, q, qmin;
 
-    OSCL_UNUSED_ARG(xpos);
-    OSCL_UNUSED_ARG(ypos);
-    OSCL_UNUSED_ARG(hp_guess);
-
     GenerateHalfPelPred(subpel_pred, ncand, lx);
 
     cur = encvid->currYMB; // pre-load current original MB

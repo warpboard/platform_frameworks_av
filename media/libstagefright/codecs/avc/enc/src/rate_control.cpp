@@ -142,8 +142,6 @@ void RCUpdateBuffer(AVCCommonObj *video, AVCRateControl *rateCtrl, int frameInc)
     int tmp;
     MultiPass *pMP = rateCtrl->pMP;
 
-    OSCL_UNUSED_ARG(video);
-
     if (rateCtrl->rcEnable == TRUE)
     {
         if (frameInc > 1)
@@ -323,8 +321,6 @@ void CleanupRateControlModule(AVCHandle *avcHandle)
 void RCInitGOP(AVCEncObject *encvid)
 {
     /* in BX RC, there's no GOP-level RC */
-
-    OSCL_UNUSED_ARG(encvid);
 
     return ;
 }
@@ -519,7 +515,6 @@ void calculateQuantizer_Multipass(AVCEncObject *encvid, AVCCommonObj *video,
 
 void targetBitCalculation(AVCEncObject *encvid, AVCCommonObj *video, AVCRateControl *rateCtrl, MultiPass *pMP)
 {
-    OSCL_UNUSED_ARG(encvid);
     OsclFloat curr_mad;//, average_mad;
     int diff_counter_BTsrc, diff_counter_BTdst, prev_counter_diff, curr_counter_diff, bound;
     /* BT = Bit Transfer, for pMP->counter_BTsrc, pMP->counter_BTdst */
@@ -744,7 +739,6 @@ void RCInitMBQP(AVCEncObject *encvid)
 
 void RCPostMB(AVCCommonObj *video, AVCRateControl *rateCtrl, int num_header_bits, int num_texture_bits)
 {
-    OSCL_UNUSED_ARG(video);
     rateCtrl->numMBHeaderBits = num_header_bits;
     rateCtrl->numMBTextureBits = num_texture_bits;
     rateCtrl->NumberofHeaderBits += rateCtrl->numMBHeaderBits;

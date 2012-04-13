@@ -19,7 +19,7 @@
 
 #include "avclib_common.h"
 
-OSCL_EXPORT_REF void InitNeighborAvailability(AVCCommonObj *video, int mbNum)
+void InitNeighborAvailability(AVCCommonObj *video, int mbNum)
 {
     int PicWidthInMbs = video->PicWidthInMbs;
 
@@ -65,7 +65,7 @@ bool mb_is_available(AVCMacroblock *mblock, uint PicSizeInMbs, int mbAddr, int c
     return TRUE;
 }
 
-OSCL_EXPORT_REF int predict_nnz(AVCCommonObj *video, int i, int j)
+int predict_nnz(AVCCommonObj *video, int i, int j)
 {
     int pred_nnz = 0;
     int cnt      = 1;
@@ -125,7 +125,7 @@ OSCL_EXPORT_REF int predict_nnz(AVCCommonObj *video, int i, int j)
 }
 
 
-OSCL_EXPORT_REF int predict_nnz_chroma(AVCCommonObj *video, int i, int j)
+int predict_nnz_chroma(AVCCommonObj *video, int i, int j)
 {
     int pred_nnz = 0;
     int cnt      = 1;
@@ -183,7 +183,7 @@ OSCL_EXPORT_REF int predict_nnz_chroma(AVCCommonObj *video, int i, int j)
     return pred_nnz;
 }
 
-OSCL_EXPORT_REF void GetMotionVectorPredictor(AVCCommonObj *video, int encFlag)
+void GetMotionVectorPredictor(AVCCommonObj *video, int encFlag)
 {
     AVCMacroblock *currMB = video->currMB;
     AVCMacroblock *MB_A, *MB_B, *MB_C, *MB_D;
