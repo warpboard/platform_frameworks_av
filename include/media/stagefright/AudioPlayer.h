@@ -28,6 +28,7 @@ namespace android {
 class MediaSource;
 class AudioTrack;
 class AwesomePlayer;
+class TimeInterpolator;
 
 class AudioPlayer : public TimeSource {
 public:
@@ -60,6 +61,8 @@ public:
     // has played at least one frame of audio.
     bool getMediaTimeMapping(int64_t *realtime_us, int64_t *mediatime_us);
 
+    int64_t getLatencyUs() const;
+
     status_t seekTo(int64_t time_us);
 
     bool isSeeking();
@@ -84,6 +87,7 @@ private:
 
     int64_t mPositionTimeMediaUs;
     int64_t mPositionTimeRealUs;
+    sp<TimeInterpolator> mRealTimeInterpolator;
 
     bool mSeeking;
     bool mReachedEOS;

@@ -45,6 +45,7 @@ LOCAL_SRC_FILES:=                         \
         StagefrightMetadataRetriever.cpp  \
         SurfaceMediaSource.cpp            \
         ThrottledSource.cpp               \
+        TimeInterpolator.cpp              \
         TimeSource.cpp                    \
         TimedEventQueue.cpp               \
         Utils.cpp                         \

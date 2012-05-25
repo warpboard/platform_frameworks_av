@@ -29,6 +29,7 @@
 #include <media/stagefright/MetaData.h>
 
 #include "include/AwesomePlayer.h"
+#include "include/TimeInterpolator.h"
 
 namespace android {
 
@@ -45,6 +46,7 @@ AudioPlayer::AudioPlayer(
       mNumFramesPlayedSysTimeUs(ALooper::GetNowUs()),
       mPositionTimeMediaUs(-1),
       mPositionTimeRealUs(-1),
+      mRealTimeInterpolator(new TimeInterpolator),
       mSeeking(false),
       mReachedEOS(false),
       mFinalStatus(OK),
@@ -187,6 +189,9 @@ status_t AudioPlayer::start(bool sourceAlreadyStarted) {
         mAudioTrack->start();
     }
 
+    ALOGI("mLatencyUs = %lld", mLatencyUs);
+    mRealTimeInterpolator->set_latency(mLatencyUs);
+
     mStarted = true;
     mPinnedTimeUs = -1ll;
 
@@ -203,6 +208,7 @@ void AudioPlayer::pause(bool playPendingSamples) {
             mAudioTrack->stop();
         }
 
+        mRealTimeInterpolator->stop();
         mNumFramesPlayed = 0;
         mNumFramesPlayedSysTimeUs = ALooper::GetNowUs();
     } else {
@@ -213,11 +219,14 @@ void AudioPlayer::pause(bool playPendingSamples) {
         }
 
         mPinnedTimeUs = ALooper::GetNowUs();
+        mRealTimeInterpolator->pause();
     }
 }
 
 void AudioPlayer::resume() {
     CHECK(mStarted);
+
+    mRealTimeInterpolator->resume();
 
     if (mAudioSink.get() != NULL) {
         mAudioSink->start();
@@ -274,6 +283,7 @@ void AudioPlayer::reset() {
     mReachedEOS = false;
     mFinalStatus = OK;
     mStarted = false;
+    mRealTimeInterpolator->reset();
 }
 
 // static
@@ -356,6 +366,11 @@ size_t AudioPlayer::fillBuffer(void *data, size_t size) {
     bool postSeekComplete = false;
     bool postEOS = false;
     int64_t postEOSDelayUs = 0;
+
+    mRealTimeInterpolator->post_buffer(
+        TimeInterpolator::bytes_to_usecs(size, mFrameSize, mSampleRate)
+        );
+    mPositionTimeRealUs = mRealTimeInterpolator->get_stream_usecs();
 
     size_t size_done = 0;
     size_t size_remaining = size;
@@ -457,10 +472,6 @@ size_t AudioPlayer::fillBuffer(void *data, size_t size) {
             CHECK(mInputBuffer->meta_data()->findInt64(
                         kKeyTime, &mPositionTimeMediaUs));
 
-            mPositionTimeRealUs =
-                ((mNumFramesPlayed + size_done / mFrameSize) * 1000000)
-                    / mSampleRate;
-
             ALOGV("buffer->size() = %d, "
                  "mPositionTimeMediaUs=%.2f mPositionTimeRealUs=%.2f",
                  mInputBuffer->range_length(),
@@ -515,7 +526,7 @@ size_t AudioPlayer::fillBuffer(void *data, size_t size) {
 
 int64_t AudioPlayer::getRealTimeUs() {
     Mutex::Autolock autoLock(mLock);
-    return getRealTimeUsLocked();
+    return mRealTimeInterpolator->get_stream_usecs();
 }
 
 int64_t AudioPlayer::getRealTimeUsLocked() const {
@@ -557,11 +568,16 @@ int64_t AudioPlayer::getMediaTimeUs() {
     return mPositionTimeMediaUs + realTimeOffset;
 }
 
+int64_t AudioPlayer::getLatencyUs() const
+{
+    return mLatencyUs;
+}
+
 bool AudioPlayer::getMediaTimeMapping(
         int64_t *realtime_us, int64_t *mediatime_us) {
     Mutex::Autolock autoLock(mLock);
 
-    *realtime_us = mPositionTimeRealUs;
+    *realtime_us = mRealTimeInterpolator->read_pointer();
     *mediatime_us = mPositionTimeMediaUs;
 
     return mPositionTimeRealUs != -1 && mPositionTimeMediaUs != -1;
@@ -574,6 +590,7 @@ status_t AudioPlayer::seekTo(int64_t time_us) {
     mPositionTimeRealUs = mPositionTimeMediaUs = -1;
     mReachedEOS = false;
     mSeekTimeUs = time_us;
+    mRealTimeInterpolator->seek(time_us);
 
     // Flush resets the number of played frames
     mNumFramesPlayed = 0;

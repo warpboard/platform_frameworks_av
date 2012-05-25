@@ -644,7 +644,7 @@ void AwesomePlayer::onVideoLagUpdate() {
     }
     mVideoLagEventPending = false;
 
-    int64_t audioTimeUs = mAudioPlayer->getMediaTimeUs();
+    int64_t audioTimeUs = mAudioPlayer->getRealTimeUs();
     int64_t videoLateByUs = audioTimeUs - mVideoTimeUs;
 
     if (!(mFlags & VIDEO_AT_EOS) && videoLateByUs > 300000ll) {
@@ -1285,7 +1285,7 @@ status_t AwesomePlayer::getPosition(int64_t *positionUs) {
         Mutex::Autolock autoLock(mMiscStateLock);
         *positionUs = mVideoTimeUs;
     } else if (mAudioPlayer != NULL) {
-        *positionUs = mAudioPlayer->getMediaTimeUs();
+        *positionUs = mAudioPlayer->getRealTimeUs();
     } else {
         *positionUs = 0;
     }
@@ -1741,7 +1741,14 @@ void AwesomePlayer::onVideoEvent() {
     if (wasSeeking == NO_SEEK) {
         // Let's display the first frame after seeking right away.
 
-        int64_t nowUs = ts->getRealTimeUs() - mTimeSourceDeltaUs;
+        int64_t nowUs = ts->getRealTimeUs();
+
+        if (ts == (TimeSource*)&mSystemTimeSource) {
+            /* At end of audio stream, clock switches back to system clock.
+             * This keeps the timeline from having a big jump.
+             */
+            nowUs -= mTimeSourceDeltaUs;
+        }
 
         int64_t latenessUs = nowUs - timeUs;
 
@@ -1760,7 +1767,7 @@ void AwesomePlayer::onVideoEvent() {
             mSeeking = SEEK_VIDEO_ONLY;
             mSeekTimeUs = mediaTimeUs;
 
-            postVideoEvent_l();
+            postVideoEvent_l(0);
             return;
         }
 
@@ -1785,14 +1792,18 @@ void AwesomePlayer::onVideoEvent() {
                     ++mStats.mNumVideoFramesDropped;
                 }
 
-                postVideoEvent_l();
+                postVideoEvent_l(0);
                 return;
             }
         }
 
         if (latenessUs < -10000) {
             // We're more than 10ms early.
-            postVideoEvent_l(10000);
+            if (-latenessUs > 100000) {
+                postVideoEvent_l(10000);
+            } else {
+                postVideoEvent_l(latenessUs * -1);
+            }
             return;
         }
     }
@@ -1817,7 +1828,7 @@ void AwesomePlayer::onVideoEvent() {
         return;
     }
 
-    postVideoEvent_l();
+    postVideoEvent_l(0);
 }
 
 void AwesomePlayer::postVideoEvent_l(int64_t delayUs) {
