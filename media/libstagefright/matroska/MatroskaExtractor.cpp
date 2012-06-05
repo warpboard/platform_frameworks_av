@@ -109,6 +109,9 @@ private:
     const mkvparser::BlockEntry *mBlockEntry;
     long mBlockEntryIndex;
 
+    long parseCluster();
+    long parseNextCluster();
+
     void advance_l();
 
     BlockIterator(const BlockIterator &);
@@ -230,26 +233,62 @@ void BlockIterator::advance() {
     advance_l();
 }
 
+long BlockIterator::parseCluster()
+{
+    long long pos;
+    long len;
+    long res = mCluster->Parse(pos, len);
+    ALOGV("Parse returned %ld", res);
+
+    if (res == mkvparser::E_FILE_FORMAT_INVALID) {
+        // Skip this cluster
+        res = parseNextCluster();
+    }
+    return res;
+}
+
+long BlockIterator::parseNextCluster()
+{
+    long long pos;
+    long len;
+    long res;
+
+    do {
+        const mkvparser::Cluster *nextCluster;
+        res = mExtractor->mSegment->ParseNext(
+                mCluster, nextCluster, pos, len);
+        ALOGV("ParseNext returned %ld", res);
+
+        if (res != 0) {
+            // EOF or Error
+            return -1;
+        }
+
+        CHECK(nextCluster != NULL);
+        CHECK(!nextCluster->EOS());
+
+        mCluster = nextCluster;
+
+        res = mCluster->Parse(pos, len);
+        ALOGV("Parse (2) returned %ld", res);
+
+        mBlockEntryIndex = 0;
+    } while (res == mkvparser::E_FILE_FORMAT_INVALID);
+
+    return res;
+}
+
 void BlockIterator::advance_l() {
     for (;;) {
         long res = mCluster->GetEntry(mBlockEntryIndex, mBlockEntry);
         ALOGV("GetEntry returned %ld", res);
 
-        long long pos;
-        long len;
         if (res < 0) {
             // Need to parse this cluster some more
 
             CHECK_EQ(res, mkvparser::E_BUFFER_NOT_FULL);
 
-            res = mCluster->Parse(pos, len);
-            ALOGV("Parse returned %ld", res);
-
-            if (res < 0) {
-                // I/O error
-
-                ALOGE("Cluster::Parse returned result %ld", res);
-
+            if (parseCluster() < 0) {
                 mCluster = NULL;
                 break;
             }
@@ -258,29 +297,11 @@ void BlockIterator::advance_l() {
         } else if (res == 0) {
             // We're done with this cluster
 
-            const mkvparser::Cluster *nextCluster;
-            res = mExtractor->mSegment->ParseNext(
-                    mCluster, nextCluster, pos, len);
-            ALOGV("ParseNext returned %ld", res);
-
-            if (res > 0) {
-                // EOF
-
+            if (parseNextCluster() < 0) {
                 mCluster = NULL;
                 break;
             }
 
-            CHECK_EQ(res, 0);
-            CHECK(nextCluster != NULL);
-            CHECK(!nextCluster->EOS());
-
-            mCluster = nextCluster;
-
-            res = mCluster->Parse(pos, len);
-            ALOGV("Parse (2) returned %ld", res);
-            CHECK_GE(res, 0);
-
-            mBlockEntryIndex = 0;
             continue;
         }
 
