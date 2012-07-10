@@ -200,7 +200,10 @@ struct MyHandler : public AHandler {
     static void addSDES(int s, const sp<ABuffer> &buffer) {
         struct sockaddr_in addr;
         socklen_t addrSize = sizeof(addr);
-        CHECK_EQ(0, getsockname(s, (sockaddr *)&addr, &addrSize));
+        if (getsockname(s, (sockaddr *)&addr, &addrSize) != 0) {
+            ALOGV("getsockname failed - aborting addSDES");
+            return;
+        }
 
         uint8_t *data = buffer->data() + buffer->size();
         data[0] = 0x80 | 1;
