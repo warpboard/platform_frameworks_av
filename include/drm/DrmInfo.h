@@ -56,7 +56,7 @@ public:
 
     private:
         KeyIterator(const DrmInfo* drmInfo)
-            : mDrmInfo(const_cast <DrmInfo*> (drmInfo)), mIndex(0) {}
+                : mDrmInfo(const_cast <DrmInfo*> (drmInfo)), mIndex(0) {}
 
     public:
         KeyIterator(const KeyIterator& keyIterator);
@@ -80,7 +80,7 @@ public:
 
     private:
         Iterator(const DrmInfo* drmInfo)
-            : mDrmInfo(const_cast <DrmInfo*> (drmInfo)), mIndex(0) {}
+                : mDrmInfo(const_cast <DrmInfo*> (drmInfo)), mIndex(0) {}
 
     public:
         Iterator(const Iterator& iterator);
