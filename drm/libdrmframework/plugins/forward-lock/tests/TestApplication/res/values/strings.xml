@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="songYear">Year: </string>
+    <string name="go_back_to_constraint_type_list_">Go back to constraint type list.</string>
+    <string name="showing_constraints_for_permission_play">Showing constraints for permission: PLAY</string>
+    <string name="songAuthor">Author:</string>
+    <string name="songCoverUri">Album art:</string>
+    <string name="songTrackNumber">Track No:</string>
+    <string name="songArtist">Artist:</string>
+    <string name="songAlbum">Album:</string>
+    <string name="songTitle">Title:</string>
+    <string name="filename">FileName</string>
+    <string name="playMusic">Play</string>
+    <string name="convertFL">Convert FL</string>
+    <string name="fileInfo">File Info</string>
+    <string name="hello">Main Menu</string>
+    <string name="app_name">DRM Test Application</string>
+<string name="playername">Media Player</string>
+<string name="metadataname">Meta Data</string>
+<string name="rightsname">Constraints</string>
+<string name="upButton">Back</string>
+</resources>

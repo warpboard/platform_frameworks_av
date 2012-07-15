@@ -233,8 +233,15 @@ DrmInfoStatus* FwdLockEngine::onProcessDrmInfo(int uniqueId, const DrmInfo* drmI
     DrmInfoStatus *drmInfoStatus = NULL;
 
     // Nothing to process
-
-    drmInfoStatus = new DrmInfoStatus((int)DrmInfoStatus::STATUS_OK, 0, NULL, String8(""));
+    String8 notEmptyString("dummy");
+    const int bufferSize = notEmptyString.size();
+    char* data = NULL;
+    data = new char[bufferSize];
+    memcpy(data, notEmptyString.string(), bufferSize);
+    const DrmBuffer* buffer = new DrmBuffer(data, bufferSize);
+    drmInfoStatus =
+            new DrmInfoStatus((int)DrmInfoStatus::STATUS_OK, drmInfo->getInfoType(), buffer,
+                    drmInfo->getMimeType());
 
     LOG_VERBOSE("FwdLockEngine::onProcessDrmInfo");
 
@@ -255,6 +262,12 @@ DrmInfo* FwdLockEngine::onAcquireDrmInfo(int uniqueId, const DrmInfoRequest* drm
     DrmInfo* drmInfo = NULL;
 
     // Nothing to be done for Forward Lock file
+    String8 notEmptyString("dummy");
+    int length = notEmptyString.length();
+    char* data = new char[length];
+    memcpy(data, notEmptyString.string(), length);
+    drmInfo = new DrmInfo(drmInfoRequest->getInfoType(),
+            DrmBuffer(data, length), drmInfoRequest->getMimeType());
     LOG_VERBOSE("FwdLockEngine::onAcquireDrmInfo");
 
     return drmInfo;

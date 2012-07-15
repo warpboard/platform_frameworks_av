@@ -13,21 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-LOCAL_PATH := $(call my-dir)
-
+LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
-LOCAL_SRC_FILES := \
-    FwdLockFile.c
+LOCAL_MODULE_TAGS := tests
+LOCAL_CERTIFICATE := shared
 
-LOCAL_C_INCLUDES := \
-    frameworks/av/drm/libdrmframework/plugins/forward-lock/internal-format/common \
-    external/openssl/include
+LOCAL_JAVA_LIBRARIES := android.test.runner
 
-LOCAL_SHARED_LIBRARIES := libcrypto
+LOCAL_SRC_FILES := $(call all-java-files-under, src)
 
-LOCAL_MODULE := libfwdlock-decoder
+LOCAL_PACKAGE_NAME := ForwardLockTests
 
-LOCAL_MODULE_TAGS := optional
+LOCAL_INSTRUMENTATION_FOR := FLTestApp
 
-include $(BUILD_STATIC_LIBRARY)
+include $(BUILD_PACKAGE)

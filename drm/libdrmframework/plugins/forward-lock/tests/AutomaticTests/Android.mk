@@ -13,21 +13,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-LOCAL_PATH := $(call my-dir)
-
+LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
-LOCAL_SRC_FILES := \
-    FwdLockFile.c
+LOCAL_MODULE_TAGS := tests
+LOCAL_CERTIFICATE := shared
 
-LOCAL_C_INCLUDES := \
-    frameworks/av/drm/libdrmframework/plugins/forward-lock/internal-format/common \
-    external/openssl/include
+LOCAL_SRC_FILES := $(call all-java-files-under,src)
 
-LOCAL_SHARED_LIBRARIES := libcrypto
+LOCAL_PACKAGE_NAME := FLTestApp
 
-LOCAL_MODULE := libfwdlock-decoder
+include $(BUILD_PACKAGE)
 
-LOCAL_MODULE_TAGS := optional
-
-include $(BUILD_STATIC_LIBRARY)
+include $(call all-makefiles-under,$(LOCAL_PATH))

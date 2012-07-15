@@ -1,0 +1,10 @@
+.classpath
+.project
+.settings
+reports/
+bin/
+gen/
+local.properties
+default.properties
+*.class
+*~

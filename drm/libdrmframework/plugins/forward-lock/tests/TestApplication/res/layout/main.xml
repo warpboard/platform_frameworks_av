@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout android:orientation="vertical"
+    android:layout_width="fill_parent" android:layout_height="fill_parent"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <LinearLayout android:id="@+id/LinearLayout01"
+        android:layout_height="wrap_content" android:layout_width="fill_parent">
+        <Button android:layout_height="wrap_content"
+            android:text="@string/playMusic" android:id="@+id/buttonPlay"
+            android:layout_width="wrap_content" android:layout_weight="0.2"></Button>
+        <Button android:layout_height="wrap_content" android:id="@+id/buttonFileInfo"
+            android:text="@string/fileInfo" android:layout_width="wrap_content"
+            android:layout_weight="0.3"></Button>
+        <Button android:layout_height="wrap_content"
+            android:text="@string/convertFL" android:id="@+id/buttonConvertFL"
+            android:layout_width="wrap_content" android:layout_weight="0.3"></Button>
+        <Button android:layout_height="wrap_content"
+            android:layout_width="wrap_content" android:text="@string/upButton"
+            android:id="@+id/buttonUpDir" android:layout_weight="0.2"></Button>
+    </LinearLayout>
+    <LinearLayout android:id="@+id/LinearLayout02"
+        android:layout_height="wrap_content" android:layout_width="fill_parent">
+        <ListView android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:isScrollContainer="true" android:keepScreenOn="true"
+            android:minHeight="20dp" android:id="@+id/listviewFile"
+            android:stackFromBottom="true" android:clickable="true"
+            android:choiceMode="multipleChoice">
+        </ListView>
+    </LinearLayout>
+
+</LinearLayout>

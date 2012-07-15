@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content" android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TableLayout android:id="@+id/TableLayout01"
+        android:layout_width="wrap_content" android:layout_height="wrap_content">
+        <TableRow>
+            <TextView android:layout_marginRight="4px" android:typeface="monospace"
+                android:textSize="12sp" android:text="@string/songTitle" />
+            <TextView android:id="@+id/title" android:typeface="sans"
+                android:textSize="20sp" />
+        </TableRow>
+
+        <TableRow>
+            <TextView android:text="@string/songAlbum"
+                android:layout_marginRight="4px" android:typeface="monospace"
+                android:textSize="12sp" />
+
+            <TextView android:id="@+id/album" android:typeface="sans"
+                android:textSize="20sp" />
+        </TableRow>
+
+        <TableRow>
+            <TextView android:text="@string/songArtist"
+                android:layout_marginRight="4px" android:typeface="monospace"
+                android:textSize="12sp" />
+
+            <TextView android:id="@+id/artist" android:typeface="sans"
+                android:textSize="20sp" />
+        </TableRow>
+
+        <TableRow>
+            <TextView android:text="@string/songTrackNumber"
+                android:layout_marginRight="4px" android:typeface="monospace"
+                android:textSize="12sp" />
+
+            <TextView android:id="@+id/trackno" android:typeface="sans"
+                android:textSize="20sp" />
+        </TableRow>
+
+        <TableRow>
+            <TextView android:text="@string/songCoverUri"
+                android:layout_marginRight="4px" android:typeface="monospace"
+                android:textSize="12sp" />
+
+            <TextView android:id="@+id/coveruri" android:typeface="sans"
+                android:textSize="20sp" />
+        </TableRow>
+
+        <TableRow>
+            <TextView android:text="@string/songAuthor"
+                android:layout_marginRight="4px" android:typeface="monospace"
+                android:textSize="12sp" />
+
+            <TextView android:id="@+id/author" android:typeface="sans"
+                android:textSize="20sp" />
+        </TableRow>
+
+        <TableRow>
+            <TextView android:text="@string/songYear"
+                android:layout_marginRight="4px" android:typeface="monospace"
+                android:textSize="12sp" />
+            <TextView android:id="@+id/year" android:typeface="sans"
+                android:textSize="20sp" />
+        </TableRow>
+
+    </TableLayout>
+
+</LinearLayout>
