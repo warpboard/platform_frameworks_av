@@ -233,8 +233,8 @@ DrmInfoStatus* FwdLockEngine::onProcessDrmInfo(int uniqueId, const DrmInfo* drmI
     DrmInfoStatus *drmInfoStatus = NULL;
 
     // Nothing to process
-
-    drmInfoStatus = new DrmInfoStatus((int)DrmInfoStatus::STATUS_OK, 0, NULL, String8(""));
+    drmInfoStatus = new DrmInfoStatus((int)DrmInfoStatus::STATUS_OK, drmInfo->getInfoType(), NULL,
+            drmInfo->getMimeType());
 
     LOG_VERBOSE("FwdLockEngine::onProcessDrmInfo");
 
