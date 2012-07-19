@@ -168,6 +168,7 @@ private:
     // Acquire lock before calling these methods
     off64_t addSample_l(MediaBuffer *buffer);
     off64_t addLengthPrefixedSample_l(MediaBuffer *buffer);
+    off64_t addLengthPrefixedSample_lex(MediaBuffer *buffer); //To handle length prefixed avc sample
 
     bool exceedsFileSizeLimit();
     bool use32BitFileOffset() const;
