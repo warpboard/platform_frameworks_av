@@ -19,6 +19,7 @@
 #if CHROMIUM_AVAILABLE
 #include "include/DataUriSource.h"
 #endif
+#include "include/AVIExtractor.h"
 
 #include "include/MP3Extractor.h"
 #include "include/MPEG4Extractor.h"
@@ -120,6 +121,7 @@ void DataSource::RegisterDefaultSniffers() {
     RegisterSniffer(SniffAAC);
     RegisterSniffer(SniffMPEG2PS);
     RegisterSniffer(SniffWVM);
+    RegisterSniffer(SniffAVI);
 
     char value[PROPERTY_VALUE_MAX];
     if (property_get("drm.service.enabled", value, NULL)
