@@ -3245,11 +3245,11 @@ bool ACodec::LoadedState::onConfigureComponent(
 
 void ACodec::LoadedState::onStart() {
     ALOGV("onStart");
-
-    CHECK_EQ(mCodec->mOMX->sendCommand(
-                mCodec->mNode, OMX_CommandStateSet, OMX_StateIdle),
-             (status_t)OK);
-
+    if (!(mCodec->mQuirks & OMXCodec::kRequiresLoadedToIdleAfterAllocation)) {
+        CHECK_EQ(mCodec->mOMX->sendCommand(
+                    mCodec->mNode, OMX_CommandStateSet, OMX_StateIdle),
+                 (status_t)OK);
+    }
     mCodec->changeState(mCodec->mLoadedToIdleState);
 }
 
@@ -3271,6 +3271,10 @@ void ACodec::LoadedToIdleState::stateEntered() {
         mCodec->signalError(OMX_ErrorUndefined, err);
 
         mCodec->changeState(mCodec->mLoadedState);
+    } else if (mCodec->mQuirks & OMXCodec::kRequiresLoadedToIdleAfterAllocation) {
+        CHECK_EQ(mCodec->mOMX->sendCommand(
+                    mCodec->mNode, OMX_CommandStateSet, OMX_StateIdle),
+                 (status_t)OK);
     }
 }
 
