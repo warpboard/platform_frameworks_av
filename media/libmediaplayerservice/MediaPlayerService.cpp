@@ -211,7 +211,7 @@ extmap FILE_EXTS [] =  {
 };
 
 // TODO: Find real cause of Audio/Video delay in PV framework and remove this workaround
-/* static */ int MediaPlayerService::AudioOutput::mMinBufferCount = 4;
+/* static */ int MediaPlayerService::AudioOutput::mMinBufferCount = 2;
 /* static */ bool MediaPlayerService::AudioOutput::mIsOnEmulator = false;
 
 void MediaPlayerService::instantiate() {
