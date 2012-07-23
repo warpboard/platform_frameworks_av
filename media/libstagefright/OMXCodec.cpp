@@ -366,6 +366,10 @@ sp<MediaSource> OMXCodec::Create(
                     codec->mFlags |= kOnlySubmitOneInputBufferAtOneTime;
                 }
 
+                if (!strncmp("OMX.Intel.VideoEncoder", componentName, 22)) {
+                    codec->mFlags &= ~kOnlySubmitOneInputBufferAtOneTime;
+                }
+
                 return codec;
             }
 
