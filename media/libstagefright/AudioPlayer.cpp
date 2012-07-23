@@ -454,17 +454,20 @@ size_t AudioPlayer::fillBuffer(void *data, size_t size) {
                 mLatencyUs = (int64_t)mAudioTrack->latency() * 1000;
             }
 
-            CHECK(mInputBuffer->meta_data()->findInt64(
+            if (mInputBuffer->range_length() != 0) {
+                //check for non zero buffer
+                CHECK(mInputBuffer->meta_data()->findInt64(
                         kKeyTime, &mPositionTimeMediaUs));
 
+            }
             mPositionTimeRealUs =
-                ((mNumFramesPlayed + size_done / mFrameSize) * 1000000)
+                    ((mNumFramesPlayed + size_done / mFrameSize) * 1000000)
                     / mSampleRate;
 
             ALOGV("buffer->size() = %d, "
-                 "mPositionTimeMediaUs=%.2f mPositionTimeRealUs=%.2f",
-                 mInputBuffer->range_length(),
-                 mPositionTimeMediaUs / 1E6, mPositionTimeRealUs / 1E6);
+                    "mPositionTimeMediaUs=%.2f mPositionTimeRealUs=%.2f",
+                    mInputBuffer->range_length(),
+                    mPositionTimeMediaUs / 1E6, mPositionTimeRealUs / 1E6);
         }
 
         if (mInputBuffer->range_length() == 0) {
