@@ -957,13 +957,13 @@ MtpResponseCode MtpServer::doSendObject() {
         ALOGV("receiving %s\n", (const char *)mSendObjectFilePath);
         // transfer the file
         ret = ioctl(mFD, MTP_RECEIVE_FILE, (unsigned long)&mfr);
-        ALOGV("MTP_RECEIVE_FILE returned %d\n", ret);
+        ALOGV("MTP_RECEIVE_FILE returned %d errno %d \n", ret, errno);
     }
     close(mfr.fd);
 
     if (ret < 0) {
         unlink(mSendObjectFilePath);
-        if (errno == ECANCELED)
+        if (errno == ECANCELED || errno == EIO )
             result = MTP_RESPONSE_TRANSACTION_CANCELLED;
         else
             result = MTP_RESPONSE_GENERAL_ERROR;
