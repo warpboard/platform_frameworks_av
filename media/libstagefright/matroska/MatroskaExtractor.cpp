@@ -461,28 +461,39 @@ status_t MatroskaSource::readBlock() {
     }
 
     const mkvparser::Block *block = mBlockIter.block();
-
+    const mkvparser::Tracks *tracks = (mExtractor->mSegment)->GetTracks();
+    const mkvparser::Track *track = tracks->GetTrackByNumber(block->GetTrackNumber());
+    int64_t nextBlkTimeUs, diffTimeUs, frameTimeUs;
     int64_t timeUs = mBlockIter.blockTimeUs();
+    mBlockIter.advance();
+    enum { VIDEO_TRACK = 1, AUDIO_TRACK = 2 };
+    frameTimeUs = timeUs;
+    diffTimeUs = 0;
+    if (track->GetType() == AUDIO_TRACK) {
+        if (!mBlockIter.eos()) {
+            nextBlkTimeUs = mBlockIter.blockTimeUs();
+            diffTimeUs = (nextBlkTimeUs - timeUs) / block->GetFrameCount();
+        }
+     }
 
     for (int i = 0; i < block->GetFrameCount(); ++i) {
         const mkvparser::Block::Frame &frame = block->GetFrame(i);
 
         MediaBuffer *mbuf = new MediaBuffer(frame.len);
-        mbuf->meta_data()->setInt64(kKeyTime, timeUs);
+        mbuf->meta_data()->setInt64(kKeyTime, frameTimeUs);
+        frameTimeUs += diffTimeUs;
         mbuf->meta_data()->setInt32(kKeyIsSyncFrame, block->IsKey());
 
         long n = frame.Read(mExtractor->mReader, (unsigned char *)mbuf->data());
         if (n != 0) {
             mPendingFrames.clear();
 
-            mBlockIter.advance();
             return ERROR_IO;
         }
 
         mPendingFrames.push_back(mbuf);
     }
 
-    mBlockIter.advance();
 
     return OK;
 }
@@ -674,7 +685,12 @@ MatroskaExtractor::MatroskaExtractor(const sp<DataSource> &source)
          info->GetWritingAppAsUTF8());
 #endif
 
-    addTracks();
+    ret = addTracks();
+    if (ret < 0) {
+        delete mSegment;
+        mSegment = NULL;
+        return;
+    }
 }
 
 MatroskaExtractor::~MatroskaExtractor() {
@@ -785,7 +801,7 @@ void addVorbisCodecInfo(
             codecPrivateSize - len1 - len2 - 3);
 }
 
-void MatroskaExtractor::addTracks() {
+int MatroskaExtractor::addTracks() {
     const mkvparser::Tracks *tracks = mSegment->GetTracks();
 
     for (size_t index = 0; index < tracks->GetTracksCount(); ++index) {
@@ -848,7 +864,9 @@ void MatroskaExtractor::addTracks() {
 
                 if (!strcmp("A_AAC", codecID)) {
                     meta->setCString(kKeyMIMEType, MEDIA_MIMETYPE_AUDIO_AAC);
-                    CHECK(codecPrivateSize >= 2);
+                    if (codecPrivateSize < 2) {
+                        return -1;
+                    }
 
                     addESDSFromCodecPrivate(
                             meta, true, codecPrivate, codecPrivateSize);
@@ -880,6 +898,7 @@ void MatroskaExtractor::addTracks() {
         trackInfo->mTrackNum = track->GetNumber();
         trackInfo->mMeta = meta;
     }
+    return 0;
 }
 
 void MatroskaExtractor::findThumbnails() {
