@@ -27,6 +27,32 @@
 
 namespace android {
 
+#define FILE_SOURCE_META_BUFFER_NUMBER                6
+// must be power of 2
+#define FILE_SOURCE_META_BUFFER_DATA_SIZE             (4*1024)//0x1000 // 4096
+#define FILE_SOURCE_META_BUFFER_DATA_LOCAL_OFFSET     (FILE_SOURCE_META_BUFFER_DATA_SIZE - 1)
+#define FILE_SOURCE_META_BUFFER_DATA_OFFSET           ~(FILE_SOURCE_META_BUFFER_DATA_LOCAL_OFFSET)
+#define FILE_SOURCE_META_BUFFER_LRU_COUNT_LIMIT       100
+struct FileSourceMetaBuffer {
+    char data[FILE_SOURCE_META_BUFFER_DATA_SIZE];
+    off_t offset;
+    char valid;
+    int count; // for LRU calculation
+    size_t len; // actual bytes in buffer
+};
+
+class FileSourceBuffer {
+public:
+    FileSourceBuffer();
+    ssize_t readFromBuffer(off64_t offset, void *data, size_t size, int file);
+
+private:
+    struct FileSourceMetaBuffer mMetaBuffer[FILE_SOURCE_META_BUFFER_NUMBER];
+    int mNextBuffer;
+    Mutex mLock;
+};
+
+
 class FileSource : public DataSource {
 public:
     FileSource(const char *filename);
@@ -50,6 +76,7 @@ private:
     int64_t mOffset;
     int64_t mLength;
     Mutex mLock;
+    FileSourceBuffer mBuffer;
 
     /*for DRM*/
     sp<DecryptHandle> mDecryptHandle;
