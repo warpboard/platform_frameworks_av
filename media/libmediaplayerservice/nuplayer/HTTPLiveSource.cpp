@@ -185,5 +185,10 @@ bool NuPlayer::HTTPLiveSource::isSeekable() {
     return mLiveSession->isSeekable();
 }
 
+bool NuPlayer::HTTPLiveSource::isStreamValid(bool audio) {
+    ATSParser::SourceType type = audio ? ATSParser::AUDIO : ATSParser::VIDEO;
+    return mTSParser->isStreamValid(type);
+}
+
 }  // namespace android
 

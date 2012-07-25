@@ -74,6 +74,8 @@ struct ATSParser : public RefBase {
 
     bool PTSTimeDeltaEstablished();
 
+    bool isStreamValid(SourceType type);
+
     enum {
         // From ISO/IEC 13818-1: 2000 (E), Table 2-29
         STREAMTYPE_RESERVED             = 0x00,

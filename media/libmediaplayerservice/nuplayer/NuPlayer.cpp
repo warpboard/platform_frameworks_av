@@ -63,7 +63,9 @@ NuPlayer::NuPlayer()
       mSkipRenderingVideoUntilMediaTimeUs(-1ll),
       mVideoLateByUs(0ll),
       mNumFramesTotal(0ll),
-      mNumFramesDropped(0ll) {
+      mNumFramesDropped(0ll),
+      mSourceAlreadyStart(false),
+      mPreparePending(false) {
 }
 
 NuPlayer::~NuPlayer() {
@@ -156,6 +158,10 @@ void NuPlayer::resetAsync() {
     (new AMessage(kWhatReset, id()))->post();
 }
 
+void NuPlayer::prepareAsync() {
+    (new AMessage(kWhatPrepare, id()))->post();
+}
+
 void NuPlayer::seekToAsync(int64_t seekTimeUs) {
     sp<AMessage> msg = new AMessage(kWhatSeek, id());
     msg->setInt64("seekTimeUs", seekTimeUs);
@@ -232,7 +238,9 @@ void NuPlayer::onMessageReceived(const sp<AMessage> &msg) {
             mNumFramesTotal = 0;
             mNumFramesDropped = 0;
 
-            mSource->start();
+            if(!mSourceAlreadyStart) {
+                mSource->start();
+            }
 
             mRenderer = new Renderer(
                     mAudioSink,
@@ -241,6 +249,55 @@ void NuPlayer::onMessageReceived(const sp<AMessage> &msg) {
             looper()->registerHandler(mRenderer);
 
             postScanSources();
+            break;
+        }
+
+        case kWhatPrepare:
+        {
+            if (mPreparePending) {
+                return;
+            }
+            mSource->start();
+            mSourceAlreadyStart = true;
+            postWaitPrepare();
+        }
+
+        case kWhatWaitPrepareDone:
+        {
+            if (!mPreparePending) {
+                return;
+            }
+            status_t err;
+            mPreparePending = false;
+            sp<MetaData>  videometa = mSource->getFormat(false);
+            sp<MetaData>  audiometa = mSource->getFormat(true);
+            if ((err = mSource->feedMoreTSData()) != OK) {
+                if (err == ERROR_END_OF_STREAM) {
+                    notifyListener(MEDIA_PLAYBACK_COMPLETE, 0, 0);
+                } else {
+                    notifyListener(MEDIA_ERROR, MEDIA_ERROR_UNKNOWN, err);
+                }
+                finishPrepare();
+                break;
+            }
+            if( !mSource->isIStreamSource() && videometa == NULL && ( mSource->isStreamValid(false) || audiometa == NULL) ) {
+                msg->post(100000ll);
+                mPreparePending = true;
+            } else {
+                if (mSource->isStreamValid(true) && audiometa == NULL) {
+                    msg->post(100000ll);
+                    mPreparePending = true;
+                } else if (videometa != NULL) {
+                    int width = 0 ;
+                    int height = 0;
+                    CHECK(videometa->findInt32(kKeyWidth, &width));
+                    CHECK(videometa->findInt32(kKeyHeight, &height));
+                    notifyListener(MEDIA_SET_VIDEO_SIZE, width, height);
+                    finishPrepare();
+                } else {
+                    finishPrepare();
+                }
+            }
             break;
         }
 
@@ -513,6 +570,11 @@ void NuPlayer::onMessageReceived(const sp<AMessage> &msg) {
         {
             ALOGV("kWhatReset");
 
+            if(mPreparePending) {
+                finishPrepare();
+                mPreparePending = false;
+            }
+
             if (mRenderer != NULL) {
                 // There's an edge case where the renderer owns all output
                 // buffers and is paused, therefore the decoder will not read
@@ -635,6 +697,18 @@ void NuPlayer::finishFlushIfPossible() {
     }
 }
 
+void NuPlayer::finishPrepare() {
+    int64_t durationUs;
+    // notify the whole duration when finish Prepare
+    if (mDriver != NULL && mSource != NULL && mSource->getDuration(&durationUs) == OK) {
+        sp<NuPlayerDriver> driver = mDriver.promote();
+        if (driver != NULL) {
+            driver->notifyDuration(durationUs);
+        }
+    }
+    notifyListener(MEDIA_PREPARED, 0, 0);
+}
+
 void NuPlayer::finishReset() {
     CHECK(mAudioDecoder == NULL);
     CHECK(mVideoDecoder == NULL);
@@ -648,6 +722,9 @@ void NuPlayer::finishReset() {
         mSource->stop();
         mSource.clear();
     }
+
+    mPreparePending =  false;
+    mSourceAlreadyStart = false;
 
     if (mDriver != NULL) {
         sp<NuPlayerDriver> driver = mDriver.promote();
@@ -667,6 +744,12 @@ void NuPlayer::postScanSources() {
     msg->post();
 
     mScanSourcesPending = true;
+}
+
+void NuPlayer::postWaitPrepare() {
+    sp<AMessage> msg = new AMessage(kWhatWaitPrepareDone, id());
+    msg->post();
+    mPreparePending = true;
 }
 
 status_t NuPlayer::instantiateDecoder(bool audio, sp<Decoder> *decoder) {

@@ -262,4 +262,11 @@ bool NuPlayer::GenericSource::isSeekable() {
     return true;
 }
 
+bool NuPlayer::GenericSource::isStreamValid(bool audio) {
+    if (audio)
+        return (mAudioTrack.mSource != NULL);
+    else
+        return (mVideoTrack.mSource != NULL);
+}
+
 }  // namespace android

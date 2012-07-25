@@ -418,4 +418,12 @@ void NuPlayer::RTSPSource::finishDisconnectIfPossible() {
     mDisconnectReplyID = 0;
 }
 
+bool NuPlayer::RTSPSource::isStreamValid(bool audio) {
+    sp<AnotherPacketSource> source = getSource(audio);
+    if(source == NULL) {
+        return false;
+    }
+
+    return true;
+}
 }  // namespace android

@@ -67,6 +67,8 @@ struct ATSParser::Program : public RefBase {
         return mFirstPTSValid;
     }
 
+    bool isStreamValid(SourceType type);
+
     unsigned number() const { return mProgramNumber; }
 
     void updateProgramMapPID(unsigned programMapPID) {
@@ -108,6 +110,9 @@ struct ATSParser::Stream : public RefBase {
 
     sp<MediaSource> getSource(SourceType type);
 
+    bool isAudio() const;
+    bool isVideo() const;
+
 protected:
     virtual ~Stream();
 
@@ -130,9 +135,6 @@ private:
             const uint8_t *data, size_t size);
 
     void extractAACFrames(const sp<ABuffer> &buffer);
-
-    bool isAudio() const;
-    bool isVideo() const;
 
     DISALLOW_EVIL_CONSTRUCTORS(Stream);
 };
@@ -404,6 +406,16 @@ sp<MediaSource> ATSParser::Program::getSource(SourceType type) {
     }
 
     return NULL;
+}
+
+bool ATSParser::Program::isStreamValid(SourceType type) {
+    for (size_t i = 0; i < mStreams.size(); ++i) {
+        bool streamValid = (type == AUDIO) ? mStreams.editValueAt(i)->isAudio() : mStreams.editValueAt(i)->isVideo();
+        if(streamValid == true)
+            return true;
+    }
+
+    return false;
 }
 
 int64_t ATSParser::Program::convertPTSToTimestamp(uint64_t PTS) {
@@ -1061,6 +1073,18 @@ status_t ATSParser::parseTS(ABitReader *br) {
     }
 
     return OK;
+}
+
+bool ATSParser::isStreamValid(SourceType type) {
+    for(size_t i = 0; i < mPrograms.size(); i++) {
+        const sp<Program> &program = mPrograms.editItemAt(i);
+        bool isStreamValid = program->isStreamValid(type);
+
+        if(isStreamValid == true)
+            return true;
+    }
+
+    return false;
 }
 
 sp<MediaSource> ATSParser::getSource(SourceType type) {

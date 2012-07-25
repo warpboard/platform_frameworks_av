@@ -55,6 +55,9 @@ struct NuPlayer : public AHandler {
     // Will notify the driver through "notifySeekComplete" once finished.
     void seekToAsync(int64_t seekTimeUs);
 
+    // will notify the driver through "notifyPrepareComplete" once finished.
+    void prepareAsync();
+
 protected:
     virtual ~NuPlayer();
 
@@ -84,6 +87,8 @@ private:
         kWhatSeek                       = 'seek',
         kWhatPause                      = 'paus',
         kWhatResume                     = 'rsme',
+        kWhatPrepare                    = 'prep',
+        kWhatWaitPrepareDone            = 'preD',
     };
 
     wp<NuPlayerDriver> mDriver;
@@ -102,6 +107,9 @@ private:
 
     bool mScanSourcesPending;
     int32_t mScanSourcesGeneration;
+
+    bool mPreparePending;
+    bool mSourceAlreadyStart;
 
     enum FlushStatus {
         NONE,
@@ -141,7 +149,9 @@ private:
 
     static bool IsFlushingState(FlushStatus state, bool *needShutdown = NULL);
 
+    void finishPrepare();
     void finishReset();
+    void postWaitPrepare();
     void postScanSources();
 
     DISALLOW_EVIL_CONSTRUCTORS(NuPlayer);

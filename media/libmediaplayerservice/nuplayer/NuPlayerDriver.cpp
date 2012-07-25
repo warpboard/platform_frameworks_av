@@ -108,11 +108,8 @@ status_t NuPlayerDriver::prepare() {
 }
 
 status_t NuPlayerDriver::prepareAsync() {
-    status_t err = prepare();
-
-    notifyListener(MEDIA_PREPARED);
-
-    return err;
+    mPlayer->prepareAsync();
+    return OK;
 }
 
 status_t NuPlayerDriver::start() {
