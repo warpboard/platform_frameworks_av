@@ -24,6 +24,94 @@
 
 namespace android {
 
+FileSourceBuffer::FileSourceBuffer() {
+    for (int i = 0; i < FILE_SOURCE_META_BUFFER_NUMBER; i++) {
+        mMetaBuffer[i].valid = 0;
+        mMetaBuffer[i].count = 0;
+        mMetaBuffer[i].len = 0;
+    }
+    mNextBuffer = 0;
+}
+
+ssize_t FileSourceBuffer::readFromBuffer(off64_t offset, void *data, size_t size, int file) {
+    off64_t local_offset = offset & FILE_SOURCE_META_BUFFER_DATA_LOCAL_OFFSET;
+    Mutex::Autolock autoLock(mLock);
+    if (local_offset + size < FILE_SOURCE_META_BUFFER_DATA_SIZE) {
+        off64_t block_offset = offset & FILE_SOURCE_META_BUFFER_DATA_OFFSET;
+        for (int i = 0; i < FILE_SOURCE_META_BUFFER_NUMBER; i++) {
+            if (mMetaBuffer[i].valid) {
+                if (mMetaBuffer[i].count < FILE_SOURCE_META_BUFFER_LRU_COUNT_LIMIT) {
+                    mMetaBuffer[i].count ++;
+                }
+            }
+        }
+        for (int i = 0; i < FILE_SOURCE_META_BUFFER_NUMBER; i++) {
+            if ((block_offset == mMetaBuffer[i].offset) && mMetaBuffer[i].valid) {
+                if (mMetaBuffer[i].len < FILE_SOURCE_META_BUFFER_DATA_SIZE) {
+                    if (local_offset >= mMetaBuffer[i].len) {
+                        return 0;
+                    }
+                    if ((local_offset + size) > mMetaBuffer[i].len) {
+                        size = mMetaBuffer[i].len - local_offset;
+                    }
+                }
+                memcpy(data, mMetaBuffer[i].data + local_offset, size);
+                mMetaBuffer[i].count = 0;
+                return size;
+            }
+        }
+
+        off64_t err = lseek64(file, block_offset, SEEK_SET);
+
+        if (err == -1) {
+            ALOGE("seek to %ld failed", block_offset);
+            return UNKNOWN_ERROR;
+        }
+
+        // mNextBuffer calculation
+        // 1) select the buffer with valid = 0;
+        // 2) LRU calculation: select the buffer with the max count
+        mNextBuffer = -1;
+        for (int i = 0; i < FILE_SOURCE_META_BUFFER_NUMBER; i++) {
+            if (mMetaBuffer[i].valid == 0) {
+                mNextBuffer = i;
+                break;
+            }
+        }
+        if (mNextBuffer == -1) {
+            int max_count = -1;
+            for (int i = 0; i < FILE_SOURCE_META_BUFFER_NUMBER; i++) {
+                if (mMetaBuffer[i].count > max_count) {
+                    max_count = mMetaBuffer[i].count;
+                    mNextBuffer = i;
+                }
+            }
+        }
+        mMetaBuffer[mNextBuffer].valid = 0;
+        size_t len = ::read(file, mMetaBuffer[mNextBuffer].data, FILE_SOURCE_META_BUFFER_DATA_SIZE);
+        if (len <= 0) {
+            return UNKNOWN_ERROR;
+        }
+
+        mMetaBuffer[mNextBuffer].len = len;
+        mMetaBuffer[mNextBuffer].offset = block_offset;
+        mMetaBuffer[mNextBuffer].valid = 1;
+        mMetaBuffer[mNextBuffer].count = 0;
+        if (mMetaBuffer[mNextBuffer].len < FILE_SOURCE_META_BUFFER_DATA_SIZE) {
+            if (local_offset >= mMetaBuffer[mNextBuffer].len) {
+                return 0;
+            }
+            if ((local_offset + size) > mMetaBuffer[mNextBuffer].len) {
+                size = mMetaBuffer[mNextBuffer].len - local_offset;
+            }
+        }
+        memcpy(data, mMetaBuffer[mNextBuffer].data + local_offset, size);
+        return size;
+    }
+    return NOT_ENOUGH_DATA;
+}
+
+
 FileSource::FileSource(const char *filename)
     : mFd(-1),
       mOffset(0),
@@ -105,6 +193,11 @@ ssize_t FileSource::readAt(off64_t offset, void *data, size_t size) {
             == mDecryptHandle->decryptApiType) {
         return readAtDRM(offset, data, size);
    } else {
+        int ret = mBuffer.readFromBuffer(offset + mOffset, data, size, mFd);
+        // ret >= 0 is the number of bytes read
+        if (ret >= 0) {
+            return ret;
+        }
         off64_t result = lseek64(mFd, offset + mOffset, SEEK_SET);
         if (result == -1) {
             ALOGE("seek to %lld failed", offset + mOffset);
