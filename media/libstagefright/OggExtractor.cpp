@@ -499,6 +499,14 @@ status_t MyVorbisExtractor::readNextPacket(MediaBuffer **out) {
             }
             buffer = tmp;
 
+            int64_t durationUs = 0;
+            if (mMeta->findInt64(kKeyDuration, &durationUs)) {
+                if (durationUs < timeUs) {
+                    ALOGV("Reached End of File");
+                    return ERROR_END_OF_STREAM;
+                }
+            }
+
             ssize_t n = mSource->readAt(
                     dataOffset,
                     (uint8_t *)buffer->data() + buffer->range_length(),
