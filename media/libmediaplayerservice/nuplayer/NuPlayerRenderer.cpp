@@ -630,6 +630,9 @@ void NuPlayer::Renderer::onPause() {
 
     if (mHasAudio) {
         mAudioSink->pause();
+    } else {
+        // if no audio, we need to clear mAnchorTimeMediaUs, reset it when first video buffer comes
+        mAnchorTimeMediaUs = -1;
     }
 
     ALOGV("now paused audio queue has %d entries, video has %d entries",
