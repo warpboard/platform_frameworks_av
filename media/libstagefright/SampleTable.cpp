@@ -326,7 +326,8 @@ status_t SampleTable::setTimeToSampleParams(
 
     if (U32_AT(header) != 0) {
         // Expected version = 0, flags = 0.
-        return ERROR_MALFORMED;
+        ALOGW("Expected version = 0, flags = 0");
+        return OK;
     }
 
     mTimeToSampleCount = U32_AT(&header[4]);
