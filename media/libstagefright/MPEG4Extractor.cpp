@@ -347,7 +347,7 @@ sp<MetaData> MPEG4Extractor::getTrackMetaData(
         CHECK(track->meta->findCString(kKeyMIMEType, &mime));
         if (!strncasecmp("video/", mime, 6)) {
             uint32_t sampleIndex;
-            uint32_t sampleTime;
+            int64_t sampleTime;
             if (track->sampleTable->findThumbnailSample(&sampleIndex) == OK
                     && track->sampleTable->getMetaDataForSample(
                         sampleIndex, NULL /* offset */, NULL /* size */,
@@ -2052,7 +2052,7 @@ status_t MPEG4Source::read(
                     sampleIndex, &syncSampleIndex, findFlags);
         }
 
-        uint32_t sampleTime;
+        int64_t sampleTime;
         if (err == OK) {
             err = mSampleTable->getMetaDataForSample(
                     sampleIndex, NULL, NULL, &sampleTime);
@@ -2097,7 +2097,7 @@ status_t MPEG4Source::read(
 
     off64_t offset;
     size_t size;
-    uint32_t cts;
+    int64_t cts;
     bool isSyncSample;
     bool newBuffer = false;
     if (mBuffer == NULL) {

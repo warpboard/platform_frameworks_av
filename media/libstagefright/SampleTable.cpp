@@ -777,7 +777,7 @@ status_t SampleTable::getMetaDataForSample(
         uint32_t sampleIndex,
         off64_t *offset,
         size_t *size,
-        uint32_t *compositionTime,
+        int64_t *compositionTime,
         bool *isSyncSample) {
     Mutex::Autolock autoLock(mLock);
 
