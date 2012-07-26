@@ -163,7 +163,7 @@ sp<AnotherPacketSource> NuPlayer::RTSPSource::getSource(bool audio) {
 }
 
 status_t NuPlayer::RTSPSource::getDuration(int64_t *durationUs) {
-    *durationUs = 0ll;
+    *durationUs = -1ll;
 
     int64_t audioDurationUs;
     if (mAudioTrack != NULL
