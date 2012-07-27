@@ -186,7 +186,7 @@ void AH263Assembler::submitAccessUnit() {
     fflush(stdout);
 #endif
 
-    if (mAccessUnitDamaged) {
+    if (accessUnitDamaged()) {
         accessUnit->meta()->setInt32("damaged", true);
     }
 
@@ -209,6 +209,41 @@ void AH263Assembler::onByeReceived() {
     sp<AMessage> msg = mNotifyMsg->dup();
     msg->setInt32("eos", true);
     msg->post();
+}
+
+bool AH263Assembler::accessUnitDamaged() {
+    if (!mAccessUnitDamaged) {
+        return false;
+    } else if (mPackets.empty()) {
+        return true;
+    }
+    int32_t marker = 0;
+    int32_t lastSeq = -1;
+    List<sp<ABuffer> >::iterator it = mPackets.begin();
+    while (it != mPackets.end()) {
+        const sp<ABuffer> &unit = *it;
+        if (unit->meta()->findInt32("M", &marker)) {
+            ALOGV("Find marker is %d", marker);
+        } else {
+            ALOGV("Not find the marker");
+        }
+        if (lastSeq == -1) {
+            lastSeq = (int32_t)(*it)->int32Data();
+        } else {
+            int32_t seq = (int32_t)(*it)->int32Data();
+            if (seq - lastSeq != 1) {
+                // not continuous
+               return true;
+            }
+            lastSeq = seq;
+        }
+        ++it;
+
+    }
+    if (marker != 1) {
+        return true;
+    }
+    return false;
 }
 
 }  // namespace android
