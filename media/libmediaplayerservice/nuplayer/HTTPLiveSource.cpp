@@ -178,6 +178,19 @@ status_t NuPlayer::HTTPLiveSource::seekTo(int64_t seekTimeUs) {
 
     mLiveSession->seekTo(seekTimeUs);
 
+    if (mFinalResult != OK) {
+        mFinalResult = OK;
+        sp<AnotherPacketSource> audiosource =
+        static_cast<AnotherPacketSource*>(mTSParser->getSource(ATSParser::AUDIO).get());
+        if (audiosource != NULL) {
+            audiosource->resetEOS();
+        }
+        sp<AnotherPacketSource> videosource =
+        static_cast<AnotherPacketSource*>(mTSParser->getSource(ATSParser::VIDEO).get());
+        if (videosource != NULL) {
+            videosource->resetEOS();
+        }
+    }
     return OK;
 }
 

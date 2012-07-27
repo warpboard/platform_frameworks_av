@@ -188,6 +188,11 @@ void AnotherPacketSource::signalEOS(status_t result) {
     mCondition.signal();
 }
 
+void AnotherPacketSource::resetEOS() {
+    Mutex::Autolock autoLock(mLock);
+    mEOSResult = OK;
+}
+
 bool AnotherPacketSource::hasBufferAvailable(status_t *finalResult) {
     Mutex::Autolock autoLock(mLock);
     if (!mBuffers.empty()) {

@@ -655,6 +655,18 @@ void NuPlayer::onMessageReceived(const sp<AMessage> &msg) {
                 }
             }
 
+            if ((mAudioDecoder != NULL) && mAudioEOS &&
+                   !mSource->isIStreamSource()) {
+                flushDecoder(true, false);
+                mAudioEOS = false;
+            }
+
+            if ((mVideoDecoder != NULL) && mVideoEOS &&
+                   !mSource->isIStreamSource()) {
+                flushDecoder(false, false);
+                mVideoEOS = false;
+            }
+
             break;
         }
 
