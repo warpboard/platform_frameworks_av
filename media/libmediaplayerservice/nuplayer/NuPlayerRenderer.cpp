@@ -263,7 +263,7 @@ bool NuPlayer::Renderer::onDrainAudioQueue() {
             CHECK_EQ(mAudioSink->getPosition(&numFramesPlayed), (status_t)OK);
 
             uint32_t numFramesPendingPlayout =
-                mNumFramesWritten - numFramesPlayed;
+                (mNumFramesWritten > numFramesPlayed) ? (mNumFramesWritten - numFramesPlayed) : 0;
 
             int64_t realTimeOffsetUs =
                 (mAudioSink->latency() / 2  /* XXX */
