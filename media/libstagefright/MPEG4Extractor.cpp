@@ -964,7 +964,15 @@ status_t MPEG4Extractor::parseChunk(off64_t *offset, int depth) {
             while (*offset < stop_offset) {
                 status_t err = parseChunk(offset, depth + 1);
                 if (err != OK) {
-                    return err;
+                    if (chunk_type == FOURCC('t', 'r', 'a', 'k')){
+                        // If one 'trak' box contains error, we can skip it to keep parsing,
+                        // which make sure we can parse out following valid 'trak' in the clip
+                        ALOGE("invalid track, skip it and keep parsing");
+                        mLastTrack->skipTrack = true;
+                        *offset = stop_offset;
+                    } else {
+                        return err;
+                    }
                 }
             }
 
