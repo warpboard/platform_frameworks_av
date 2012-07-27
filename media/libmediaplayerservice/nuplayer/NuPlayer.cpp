@@ -699,6 +699,12 @@ status_t NuPlayer::instantiateDecoder(bool audio, sp<Decoder> *decoder) {
 
     if (format == NULL) {
         return -EWOULDBLOCK;
+    } else if (mSource->isStreamValid(!audio)) {
+        sp<AMessage> format = mSource->getFormat(!audio);
+        if (format == NULL) {
+            ALOGV("%s stream is valid, but not instantiate, wait", (audio)? "Video" : "Audio");
+            return -EWOULDBLOCK;
+        }
     }
 
     if (!audio) {
