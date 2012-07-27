@@ -371,8 +371,8 @@ status_t ATSParser::Program::parseProgramMap(ABitReader *br) {
         }
 
         if (!success) {
-            ALOGI("Stream PIDs changed and we cannot recover.");
-            return ERROR_MALFORMED;
+            mStreams.clear();
+            ALOGI("Stream PIDs changed and we try to recover.");
         }
     }
 
