@@ -354,7 +354,7 @@ sp<MetaData> MPEG4Extractor::getTrackMetaData(
                         &sampleTime) == OK) {
                 track->meta->setInt64(
                         kKeyThumbnailTime,
-                        ((int64_t)sampleTime * 1000000) / track->timescale);
+                        ((((int64_t)sampleTime * 10000000) / track->timescale) + 9) / 10);
             }
         }
     }
