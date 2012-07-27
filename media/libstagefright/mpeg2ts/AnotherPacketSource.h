@@ -56,6 +56,8 @@ struct AnotherPacketSource : public MediaSource {
 
     void signalEOS(status_t result);
 
+    void resetEOS();
+
     status_t dequeueAccessUnit(sp<ABuffer> *buffer);
 
 protected:

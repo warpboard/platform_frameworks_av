@@ -141,7 +141,10 @@ status_t NuPlayerDriver::start() {
         default:
         {
             CHECK_EQ((int)mState, (int)PAUSED);
-
+            if (mAtEOS == true) {
+                 mPlayer->seekToAsync(0);
+                 mAtEOS = false;
+            }
             mPlayer->resume();
             break;
         }
@@ -195,6 +198,12 @@ status_t NuPlayerDriver::seekTo(int msec) {
         case PLAYING:
         case PAUSED:
         {
+            if (mAtEOS && mDurationUs > 0 && seekTimeUs >= mDurationUs) {
+                // when seek in EOS, if seekTime >= duration, drop invalid seek since it is
+                // already EOS.
+                notifyListener(MEDIA_SEEK_COMPLETE);
+                return OK;
+            }
             mAtEOS = false;
             mPlayer->seekToAsync(seekTimeUs);
             break;
@@ -329,6 +338,13 @@ status_t NuPlayerDriver::dump(int fd, const Vector<String16> &args) const {
 void NuPlayerDriver::notifyListener(int msg, int ext1, int ext2) {
     if (msg == MEDIA_PLAYBACK_COMPLETE || msg == MEDIA_ERROR) {
         mAtEOS = true;
+        // Pause the player,change the state to pause
+        // As play in html5, browser can not quit when play complete or meet MEDIA_ERROR,
+        // when seek after playing complete,it will stay at pause state.
+        if (mState == PLAYING) {
+            mPlayer->pause();
+            mState = PAUSED;
+        }
     }
 
     sendEvent(msg, ext1, ext2);
