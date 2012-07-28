@@ -100,6 +100,11 @@ private:
     bool mAudioEOS;
     bool mVideoEOS;
 
+    bool mAudioEosPending;
+    bool mVideoEosPending;
+    int32_t mAudioEosErr;
+    int32_t mVideoEosErr;
+
     bool mScanSourcesPending;
     int32_t mScanSourcesGeneration;
 

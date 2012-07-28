@@ -52,6 +52,8 @@ NuPlayer::NuPlayer()
       mVideoIsAVC(false),
       mAudioEOS(false),
       mVideoEOS(false),
+      mAudioEosPending(false),
+      mVideoEosPending(false),
       mScanSourcesPending(false),
       mScanSourcesGeneration(0),
       mTimeDiscontinuityPending(false),
@@ -318,7 +320,16 @@ void NuPlayer::onMessageReceived(const sp<AMessage> &msg) {
                          err);
                 }
 
-                mRenderer->queueEOS(audio, err);
+                // we should delay EOS message during flushing
+                if (!IsFlushingState(audio ? mFlushingAudio : mFlushingVideo)) {
+                    mRenderer->queueEOS(audio, err);
+                } else if (audio) {
+                    mAudioEosPending = true;
+                    mAudioEosErr = err;
+                } else {
+                    mVideoEosPending = true;
+                    mVideoEosErr = err;
+                }
             } else if (what == ACodec::kWhatFlushCompleted) {
                 bool needShutdown;
 
@@ -436,7 +447,16 @@ void NuPlayer::onMessageReceived(const sp<AMessage> &msg) {
                 ALOGE("Received error from %s decoder, aborting playback.",
                      audio ? "audio" : "video");
 
-                mRenderer->queueEOS(audio, UNKNOWN_ERROR);
+                // we should delay EOS message during flushing
+                if (!IsFlushingState(audio ? mFlushingAudio : mFlushingVideo)) {
+                    mRenderer->queueEOS(audio, UNKNOWN_ERROR);
+                } else if (audio) {
+                    mAudioEosPending = true;
+                    mAudioEosErr = UNKNOWN_ERROR;
+                } else {
+                    mVideoEosPending = true;
+                    mVideoEosErr = UNKNOWN_ERROR;
+                }
             } else if (what == ACodec::kWhatDrainThisBuffer) {
                 renderBuffer(audio, codecRequest);
             } else {
@@ -610,6 +630,17 @@ void NuPlayer::finishFlushIfPossible() {
         mRenderer->signalTimeDiscontinuity();
         mTimeDiscontinuityPending = false;
     }
+
+    if (mAudioEosPending && mRenderer != NULL) {
+        mRenderer->queueEOS(true,  mAudioEosErr);
+    }
+
+    if (mVideoEosPending && mRenderer != NULL) {
+        mRenderer->queueEOS(false, mVideoEosErr);
+    }
+
+    mAudioEosPending = false;
+    mVideoEosPending = false;
 
     if (mAudioDecoder != NULL) {
         mAudioDecoder->signalResume();
