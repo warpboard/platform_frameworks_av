@@ -836,6 +836,15 @@ void MatroskaExtractor::addTracks() {
                     continue;
                 }
 
+                int32_t frame_rate = vtrack->GetFrameRate();
+                if (frame_rate <= 0) {
+                    CalulateFrameRate(&frame_rate,track->GetNumber());
+                }
+                if (frame_rate > 0) {
+                    meta->setInt32(kKeyFrameRate, frame_rate);
+                }
+                ALOGI("frameRate = %d", frame_rate);
+
                 meta->setInt32(kKeyWidth, vtrack->GetWidth());
                 meta->setInt32(kKeyHeight, vtrack->GetHeight());
                 break;
@@ -879,6 +888,43 @@ void MatroskaExtractor::addTracks() {
         TrackInfo *trackInfo = &mTracks.editItemAt(mTracks.size() - 1);
         trackInfo->mTrackNum = track->GetNumber();
         trackInfo->mMeta = meta;
+    }
+}
+
+static int compareTimeCode(const int64_t* timeUs1, const int64_t* timeUs2) {
+
+    if (*timeUs1 < *timeUs2) {
+        return -1;
+    } else if (*timeUs1 > *timeUs2) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+void MatroskaExtractor::CalulateFrameRate(int32_t* framerate, int32_t trackNum) {
+    *framerate = 0;
+    Vector<int64_t> blockTimeArray;
+    blockTimeArray.clear();
+    BlockIterator iter(this, trackNum);
+    for (int i = 0; i < 50; i++) {
+        if (iter.eos()) {
+            break;
+        }
+        blockTimeArray.push(iter.blockTimeUs());
+        iter.advance();
+    }
+    blockTimeArray.sort(compareTimeCode); // sort by PTS
+    int32_t count = blockTimeArray.size();
+    if (count < 1) return;
+
+    // remove the last 8 items.
+    count = count > 9 ? (count - 8) : count;
+    int64_t beginTimeUs = blockTimeArray.itemAt(0);;
+    int64_t endTimeUs = blockTimeArray.itemAt(count - 1);
+    int64_t duration = endTimeUs - beginTimeUs;
+    if (duration != 0) {
+        *framerate = ((count - 1) * 1000000LL + (duration >> 1)) / duration;
     }
 }
 
