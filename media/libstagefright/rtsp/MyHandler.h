@@ -854,6 +854,15 @@ struct MyHandler : public AHandler {
 #if 0
                     track->mPacketSource->signalEOS(ERROR_END_OF_STREAM);
 #endif
+                    // If there are still cached AUs, process them before postQueue EOS;
+                    if (!track->mPackets.empty()) {
+                        ALOGV("still has some cached AU");
+                        List<sp<ABuffer> >::iterator it = --track->mPackets.end();
+                        sp<ABuffer> accessUnit = *it;
+                        track->mPackets.erase(it);
+                        onAccessUnitComplete(trackIndex,accessUnit);
+                    }
+                    postQueueEOS(trackIndex, ERROR_END_OF_STREAM);
                     return;
                 }
 
