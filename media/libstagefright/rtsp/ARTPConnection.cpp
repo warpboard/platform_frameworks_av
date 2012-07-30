@@ -32,6 +32,7 @@
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include "HTTPBase.h"
 
 namespace android {
 
@@ -69,6 +70,7 @@ struct ARTPConnection::StreamInfo {
 
 ARTPConnection::ARTPConnection(uint32_t flags)
     : mFlags(flags),
+      mUIDValid(false),
       mPollEventPending(false),
       mLastReceiverReportTimeUs(-1) {
 }
@@ -92,7 +94,8 @@ void ARTPConnection::addStream(
     msg->post();
 }
 
-void ARTPConnection::removeStream(int rtpSocket, int rtcpSocket) {
+void ARTPConnection::removeStream(int rtpSocket, int rtcpSocket, bool uidvalid) {
+    mUIDValid = uidvalid;
     sp<AMessage> msg = new AMessage(kWhatRemoveStream, id());
     msg->setInt32("rtp-socket", rtpSocket);
     msg->setInt32("rtcp-socket", rtcpSocket);
@@ -223,6 +226,16 @@ void ARTPConnection::onRemoveStream(const sp<AMessage> &msg) {
     if (it == mStreams.end()) {
         return;
     }
+
+    if (mUIDValid) {
+        HTTPBase::UnRegisterSocketUserTag(it->mRTPSocket);
+        HTTPBase::UnRegisterSocketUserTag(it->mRTCPSocket);
+    }
+    // close the socket here
+    close(it->mRTPSocket);
+    close(it->mRTCPSocket);
+    it->mRTPSocket = -1;
+    it->mRTCPSocket = -1;
 
     mStreams.erase(it);
 }
