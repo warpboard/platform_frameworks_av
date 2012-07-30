@@ -19,9 +19,9 @@
 #include <utils/Log.h>
 
 #include <media/openmax/OMX_Audio.h>
+#include <media/stagefright/foundation/ADebug.h>
 #include <media/stagefright/AACWriter.h>
 #include <media/stagefright/MediaBuffer.h>
-#include <media/stagefright/foundation/ADebug.h>
 #include <media/stagefright/MediaDefs.h>
 #include <media/stagefright/MediaErrors.h>
 #include <media/stagefright/MediaSource.h>

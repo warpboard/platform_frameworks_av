@@ -44,6 +44,7 @@ LOCAL_C_INCLUDES :=                                               \
 	$(TOP)/frameworks/av/media/libstagefright/rtsp                  \
 	$(TOP)/frameworks/native/include/media/openmax                  \
 	$(TOP)/external/tremolo/Tremolo                                 \
+  $(TOP)/external/chromium                                        \
 
 LOCAL_MODULE:= libmediaplayerservice
 
