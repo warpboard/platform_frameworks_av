@@ -114,6 +114,11 @@ typedef struct
                                         .Used only if video effect is framming */
     M4OSA_UInt32                height; /*height of the ARGB8888 clip .
                                         Used only if video effect is framming */
+    M4OSA_UInt32    exportmode;
+    M4OSA_UInt32    framing_topleft_x;
+    M4OSA_UInt32    framing_topleft_y;
+    M4OSA_UInt32    framing_bottomright_x;
+    M4OSA_UInt32    framing_bottomright_y;
 
 } M4xVSS_FramingStruct;
 

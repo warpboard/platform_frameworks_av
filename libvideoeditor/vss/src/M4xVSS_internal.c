@@ -1839,6 +1839,107 @@ M4OSA_ERR M4xVSS_internalSetPlaneTransparent(M4OSA_UInt8* planeIn, M4OSA_UInt32 
     return M4NO_ERROR;
 }
 
+M4OSA_ERR M4xVSS_internalProbeFramingBoundary(M4xVSS_FramingStruct *framingCtx)
+{
+    M4OSA_ERR err = M4NO_ERROR;
+    M4OSA_UInt32   topleft_x, topleft_y, botright_x, botright_y;
+    M4OSA_UInt32   isTopLeftFound, isBottomRightFound;
+    M4OSA_UInt32   u32_width, u32_height;
+    M4OSA_UInt32   u32_stride_rgb, u32_stride_2rgb;
+    M4OSA_UInt32   u32_col, u32_row;
+    M4OSA_UInt8    *pu8_rgbn_data, *pu8_rgbn;
+    M4OSA_UInt16   u16_pix1, u16_pix2, u16_pix3, u16_pix4;
+
+    M4OSA_TRACE1_0("M4xVSS_internalProbeFramingBoundary starts!");
+
+    if (!framingCtx->exportmode) {
+        M4OSA_TRACE1_0("Err: not in export mode!");
+        return err;
+    }
+    topleft_x           = 0;
+    topleft_y           = 0;
+    botright_x          = 0;
+    botright_y          = 0;
+    isTopLeftFound      = 0;
+    isBottomRightFound  = 0;
+    framingCtx->framing_topleft_x = 0;
+    framingCtx->framing_topleft_y = 0;
+    framingCtx->framing_bottomright_x = 0;
+    framingCtx->framing_bottomright_y = 0;
+
+
+    /* Set the pointer to the beginning of the input data buffers */
+    pu8_rgbn_data   = framingCtx->FramingRgb->pac_data + framingCtx->FramingRgb->u_topleft;
+
+    u32_width = framingCtx->FramingRgb->u_width;
+    u32_height = framingCtx->FramingRgb->u_height;
+
+    /* Set the size of the memory jumps corresponding to row jump in input plane */
+    u32_stride_rgb = framingCtx->FramingRgb->u_stride;
+    u32_stride_2rgb = u32_stride_rgb << 1;
+
+
+    /* Loop on each row of the output image, input coordinates are estimated from output ones */
+    /* Two YUV rows are computed at each pass */
+    for (u32_row = u32_height ;u32_row != 0; u32_row -=2)
+    {
+        pu8_rgbn = pu8_rgbn_data;
+
+        /* Loop on each column of the output image */
+        for (u32_col = u32_width; u32_col != 0 ; u32_col -=2)
+        {
+            /* Get four RGB 565 samples from input data */
+            u16_pix1 = *( (M4VIFI_UInt16 *) pu8_rgbn);
+            u16_pix2 = *( (M4VIFI_UInt16 *) (pu8_rgbn + CST_RGB_16_SIZE));
+            u16_pix3 = *( (M4VIFI_UInt16 *) (pu8_rgbn + u32_stride_rgb));
+            u16_pix4 = *( (M4VIFI_UInt16 *) (pu8_rgbn + u32_stride_rgb + CST_RGB_16_SIZE));
+            if (u16_pix1 != 0xE007 && u16_pix2 != 0xE007 \
+                && u16_pix3 != 0xE007 && u16_pix4 != 0xE007 \
+                && !isTopLeftFound)
+            {
+                topleft_x = u32_width - (u32_col+1);
+                topleft_y = u32_height - (u32_row+1);
+                isTopLeftFound = 1;
+            }
+            if (u16_pix1 != 0xE007 && u16_pix2 != 0xE007 \
+                && u16_pix3 != 0xE007 && u16_pix4 != 0xE007)
+            {
+                botright_x = u32_width  - (u32_col+1);
+                botright_y = u32_height - (u32_row+1);
+                isBottomRightFound = 1;
+            }
+
+          /* Prepare for next column */
+            pu8_rgbn += (CST_RGB_16_SIZE<<1);
+        } /* End of horizontal scanning */
+
+        /* Prepare pointers for the next row */
+        pu8_rgbn_data += u32_stride_2rgb;
+
+    }
+    M4OSA_TRACE1_2("isTopLeftFound = %d, isBottomRightFound = %d",
+        isTopLeftFound, isBottomRightFound);
+    if (isTopLeftFound && isTopLeftFound)
+    {
+        if ((topleft_x < botright_x) && (topleft_y < botright_y))
+        {
+            framingCtx->framing_topleft_x       = (((topleft_x + 1)>>1)<<1) + 2;
+            framingCtx->framing_topleft_y       = (((topleft_y + 1)>>1)<<1) + 2;
+            framingCtx->framing_bottomright_x   = (((botright_x- 1)>>1)<<1) - 1;
+            framingCtx->framing_bottomright_y   = (((botright_y- 1)>>1)<<1) - 1;
+        }
+        else
+        {
+            M4OSA_TRACE1_0("Err: invalid topleft and bottomright!");
+        }
+    }
+    else
+    {
+        M4OSA_TRACE1_0("Err: fail to find framing boundaries!");
+    }
+    return M4NO_ERROR;
+}
+
 
 /**
  ******************************************************************************
@@ -2328,6 +2429,9 @@ M4OSA_ERR M4xVSS_internalConvertARGB888toYUV420_FrammingEffect(M4OSA_Context pCo
     //err = M4VIFI_RGB888toYUV420(M4OSA_NULL, framingCtx->FramingRgb,  framingCtx->FramingYuv);
     err = M4VIFI_RGB565toYUV420(M4OSA_NULL, framingCtx->FramingRgb,  framingCtx->FramingYuv);
 
+    if (framingCtx->exportmode) {
+        M4xVSS_internalProbeFramingBoundary(framingCtx);
+    }
     if (err != M4NO_ERROR)
     {
         M4OSA_TRACE1_1("SPS png: error when converting from RGB to YUV: 0x%x\n", err);
@@ -3830,7 +3934,7 @@ M4OSA_ERR M4VSS3GPP_externalVideoEffectFraming( M4OSA_Void *userData,
     M4VIFI_UInt8 *p_out2;
 
     M4VIFI_UInt32 topleft[2];
-
+    M4VIFI_UInt32 topleft_x, topleft_y, botright_x, botright_y;
     M4OSA_UInt8 transparent1 = (M4OSA_UInt8)((TRANSPARENT_COLOR & 0xFF00)>>8);
     M4OSA_UInt8 transparent2 = (M4OSA_UInt8)TRANSPARENT_COLOR;
 
@@ -3861,7 +3965,7 @@ M4OSA_ERR M4VSS3GPP_externalVideoEffectFraming( M4OSA_Void *userData,
 
     /**
      * Depending on time, initialize Framing frame to use */
-    if(Framing->previousClipTime == -1)
+    if (Framing->previousClipTime == -1)
     {
         Framing->previousClipTime = pProgress->uiOutputTime;
     }
@@ -3875,116 +3979,142 @@ M4OSA_ERR M4VSS3GPP_externalVideoEffectFraming( M4OSA_Void *userData,
     topleft[0] = currentFraming->topleft_x;
     topleft[1] = currentFraming->topleft_y;
 
-    for( x=0 ;x < PlaneIn[0].u_height ; x++)
+    topleft_x = currentFraming->framing_topleft_x;
+    topleft_y = currentFraming->framing_topleft_y;
+    botright_x = currentFraming->framing_bottomright_x;
+    botright_y = currentFraming->framing_bottomright_y;
+
+    /*Alpha blending support*/
+    M4OSA_Float alphaBlending = 1;
+
+    M4xVSS_internalEffectsAlphaBlending*  alphaBlendingStruct =\
+        (M4xVSS_internalEffectsAlphaBlending*)\
+        ((M4xVSS_FramingContext*)userData)->alphaBlendingStruct;
+
+    if (alphaBlendingStruct != M4OSA_NULL)
     {
-        for( y=0 ;y < PlaneIn[0].u_width ; y++)
+        if (pProgress->uiProgress \
+            < (M4OSA_UInt32)(alphaBlendingStruct->m_fadeInTime*10))
         {
-            /**
-             * To handle framing with input size != output size
-             * Framing is applyed if coordinates matches between framing/topleft and input plane */
-            if( y < (topleft[0] + currentFraming->FramingYuv[0].u_width)  &&
-                y >= topleft[0] &&
-                x < (topleft[1] + currentFraming->FramingYuv[0].u_height) &&
-                x >= topleft[1])
+            if (alphaBlendingStruct->m_fadeInTime == 0)
             {
-                /*Alpha blending support*/
-                M4OSA_Float alphaBlending = 1;
-                M4xVSS_internalEffectsAlphaBlending*  alphaBlendingStruct =\
-                 (M4xVSS_internalEffectsAlphaBlending*)\
-                    ((M4xVSS_FramingContext*)userData)->alphaBlendingStruct;
-
-                if(alphaBlendingStruct != M4OSA_NULL)
-                {
-                    if(pProgress->uiProgress \
-                    < (M4OSA_UInt32)(alphaBlendingStruct->m_fadeInTime*10))
-                    {
-                        if(alphaBlendingStruct->m_fadeInTime == 0) {
-                            alphaBlending = alphaBlendingStruct->m_start / 100;
-                        } else {
-                            alphaBlending = ((M4OSA_Float)(alphaBlendingStruct->m_middle\
-                             - alphaBlendingStruct->m_start)\
-                                *pProgress->uiProgress/(alphaBlendingStruct->m_fadeInTime*10));
-                            alphaBlending += alphaBlendingStruct->m_start;
-                            alphaBlending /= 100;
-                        }
-                    }
-                    else if(pProgress->uiProgress >= (M4OSA_UInt32)(alphaBlendingStruct->\
-                    m_fadeInTime*10) && pProgress->uiProgress < 1000\
-                     - (M4OSA_UInt32)(alphaBlendingStruct->m_fadeOutTime*10))
-                    {
-                        alphaBlending = (M4OSA_Float)\
-                        ((M4OSA_Float)alphaBlendingStruct->m_middle/100);
-                    }
-                    else if(pProgress->uiProgress >= 1000 - (M4OSA_UInt32)\
-                    (alphaBlendingStruct->m_fadeOutTime*10))
-                    {
-                        if(alphaBlendingStruct->m_fadeOutTime == 0) {
-                            alphaBlending = alphaBlendingStruct->m_end / 100;
-                        } else {
-                            alphaBlending = ((M4OSA_Float)(alphaBlendingStruct->m_middle \
-                            - alphaBlendingStruct->m_end))*(1000 - pProgress->uiProgress)\
-                            /(alphaBlendingStruct->m_fadeOutTime*10);
-                            alphaBlending += alphaBlendingStruct->m_end;
-                            alphaBlending /= 100;
-                        }
-                    }
-                }
-                /**/
-
-                if((*(FramingRGB)==transparent1) && (*(FramingRGB+1)==transparent2))
-                {
-                    *( p_out0+y+x*PlaneOut[0].u_stride)=(*(p_in_Y+y+x*PlaneIn[0].u_stride));
-                    *( p_out1+(y>>1)+(x>>1)*PlaneOut[1].u_stride)=
-                        (*(p_in_U+(y>>1)+(x>>1)*PlaneIn[1].u_stride));
-                    *( p_out2+(y>>1)+(x>>1)*PlaneOut[2].u_stride)=
-                        (*(p_in_V+(y>>1)+(x>>1)*PlaneIn[2].u_stride));
-                }
-                else
-                {
-                    *( p_out0+y+x*PlaneOut[0].u_stride)=
-                        (*(currentFraming->FramingYuv[0].pac_data+(y-topleft[0])\
-                            +(x-topleft[1])*currentFraming->FramingYuv[0].u_stride))*alphaBlending;
-                    *( p_out0+y+x*PlaneOut[0].u_stride)+=
-                        (*(p_in_Y+y+x*PlaneIn[0].u_stride))*(1-alphaBlending);
-                    *( p_out1+(y>>1)+(x>>1)*PlaneOut[1].u_stride)=
-                        (*(currentFraming->FramingYuv[1].pac_data+((y-topleft[0])>>1)\
-                            +((x-topleft[1])>>1)*currentFraming->FramingYuv[1].u_stride))\
-                                *alphaBlending;
-                    *( p_out1+(y>>1)+(x>>1)*PlaneOut[1].u_stride)+=
-                        (*(p_in_U+(y>>1)+(x>>1)*PlaneIn[1].u_stride))*(1-alphaBlending);
-                    *( p_out2+(y>>1)+(x>>1)*PlaneOut[2].u_stride)=
-                        (*(currentFraming->FramingYuv[2].pac_data+((y-topleft[0])>>1)\
-                            +((x-topleft[1])>>1)*currentFraming->FramingYuv[2].u_stride))\
-                                *alphaBlending;
-                    *( p_out2+(y>>1)+(x>>1)*PlaneOut[2].u_stride)+=
-                        (*(p_in_V+(y>>1)+(x>>1)*PlaneIn[2].u_stride))*(1-alphaBlending);
-                }
-                if( PlaneIn[0].u_width < (topleft[0] + currentFraming->FramingYuv[0].u_width) &&
-                    y == PlaneIn[0].u_width-1)
-                {
-                    FramingRGB = FramingRGB + 2 \
-                        * (topleft[0] + currentFraming->FramingYuv[0].u_width \
-                            - PlaneIn[0].u_width + 1);
-                }
-                else
-                {
-                    FramingRGB = FramingRGB + 2;
-                }
+                alphaBlending = alphaBlendingStruct->m_start / 100;
             }
-            /**
-             * Just copy input plane to output plane */
+            else {
+                alphaBlending = ((M4OSA_Float)(alphaBlendingStruct->m_middle\
+                - alphaBlendingStruct->m_start)\
+                *pProgress->uiProgress/(alphaBlendingStruct->m_fadeInTime*10));
+                alphaBlending += alphaBlendingStruct->m_start;
+                alphaBlending /= 100;
+            }
+        }
+        else if (pProgress->uiProgress >= (M4OSA_UInt32)(alphaBlendingStruct->\
+                 m_fadeInTime*10) && pProgress->uiProgress < 1000\
+                 -(M4OSA_UInt32)(alphaBlendingStruct->m_fadeOutTime*10))
+        {
+            alphaBlending = (M4OSA_Float)\
+            ((M4OSA_Float)alphaBlendingStruct->m_middle/100);
+        }
+        else if (pProgress->uiProgress >= 1000 - (M4OSA_UInt32)\
+        (alphaBlendingStruct->m_fadeOutTime*10))
+        {
+            if(alphaBlendingStruct->m_fadeOutTime == 0)
+            {
+                alphaBlending = alphaBlendingStruct->m_end / 100;
+            }
             else
             {
-                *( p_out0+y+x*PlaneOut[0].u_stride)=*(p_in_Y+y+x*PlaneIn[0].u_stride);
-                *( p_out1+(y>>1)+(x>>1)*PlaneOut[1].u_stride)=
-                    *(p_in_U+(y>>1)+(x>>1)*PlaneIn[1].u_stride);
-                *( p_out2+(y>>1)+(x>>1)*PlaneOut[2].u_stride)=
-                    *(p_in_V+(y>>1)+(x>>1)*PlaneIn[2].u_stride);
+                alphaBlending = ((M4OSA_Float)(alphaBlendingStruct->m_middle \
+                - alphaBlendingStruct->m_end))*(1000 - pProgress->uiProgress)\
+                /(alphaBlendingStruct->m_fadeOutTime*10);
+                alphaBlending += alphaBlendingStruct->m_end;
+                alphaBlending /= 100;
             }
         }
     }
 
+    M4VIFI_UInt8 alphaBlending_int8 = (M4VIFI_UInt8)(alphaBlending * 255);
 
+    for( x=0 ; x < PlaneIn[0].u_height ; x++)
+    {
+        if((x<topleft[1]+topleft_y) || (x> topleft[1] + botright_y))
+        {
+            if(x&0x01)
+            {
+                memcpy(p_out0+x*PlaneOut[0].u_stride,
+                       p_in_Y+x*PlaneIn[0].u_stride,
+                       PlaneOut[0].u_width);
+            }
+            else
+            {
+                memcpy(p_out0+x*PlaneOut[0].u_stride,
+                       p_in_Y+x*PlaneIn[0].u_stride,
+                       PlaneOut[0].u_width);
+                memcpy(p_out1+(x>>1)*PlaneOut[1].u_stride,
+                       p_in_U+(x>>1)*PlaneIn[1].u_stride,
+                       PlaneOut[1].u_width);
+                memcpy(p_out2+(x>>1)*PlaneOut[2].u_stride,
+                       p_in_V+(x>>1)*PlaneIn[2].u_stride,
+                       PlaneOut[2].u_width);
+            }
+        }
+        else
+        {
+            if(x&0x01)
+            {
+                for(y=0; y < PlaneIn[0].u_width ; y++)
+                {
+                    if((y>=topleft[0]+topleft_x) && (y<=topleft[0]+botright_x))
+                    {
+                        *( p_out0+y+x*PlaneOut[0].u_stride)=
+                        (M4VIFI_UInt8)(((*(currentFraming->FramingYuv[0].pac_data+(y-topleft[0])\
+                        +(x-topleft[1])*currentFraming->FramingYuv[0].u_stride))*alphaBlending_int8
+                        + (*(p_in_Y+y+x*PlaneIn[0].u_stride))*(255-alphaBlending_int8))>>8);
+                    }
+                    else
+                    {
+                        *( p_out0+y+x*PlaneOut[0].u_stride)=*(p_in_Y+y+x*PlaneIn[0].u_stride);
+                    }
+                }
+            }
+            else
+            {
+                for(y=0 ; y < PlaneIn[0].u_width ; y++)
+                {
+                    if((y>=topleft[0]+topleft_x) && (y<=topleft[0]+botright_x))
+                    {
+                        *( p_out0+y+x*PlaneOut[0].u_stride)=
+                        (M4VIFI_UInt8)(((*(currentFraming->FramingYuv[0].pac_data+(y-topleft[0])\
+                        +(x-topleft[1])*currentFraming->FramingYuv[0].u_stride))*alphaBlending_int8
+                        +(*(p_in_Y+y+x*PlaneIn[0].u_stride))*(255-alphaBlending_int8))>>8);
+
+                        *( p_out1+(y>>1)+(x>>1)*PlaneOut[1].u_stride)=
+                        (M4VIFI_UInt8)(((*(currentFraming->FramingYuv[1].pac_data+ \
+                        ((y-topleft[0])>>1)\
+                        +((x-topleft[1])>>1)*currentFraming->FramingYuv[1].u_stride))\
+                        *alphaBlending_int8 + \
+                        *(p_in_U+(y>>1)+(x>>1)*PlaneIn[1].u_stride)*(255-alphaBlending_int8))>>8);
+
+                        *( p_out2+(y>>1)+(x>>1)*PlaneOut[2].u_stride)=
+                        (M4VIFI_UInt8)(((*(currentFraming->FramingYuv[2].pac_data+ \
+                        ((y-topleft[0])>>1)\
+                        +((x-topleft[1])>>1)*currentFraming->FramingYuv[2].u_stride))\
+                        *alphaBlending_int8 + \
+                        *(p_in_V+(y>>1)+(x>>1)*PlaneIn[2].u_stride)*(255-alphaBlending_int8))>>8);
+                    }
+                    else
+                    {
+                        *( p_out0+y+x*PlaneOut[0].u_stride)=
+                             *(p_in_Y+y+x*PlaneIn[0].u_stride);
+                        *( p_out1+(y>>1)+(x>>1)*PlaneOut[1].u_stride)=
+                             *(p_in_U+(y>>1)+(x>>1)*PlaneIn[1].u_stride);
+                        *( p_out2+(y>>1)+(x>>1)*PlaneOut[2].u_stride)=
+                             *(p_in_V+(y>>1)+(x>>1)*PlaneIn[2].u_stride);
+                    }
+                }
+            }
+        }
+    }
     return M4VIFI_OK;
 }
 

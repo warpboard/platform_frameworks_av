@@ -3349,7 +3349,7 @@ replace3GP_3GP:
                         framingCtx->aFramingCtx->height);
 
 #endif
-
+                    framingCtx->aFramingCtx->exportmode = 1;
                     err = M4xVSS_internalConvertARGB888toYUV420_FrammingEffect(
                         xVSS_context,
                         &(xVSS_context->pSettings->Effects[j]),
