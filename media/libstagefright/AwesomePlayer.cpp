@@ -1644,6 +1644,7 @@ void AwesomePlayer::onVideoEvent() {
                 // So video playback is complete, but we may still have
                 // a seek request pending that needs to be applied
                 // to the audio track.
+                SeekType seekTemp = mSeeking;
                 if (mSeeking != NO_SEEK) {
                     ALOGV("video stream ended while seeking!");
                 }
@@ -1652,6 +1653,11 @@ void AwesomePlayer::onVideoEvent() {
                 if (mAudioPlayer != NULL
                         && !(mFlags & (AUDIO_RUNNING | SEEK_PREVIEW))) {
                     startAudioPlayer_l();
+                }
+
+                if (seekTemp != NO_SEEK) {
+                    modifyFlags(AUDIO_AT_EOS, SET); // video is eos, end the audio?
+                    mVideoTimeUs = mSeekTimeUs;
                 }
 
                 modifyFlags(VIDEO_AT_EOS, SET);
