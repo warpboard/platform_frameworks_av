@@ -841,6 +841,13 @@ void AwesomePlayer::onStreamDone() {
 
         pause_l(true /* at eos */);
 
+        // If audio hasn't completed MEDIA_SEEK_COMPLETE when play back complete echo,
+        // notify MEDIA_SEEK_COMPLETE to observer immediately for state persistance.
+        if (mWatchForAudioSeekComplete) {
+            notifyListener_l(MEDIA_SEEK_COMPLETE);
+            mWatchForAudioSeekComplete = false;
+        }
+
         modifyFlags(AT_EOS, SET);
     }
 }
@@ -1288,6 +1295,11 @@ status_t AwesomePlayer::getPosition(int64_t *positionUs) {
         *positionUs = mAudioPlayer->getMediaTimeUs();
     } else {
         *positionUs = 0;
+    }
+
+    // set current position to duration when EOS.
+    if (mFlags & AT_EOS) {
+        *positionUs = mDurationUs;
     }
 
     return OK;
