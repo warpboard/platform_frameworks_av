@@ -1130,7 +1130,7 @@ struct MyHandler : public AHandler {
 
             size_t trackIndex = 0;
             while (trackIndex < mTracks.size()
-                    && !(val == mTracks.editItemAt(trackIndex).mURL)) {
+                    && (-1 == mTracks.editItemAt(trackIndex).mURL.find(val.c_str(), 0))) {
                 ++trackIndex;
             }
             CHECK_LT(trackIndex, mTracks.size());
