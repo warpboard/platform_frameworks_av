@@ -463,6 +463,10 @@ status_t AwesomePlayer::setDataSource_l(const sp<MediaExtractor> &extractor) {
 }
 
 void AwesomePlayer::reset() {
+    if (mConnectingDataSource != NULL) {
+        ALOGI("interrupting the connection process in reset");
+        mConnectingDataSource->disconnect();
+    }
     Mutex::Autolock autoLock(mLock);
     reset_l();
 }
@@ -502,6 +506,11 @@ void AwesomePlayer::reset_l() {
             // enough data to start playback, we can safely interrupt that.
             finishAsyncPrepare_l();
         }
+    } else {
+        if (mConnectingDataSource != NULL) {
+            ALOGI("interrupting the connection process");
+            mConnectingDataSource->disconnect();
+        }
     }
 
     while (mFlags & PREPARING) {
@@ -509,6 +518,10 @@ void AwesomePlayer::reset_l() {
     }
 
     cancelPlayerEvents();
+
+    if (mConnectingDataSource != NULL) {
+        mConnectingDataSource.clear();
+    }
 
     mWVMExtractor.clear();
     mCachedSource.clear();
@@ -2002,8 +2015,6 @@ status_t AwesomePlayer::finishSetDataSource_l() {
         mLock.lock();
 
         if (err != OK) {
-            mConnectingDataSource.clear();
-
             ALOGI("mConnectingDataSource->connect() returned %d", err);
             return err;
         }
@@ -2026,8 +2037,6 @@ status_t AwesomePlayer::finishSetDataSource_l() {
         } else {
             dataSource = mConnectingDataSource;
         }
-
-        mConnectingDataSource.clear();
 
         String8 contentType = dataSource->getMIMEType();
 
