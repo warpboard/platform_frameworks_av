@@ -40,7 +40,7 @@ struct ARTPConnection : public AHandler {
             const sp<AMessage> &notify,
             bool injected);
 
-    void removeStream(int rtpSocket, int rtcpSocket);
+    void removeStream(int rtpSocket, int rtcpSocket, bool uidvalid = false);
 
     void injectPacket(int index, const sp<ABuffer> &buffer);
 
@@ -65,6 +65,7 @@ private:
     static const int64_t kSelectTimeoutUs;
 
     uint32_t mFlags;
+    bool mUIDValid;
 
     struct StreamInfo;
     List<StreamInfo> mStreams;

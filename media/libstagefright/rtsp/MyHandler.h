@@ -579,24 +579,26 @@ struct MyHandler : public AHandler {
                 }
 
                 if (result != OK) {
-                    if (track) {
-                        if (!track->mUsingInterleavedTCP) {
-                            // Clear the tag
-                            if (mUIDValid) {
-                                HTTPBase::UnRegisterSocketUserTag(track->mRTPSocket);
-                                HTTPBase::UnRegisterSocketUserTag(track->mRTCPSocket);
+                    for (size_t i = 0; i < mTracks.size(); ++i) {
+                        TrackInfo *info = &mTracks.editItemAt(i);
+                        if (info) {
+                            if (!info->mUsingInterleavedTCP) {
+                                // Clear the tag
+                                if (mUIDValid) {
+                                    HTTPBase::UnRegisterSocketUserTag(info->mRTPSocket);
+                                    HTTPBase::UnRegisterSocketUserTag(info->mRTCPSocket);
+                                }
+                                close(info->mRTPSocket);
+                                close(info->mRTCPSocket);
                             }
-
-                            close(track->mRTPSocket);
-                            close(track->mRTCPSocket);
+                            mTracks.removeItemsAt(i);
                         }
-
-                        mTracks.removeItemsAt(trackIndex);
                     }
+                    mSetupTracksSuccessful = false;
                 }
 
                 ++index;
-                if (index < mSessionDesc->countTracks()) {
+                if (index < mSessionDesc->countTracks() && mSetupTracksSuccessful) {
                     setupTrack(index);
                 } else if (mSetupTracksSuccessful) {
                     ++mKeepAliveGeneration;
@@ -708,16 +710,7 @@ struct MyHandler : public AHandler {
                     }
 
                     if (!info->mUsingInterleavedTCP) {
-                        mRTPConn->removeStream(info->mRTPSocket, info->mRTCPSocket);
-
-                        // Clear the tag
-                        if (mUIDValid) {
-                            HTTPBase::UnRegisterSocketUserTag(info->mRTPSocket);
-                            HTTPBase::UnRegisterSocketUserTag(info->mRTCPSocket);
-                        }
-
-                        close(info->mRTPSocket);
-                        close(info->mRTCPSocket);
+                        mRTPConn->removeStream(info->mRTPSocket, info->mRTCPSocket, mUIDValid);
                     }
                 }
                 mTracks.clear();
