@@ -20,6 +20,7 @@
 #include <gui/ISurfaceTexture.h>
 #include <gui/BufferQueue.h>
 
+#include <base/basictypes.h>
 #include <utils/threads.h>
 #include <utils/Vector.h>
 #include <media/stagefright/MediaSource.h>

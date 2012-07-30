@@ -64,6 +64,7 @@ LOCAL_C_INCLUDES:= \
         $(TOP)/external/flac/include \
         $(TOP)/external/tremolo \
         $(TOP)/external/openssl/include \
+        $(TOP)/external/chromium \
 
 LOCAL_SHARED_LIBRARIES := \
         libbinder \
