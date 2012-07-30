@@ -30,6 +30,7 @@
 #include <stdint.h>
 
 namespace android {
+static const size_t kPacketDisorderThresh = 50;
 
 // static
 AAVCAssembler::AAVCAssembler(const sp<AMessage> &notify)
@@ -73,7 +74,12 @@ ARTPAssembler::AssemblyStatus AAVCAssembler::addNALUnit(
         mNextExpectedSeqNo = (uint32_t)buffer->int32Data();
     } else if ((uint32_t)buffer->int32Data() != mNextExpectedSeqNo) {
         ALOGV("Not the sequence number I expected");
-
+        // too much packet lost and waiting for each packet for 10ms  will cause video stuck.
+        // directly drop the packets if the lost packet surpass the threshold
+        if (((uint32_t)buffer->int32Data() - mNextExpectedSeqNo) > kPacketDisorderThresh) {
+            mNextExpectedSeqNo = (uint32_t)buffer->int32Data();
+            return MALFORMED_PACKET;
+        }
         return WRONG_SEQUENCE_NUMBER;
     }
 
