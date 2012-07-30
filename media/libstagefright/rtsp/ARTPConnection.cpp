@@ -307,7 +307,28 @@ void ARTPConnection::onPollStreams() {
     int64_t nowUs = ALooper::GetNowUs();
     if (mLastReceiverReportTimeUs <= 0
             || mLastReceiverReportTimeUs + 5000000ll <= nowUs) {
-        sp<ABuffer> buffer = new ABuffer(kMaxUDPSize);
+        struct timeval tv;
+        tv.tv_sec = 0;
+        tv.tv_usec = kSelectTimeoutUs;
+        fd_set ws;
+        FD_ZERO(&ws);
+        int maxSocket = -1;
+        for (List<StreamInfo>::iterator it = mStreams.begin(); it != mStreams.end(); ++it) {
+            if ((*it).mIsInjected) {
+                continue;
+            }
+            FD_SET(it->mRTCPSocket, &ws);
+            if (it->mRTCPSocket > maxSocket) {
+                maxSocket = it->mRTCPSocket;
+            }
+        }
+
+        if (maxSocket == -1) {
+            return;
+        }
+
+        int res = select(maxSocket + 1, NULL, &ws, NULL, &tv);
+
         List<StreamInfo>::iterator it = mStreams.begin();
         while (it != mStreams.end()) {
             StreamInfo *s = &*it;
@@ -324,40 +345,43 @@ void ARTPConnection::onPollStreams() {
                 continue;
             }
 
-            buffer->setRange(0, 0);
+            if (FD_ISSET(s->mRTCPSocket, &ws)) {
+                sp<ABuffer> buffer = new ABuffer(kMaxUDPSize);
+                buffer->setRange(0, 0);
 
-            for (size_t i = 0; i < s->mSources.size(); ++i) {
-                sp<ARTPSource> source = s->mSources.valueAt(i);
+                for (size_t i = 0; i < s->mSources.size(); ++i) {
+                    sp<ARTPSource> source = s->mSources.valueAt(i);
 
-                source->addReceiverReport(buffer);
+                    source->addReceiverReport(buffer);
 
-                if (mFlags & kRegularlyRequestFIR) {
-                    source->addFIR(buffer);
-                }
-            }
-
-            if (buffer->size() > 0) {
-                ALOGV("Sending RR...");
-
-                ssize_t n;
-                do {
-                    n = sendto(
-                        s->mRTCPSocket, buffer->data(), buffer->size(), 0,
-                        (const struct sockaddr *)&s->mRemoteRTCPAddr,
-                        sizeof(s->mRemoteRTCPAddr));
-                } while (n < 0 && errno == EINTR);
-
-                if (n <= 0) {
-                    ALOGW("failed to send RTCP receiver report (%s).",
-                         n == 0 ? "connection gone" : strerror(errno));
-
-                    it = mStreams.erase(it);
-                    continue;
+                    if (mFlags & kRegularlyRequestFIR) {
+                        source->addFIR(buffer);
+                    }
                 }
 
-                CHECK_EQ(n, (ssize_t)buffer->size());
+                if (buffer->size() > 0) {
+                    ALOGV("Sending RR...");
 
-                mLastReceiverReportTimeUs = nowUs;
+                    ssize_t n;
+                    do {
+                        n = sendto(
+                                s->mRTCPSocket, buffer->data(), buffer->size(), 0,
+                                (const struct sockaddr *)&s->mRemoteRTCPAddr,
+                                sizeof(s->mRemoteRTCPAddr));
+                    } while (n < 0 && errno == EINTR);
+
+                    if (n <= 0) {
+                        ALOGW("failed to send RTCP receiver report (%s).",
+                                n == 0 ? "connection gone" : strerror(errno));
+
+                        it = mStreams.erase(it);
+                        continue;
+                    }
+
+                    CHECK_EQ(n, (ssize_t)buffer->size());
+
+                    mLastReceiverReportTimeUs = nowUs;
+                }
             }
 
             ++it;
