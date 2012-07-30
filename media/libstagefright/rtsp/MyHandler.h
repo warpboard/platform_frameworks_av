@@ -928,6 +928,8 @@ struct MyHandler : public AHandler {
 
                     info->mRTPAnchor = 0;
                     info->mNTPAnchorUs = -1;
+                    // clear the cached packets
+                    info->mPackets.clear();
                 }
 
                 mAllTracksHaveTime = false;
