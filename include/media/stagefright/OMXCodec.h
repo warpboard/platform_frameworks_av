@@ -200,6 +200,8 @@ private:
     status_t mFinalStatus;
     bool mNoMoreOutputData;
     bool mOutputPortSettingsHaveChanged;
+    bool mFirstFrame;
+    bool mCropInfoChanged;
     int64_t mSeekTimeUs;
     ReadOptions::SeekMode mSeekMode;
     int64_t mTargetTimeUs;
