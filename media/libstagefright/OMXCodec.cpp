@@ -1308,6 +1308,8 @@ OMXCodec::OMXCodec(
       mSignalledEOS(false),
       mNoMoreOutputData(false),
       mOutputPortSettingsHaveChanged(false),
+      mCropInfoChanged(false),
+      mFirstFrame(true),
       mSeekTimeUs(-1),
       mSeekMode(ReadOptions::SEEK_CLOSEST_SYNC),
       mTargetTimeUs(-1),
@@ -2196,6 +2198,11 @@ void OMXCodec::on_message(const omx_message &msg) {
                 buffer->meta_data()->setInt64(
                         kKeyTime, msg.u.extended_buffer_data.timestamp);
 
+                if (mCropInfoChanged) {
+                    buffer->meta_data()->setInt32(kKeyCropChange, true);
+                    mCropInfoChanged = false;
+                }
+
                 if (msg.u.extended_buffer_data.flags & OMX_BUFFERFLAG_SYNCFRAME) {
                     buffer->meta_data()->setInt32(kKeyIsSyncFrame, true);
                 }
@@ -2371,6 +2378,7 @@ void OMXCodec::onEvent(OMX_EVENTTYPE event, OMX_U32 data1, OMX_U32 data2) {
                 // when the OMX_EventPortSettingsChanged is not meant for reallocating
                 // the output buffers.
                 if (data1 == kPortIndexOutput) {
+                    mFilledBuffers.clear();
                     CHECK(mFilledBuffers.empty());
                 }
                 onPortSettingsChanged(data1);
@@ -2378,8 +2386,19 @@ void OMXCodec::onEvent(OMX_EVENTTYPE event, OMX_U32 data1, OMX_U32 data2) {
                         (data2 == OMX_IndexConfigCommonOutputCrop ||
                          data2 == OMX_IndexConfigCommonScale)) {
 
+                if (data2 == OMX_IndexConfigCommonOutputCrop) {
+                    mCropInfoChanged = true;
+                    // Do cropping for the first frame before
+                    // the frame is send out. For the subsequent frames
+                    // the cropping has to be done AFTER the frame is send
+                    if (!mFirstFrame) {
+                        break;
+                    }
+                }
+
                 sp<MetaData> oldOutputFormat = mOutputFormat;
                 initOutputFormat(mSource->getFormat());
+                mCropInfoChanged = false;
 
                 if (data2 == OMX_IndexConfigCommonOutputCrop &&
                     formatHasNotablyChanged(oldOutputFormat, mOutputFormat)) {
@@ -2710,7 +2729,8 @@ status_t OMXCodec::freeBuffersOnPort(
     for (size_t i = buffers->size(); i-- > 0;) {
         BufferInfo *info = &buffers->editItemAt(i);
 
-        if (onlyThoseWeOwn && info->mStatus == OWNED_BY_COMPONENT) {
+        if (onlyThoseWeOwn
+                && (info->mStatus == OWNED_BY_COMPONENT || info->mStatus==OWNED_BY_CLIENT)) {
             continue;
         }
 
@@ -3646,6 +3666,8 @@ status_t OMXCodec::start(MetaData *meta) {
     mSignalledEOS = false;
     mNoMoreOutputData = false;
     mOutputPortSettingsHaveChanged = false;
+    mCropInfoChanged = false;
+    mFirstFrame = true;
     mSeekTimeUs = -1;
     mSeekMode = ReadOptions::SEEK_CLOSEST_SYNC;
     mTargetTimeUs = -1;
@@ -3889,16 +3911,30 @@ status_t OMXCodec::read(
 
 void OMXCodec::signalBufferReturned(MediaBuffer *buffer) {
     Mutex::Autolock autoLock(mLock);
+    int cropchange = 0;
 
     Vector<BufferInfo> *buffers = &mPortBuffers[kPortIndexOutput];
     for (size_t i = 0; i < buffers->size(); ++i) {
         BufferInfo *info = &buffers->editItemAt(i);
 
         if (info->mMediaBuffer == buffer) {
-            CHECK_EQ((int)mPortStatus[kPortIndexOutput], (int)ENABLED);
             CHECK_EQ((int)info->mStatus, (int)OWNED_BY_CLIENT);
+            if (mPortStatus[kPortIndexOutput] == DISABLING) {
+                CODEC_LOGV("Port is disabled, freeing buffer %p", buffer);
+                status_t err = freeBuffer(kPortIndexOutput, i);
+                CHECK_EQ(err, (status_t)OK);
+                return;
+            }
+            CHECK_EQ((int)mPortStatus[kPortIndexOutput], (int)ENABLED);
 
             info->mStatus = OWNED_BY_US;
+            if (buffer->meta_data()->findInt32(kKeyCropChange, &cropchange) && cropchange) {
+                sp<MetaData> oldOutputFormat = mOutputFormat;
+                initOutputFormat(mSource->getFormat());
+                if (formatHasNotablyChanged(oldOutputFormat, mOutputFormat)) {
+                    mOutputPortSettingsHaveChanged = true;
+                }
+             }
 
             if (buffer->graphicBuffer() == 0) {
                 fillOutputBuffer(info);
@@ -4453,8 +4489,6 @@ void OMXCodec::initOutputFormat(const sp<MetaData> &inputFormat) {
                     CHECK_GE(rect.nTop, 0);
                     CHECK_GE(rect.nWidth, 0u);
                     CHECK_GE(rect.nHeight, 0u);
-                    CHECK_LE(rect.nLeft + rect.nWidth - 1, video_def->nFrameWidth);
-                    CHECK_LE(rect.nTop + rect.nHeight - 1, video_def->nFrameHeight);
 
                     mOutputFormat->setRect(
                             kKeyCropRect,

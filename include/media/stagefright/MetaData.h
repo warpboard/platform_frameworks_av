@@ -92,6 +92,7 @@ enum {
     kKeyCompilation       = 'cpil',  // cstring
     kKeyLocation          = 'loc ',  // cstring
     kKeyTimeScale         = 'tmsl',  // int32_t
+    kKeyCropChange        = 'crch',  // int32_t (bool)
 
     // video profile and level
     kKeyVideoProfile      = 'vprf',  // int32_t
