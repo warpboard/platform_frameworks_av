@@ -340,6 +340,13 @@ void NuPlayer::RTSPSource::onMessageReceived(const sp<AMessage> &msg) {
 
         case MyHandler::kWhatEOS:
         {
+            // If it is in conecting process, when receive bye rtcp,
+            // since mTracks has not been established, break the
+            // operation to mTracks.
+            if (mState == CONNECTING ) {
+                break;
+            }
+
             int32_t finalResult;
             CHECK(msg->findInt32("finalResult", &finalResult));
             CHECK_NE(finalResult, (status_t)OK);
