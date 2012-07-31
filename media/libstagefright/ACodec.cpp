@@ -336,6 +336,7 @@ ACodec::ACodec()
     : mQuirks(0),
       mNode(NULL),
       mSentFormat(false),
+      mFirstFrame(true),
       mIsEncoder(false),
       mShutdownInProgress(false),
       mEncoderDelay(0),
@@ -713,7 +714,8 @@ status_t ACodec::freeOutputBuffersNotOwnedByComponent() {
             &mBuffers[kPortIndexOutput].editItemAt(i);
 
         if (info->mStatus !=
-                BufferInfo::OWNED_BY_COMPONENT) {
+                BufferInfo::OWNED_BY_COMPONENT && info->mStatus !=
+                BufferInfo::OWNED_BY_DOWNSTREAM) {
             // We shouldn't have sent out any buffers to the client at this
             // point.
             CHECK_NE((int)info->mStatus, (int)BufferInfo::OWNED_BY_DOWNSTREAM);
@@ -2112,8 +2114,6 @@ void ACodec::sendFormatChange() {
             CHECK_GE(rect.nTop, 0);
             CHECK_GE(rect.nWidth, 0u);
             CHECK_GE(rect.nHeight, 0u);
-            CHECK_LE(rect.nLeft + rect.nWidth - 1, videoDef->nFrameWidth);
-            CHECK_LE(rect.nTop + rect.nHeight - 1, videoDef->nFrameHeight);
 
             notify->setRect(
                     "crop",
@@ -2802,8 +2802,8 @@ bool ACodec::BaseState::onOMXFillBufferDone(
                 info->mStatus = BufferInfo::OWNED_BY_COMPONENT;
                 break;
             }
-
-            if (!mCodec->mIsEncoder && !mCodec->mSentFormat) {
+            if (!mCodec->mIsEncoder && !mCodec->mSentFormat
+                && mCodec->mNativeWindow == NULL) {
                 mCodec->sendFormatChange();
             }
 
@@ -2832,6 +2832,20 @@ bool ACodec::BaseState::onOMXFillBufferDone(
                 new AMessage(kWhatOutputBufferDrained, mCodec->id());
 
             reply->setPointer("buffer-id", info->mBufferID);
+
+            if (!mCodec->mIsEncoder && !mCodec->mSentFormat) {
+                ALOGV("Applying format change firstFrame=%d", mCodec->mFirstFrame);
+                // Do cropping for the first frame before
+                // the frame is send out. For the subsequent frames
+                // the cropping has to be done AFTER the frame is send
+                if (mCodec->mFirstFrame) {
+                    mCodec->sendFormatChange();
+                } else {
+                    reply->setInt32("sent-format", mCodec->mSentFormat);
+                    mCodec->mSentFormat = true;
+                }
+            }
+            mCodec->mFirstFrame = false;
 
             notify->setMessage("reply", reply);
 
@@ -2875,6 +2889,16 @@ void ACodec::BaseState::onOutputBufferDrained(const sp<AMessage> &msg) {
     CHECK_EQ((int)info->mStatus, (int)BufferInfo::OWNED_BY_DOWNSTREAM);
 
     int32_t render;
+    // The client may choose not to render a buffer but we will
+    // need to apply the format change regardless as we would get
+    // only one format change call, associated with a buffer.
+    int32_t sentformat;
+    if (msg->findInt32("sent-format", &sentformat)) {
+        if (!sentformat) {
+            mCodec->sendFormatChange();
+        }
+    }
+
     if (mCodec->mNativeWindow != NULL
             && msg->findInt32("render", &render) && render != 0) {
         // The client wants this buffer to be rendered.
