@@ -753,6 +753,7 @@ M4OSA_ERR H264MCS_ProcessEncodedNALU(   M4OSA_Void *ainstance,
     M4OSA_UInt32 nal_size_low16, nal_size_high16;
     M4OSA_UInt32 frame_size = 0;
     M4OSA_UInt32 temp = 0;
+    M4OSA_UInt8 *buff;
 
     // StageFright encoder does not provide the size in the first 4 bytes of the AU, add it
     M4OSA_Int8 *pTmpBuff1 = M4OSA_NULL;
@@ -807,14 +808,15 @@ M4OSA_ERR H264MCS_ProcessEncodedNALU(   M4OSA_Void *ainstance,
         mask_bits = 0xFFFFFFFF;
         p_bs->Buffer = (M4OSA_UInt8 *)(inbuff + frame_size);
 
-        // Use unsigned value to fix errors due to bit sign extension, this fix should be generic
-
-        nal_size_high16 = ( ( (M4OSA_UInt8 *)p_bs->Buffer)[0] << 8)
-            + ((M4OSA_UInt8 *)p_bs->Buffer)[1];
-        nal_size_low16 = ( ( (M4OSA_UInt8 *)p_bs->Buffer)[2] << 8)
-            + ((M4OSA_UInt8 *)p_bs->Buffer)[3];
-
         nalu_info = (unsigned char)p_bs->Buffer[4];
+
+        if (frame_size > 0)
+        {
+            outbuff[outbuffpos++] = 0x00;
+            outbuff[outbuffpos++] = 0x00;
+            outbuff[outbuffpos++] = 0x00;
+            outbuff[outbuffpos++] = 0x01;
+        }
 
         outbuff[outbuffpos] = p_bs->Buffer[4];
 
@@ -832,7 +834,25 @@ M4OSA_ERR H264MCS_ProcessEncodedNALU(   M4OSA_Void *ainstance,
 
         H264MCS_getBits(p_bs, 0);
 
-        nal_size = ( nal_size_high16 << 16) + nal_size_low16;
+        nal_size = inbuf_size - frame_size - 4;
+        buff = inbuff + frame_size + 4;
+
+        while( nal_size > 4 )
+        {
+            if( ( buff[0] == 0x00) && (buff[1] == 0x00) && (buff[2] == 0x00)
+                    && (buff[3] == 0x01) )
+            {
+                break;
+            }
+            buff = buff + 1;
+            nal_size = nal_size - 1;
+        }
+
+        if( nal_size <= 4 )
+        {
+            nal_size = 0;
+        }
+        nal_size = ( inbuf_size - frame_size - 4) - nal_size;
 
         frame_size += nal_size + 4;
 
@@ -1445,14 +1465,14 @@ M4OSA_ERR H264MCS_ProcessSPS_PPS( NSWAVC_MCS_t *instance, M4OSA_UInt8 *inbuff,
         if( nal_unit_type == 8 )
         {
             M4OSA_TRACE1_0("H264MCS_ProcessSPS_PPS() Error: PPS");
-            return err;
+            break;
         }
 
         if( nal_unit_type == 7 )
         {
             /*SPS Packet */
             M4OSA_TRACE1_0("H264MCS_ProcessSPS_PPS() Error: SPS");
-            return err;
+            break;
         }
 
         if( ( nal_unit_type == 1) || (nal_unit_type == 5) )
@@ -1849,6 +1869,7 @@ M4OSA_ERR H264MCS_ProcessNALU( NSWAVC_MCS_t *ainstance, M4OSA_UInt8 *inbuff,
         if( nal_unit_type == 8 )
         {
             M4OSA_TRACE1_0("H264MCS_ProcessNALU() Error: PPS");
+            instance->is_done = 1;
             return err;
         }
 
@@ -1856,6 +1877,7 @@ M4OSA_ERR H264MCS_ProcessNALU( NSWAVC_MCS_t *ainstance, M4OSA_UInt8 *inbuff,
         {
             /*SPS Packet */
             M4OSA_TRACE1_0("H264MCS_ProcessNALU() Error: SPS");
+            instance->is_done = 1;
             return 0;
         }
 
