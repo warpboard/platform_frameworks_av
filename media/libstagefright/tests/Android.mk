@@ -38,6 +38,7 @@ LOCAL_C_INCLUDES := \
 	frameworks/av/media/libstagefright \
 	frameworks/av/media/libstagefright/include \
 	$(TOP)/frameworks/native/include/media/openmax \
+	$(TOP)/external/chromium \
 
 include $(BUILD_EXECUTABLE)
 
