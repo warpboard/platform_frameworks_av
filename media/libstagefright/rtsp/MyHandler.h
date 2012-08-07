@@ -133,6 +133,8 @@ struct MyHandler : public AHandler {
           mTryFakeRTCP(false),
           mReceivedFirstRTCPPacket(false),
           mReceivedFirstRTPPacket(false),
+          mFirstAccessUnitMediaTimeValid(true),
+          mFirstAccessUnitMediaTime(0),
           mSeekable(false),
           mKeepAliveTimeoutUs(kDefaultKeepAliveTimeoutUs),
           mKeepAliveGeneration(0) {
@@ -731,6 +733,7 @@ struct MyHandler : public AHandler {
                 mReceivedFirstRTCPPacket = false;
                 mReceivedFirstRTPPacket = false;
                 mSeekable = false;
+                mFirstAccessUnitMediaTimeValid = true;
 
                 sp<AMessage> reply = new AMessage('tear', id());
 
@@ -1220,11 +1223,13 @@ private:
     bool mFirstAccessUnit;
 
     bool mAllTracksHaveTime;
+    bool mFirstAccessUnitMediaTimeValid;
     int64_t mNTPAnchorUs;
     int64_t mMediaAnchorUs;
     int64_t mLastMediaTimeUs;
 
     int64_t mNumAccessUnitsReceived;
+    int64_t mFirstAccessUnitMediaTime;
     bool mCheckPending;
     int32_t mCheckGeneration;
     bool mTryTCPInterleaving;
@@ -1463,13 +1468,22 @@ private:
 
         int64_t mediaTimeUs = mMediaAnchorUs + ntpTimeUs - mNTPAnchorUs;
 
-        if (mediaTimeUs > mLastMediaTimeUs) {
-            mLastMediaTimeUs = mediaTimeUs;
+        // record the first AccessUnit MediaTime to adjust the mediaTime of
+        // access unit arrive then.
+        if (mFirstAccessUnitMediaTimeValid ) {
+            mFirstAccessUnitMediaTime = mediaTimeUs;
+            mFirstAccessUnitMediaTimeValid = false;
         }
 
-        if (mediaTimeUs < 0) {
-            ALOGV("dropping early accessUnit.");
-            return false;
+        if (mediaTimeUs < mFirstAccessUnitMediaTime) {
+            mFirstAccessUnitMediaTime = mediaTimeUs;
+        }
+
+        // adjust the mediaTimeUs according to the mFirstAccessUnitMediaTime
+        // to avoid the drop of the first few accessunit before first SR
+        mediaTimeUs = mediaTimeUs - mFirstAccessUnitMediaTime;
+        if (mediaTimeUs > mLastMediaTimeUs) {
+            mLastMediaTimeUs = mediaTimeUs;
         }
 
         ALOGV("track %d rtpTime=%d mediaTimeUs = %lld us (%.2f secs)",
