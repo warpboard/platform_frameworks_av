@@ -33,6 +33,8 @@ struct APacketSource : public RefBase {
 
     virtual sp<MetaData> getFormat();
 
+    void PreProcessAccessUnit(const uint8_t *data, size_t size);
+
 protected:
     virtual ~APacketSource();
 

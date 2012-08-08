@@ -478,6 +478,155 @@ bool ExtractDimensionsFromVOLHeader(
     return true;
 }
 
+bool ExtractDimensionsFromH263Header(
+        const uint8_t *data, size_t size, int32_t *width, int32_t *height) {
+    ABitReader br(&data[0], size);
+    uint32_t codeword;
+    int32_t extended_PTYPE = 0;
+    int32_t UFEP = 0;
+    int32_t custom_PFMT = 0;
+    codeword = br.getBits(22);
+    if (codeword !=  0x20) {
+        return false;
+    }
+    br.skipBits(8); // TR
+
+    codeword = br.getBits(1);
+    if (codeword == 0) {
+        return false;
+    }
+
+    codeword = br.getBits(1);
+    if (codeword == 1) {
+        return false;
+    }
+
+    br.skipBits(1); // split_screen_indicator
+    br.skipBits(1); // document_freeze_camera
+    br.skipBits(1); // freeze_picture_release
+
+    // source format
+    codeword = br.getBits(3);
+    switch (codeword) {
+        case 1:
+            *width = 128;
+            *height = 96;
+            break;
+
+        case 2:
+            *width = 176;
+            *height = 144;
+            break;
+
+        case 3:
+            *width = 352;
+            *height = 288;
+            break;
+
+        case 4:
+            *width = 704;
+            *height = 576;
+            break;
+
+        case 5:
+            *width = 1408;
+            *height = 1152;
+            break;
+
+        case 7:
+            extended_PTYPE = 1;
+            break;
+        default:
+            // Msg("H.263 source format not legal\n");
+            return false;
+    }
+
+    if (extended_PTYPE == 0) {
+        return true;
+    }
+
+    // source format
+    UFEP = br.getBits(3);
+    if (UFEP == 1) {
+        codeword = br.getBits(3);
+        switch (codeword) {
+            case 1:
+                *width = 128;
+                *height = 96;
+                break;
+
+            case 2:
+                *width = 176;
+                *height = 144;
+                break;
+
+            case 3:
+                *width = 352;
+                *height = 288;
+                break;
+
+            case 4:
+                *width = 704;
+                *height = 576;
+                break;
+
+            case 5:
+                *width = 1408;
+                *height = 1152;
+                break;
+
+            case 6:
+                custom_PFMT = 1;
+                break;
+            default:
+                // Msg("H.263 source format not legal\n");
+                return false;
+        }
+        if (custom_PFMT == 0) {
+            return true;
+        }
+
+        br.skipBits(15);
+    }
+
+    if (UFEP == 0 || UFEP == 1){
+        br.skipBits(9);
+    } else {
+        return false;
+    }
+
+    if (br.getBits(1)) {
+        return false; // CPM
+    }
+    if (custom_PFMT == 1 && UFEP == 1) {
+        uint32_t DisplayWidth, Width, DisplayHeight, Height, Resolution;
+        codeword = br.getBits(4);
+        if (codeword == 0) {
+            return false;
+        }
+        if (codeword == 0xf) {
+            br.skipBits(16);
+        }
+        codeword = br.getBits(9);
+        DisplayWidth = (codeword + 1) << 2;
+        Width = (DisplayWidth + 15) & -16;
+
+        br.skipBits(1); // start code emulation
+
+        codeword = br.getBits(9);
+        if (codeword == 0) {
+            return false;
+        }
+        DisplayHeight = codeword << 2;
+        Height = (DisplayHeight + 15) & -16;
+
+        *width = Width;
+        *height = Height;
+    }
+
+    return true;
+}
+
 bool GetMPEGAudioFrameSize(
         uint32_t header, size_t *frame_size,
         int *out_sampling_rate, int *out_channels,

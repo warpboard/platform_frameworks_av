@@ -456,8 +456,10 @@ APacketSource::APacketSource(
 
         int32_t width, height;
         if (!sessionDesc->getDimensions(index, PT, &width, &height)) {
-            mInitCheck = ERROR_UNSUPPORTED;
-            return;
+            ALOGV("There is no explicit framesize provided in SDP,"
+                "let decoder prase it out from bitstream then");
+            width = -1;
+            height = -1;
         }
 
         mFormat->setInt32(kKeyWidth, width);
@@ -575,6 +577,27 @@ status_t APacketSource::initCheck() const {
 
 sp<MetaData> APacketSource::getFormat() {
     return mFormat;
+}
+
+void APacketSource::PreProcessAccessUnit(const uint8_t *data, size_t size) {
+    const char *mime;
+    CHECK(mFormat->findCString(kKeyMIMEType, &mime));
+    if (!strcasecmp(mime, MEDIA_MIMETYPE_VIDEO_H263)) {
+        int32_t width;
+        int32_t height;
+        bool success = false;
+        CHECK(mFormat->findInt32(kKeyWidth, &width));
+        CHECK(mFormat->findInt32(kKeyHeight, &height));
+        if (width == -1 || height == -1) {
+            success =
+            ExtractDimensionsFromH263Header(data,size,&width,&height);
+            if (success) {
+                ALOGI("parse from AccessUnit, width = %d, height = %d\n",width, height);
+                mFormat->setInt32(kKeyWidth, width);
+                mFormat->setInt32(kKeyHeight, height);
+            }
+        }
+    }
 }
 
 }  // namespace android

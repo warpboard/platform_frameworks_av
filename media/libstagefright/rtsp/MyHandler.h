@@ -1195,6 +1195,7 @@ private:
 
         uint32_t mNormalPlayTimeRTP;
         int64_t mNormalPlayTimeUs;
+        bool mFirstAccessUnit;
 
         sp<APacketSource> mPacketSource;
 
@@ -1268,6 +1269,7 @@ private:
         info->mNTPAnchorUs = -1;
         info->mNormalPlayTimeRTP = 0;
         info->mNormalPlayTimeUs = 0ll;
+        info->mFirstAccessUnit = false;
 
         unsigned long PT;
         AString formatDesc;
@@ -1407,8 +1409,25 @@ private:
     void onAccessUnitComplete(
             int32_t trackIndex, const sp<ABuffer> &accessUnit) {
         ALOGV("onAccessUnitComplete track %d", trackIndex);
+        TrackInfo *track = &mTracks.editItemAt(trackIndex);
+        bool alltrackReceAccessUnit = true;
 
-        if (mFirstAccessUnit) {
+        if (track->mFirstAccessUnit == false) {
+            track->mPacketSource->PreProcessAccessUnit(accessUnit->data(),accessUnit->size());
+        }
+        track->mFirstAccessUnit = true;
+        if ( mFirstAccessUnit ) {
+            // check if all track receive the first unit;
+            for (size_t i = 0; i < mTracks.size(); ++i) {
+                TrackInfo *trackinfo = &mTracks.editItemAt(i);
+                if(trackinfo->mFirstAccessUnit == false) {
+                    alltrackReceAccessUnit = false;
+                    break;
+                }
+            }
+        }
+
+        if (mFirstAccessUnit && alltrackReceAccessUnit) {
             sp<AMessage> msg = mNotify->dup();
             msg->setInt32("what", kWhatConnected);
             msg->post();
@@ -1426,7 +1445,12 @@ private:
             mFirstAccessUnit = false;
         }
 
-        TrackInfo *track = &mTracks.editItemAt(trackIndex);
+        // when connection is not finished yet, hold postQueueAccessUnit
+        if (mFirstAccessUnit) {
+            ALOGV("connection has not finished yet");
+            track->mPackets.push_back(accessUnit);
+            return;
+        }
 
         if (!mAllTracksHaveTime) {
             ALOGV("storing accessUnit, no time established yet");
