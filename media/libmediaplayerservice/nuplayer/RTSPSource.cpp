@@ -296,6 +296,12 @@ void NuPlayer::RTSPSource::onMessageReceived(const sp<AMessage> &msg) {
 
         case MyHandler::kWhatEOS:
         {
+            // If it is in conecting process, when receive bye rtcp,
+            // since mTracks has not been established, break the
+            // operation to mTracks.
+            if (mState == CONNECTING) {
+                break;
+            }
             size_t trackIndex;
             CHECK(msg->findSize("trackIndex", &trackIndex));
             CHECK_LT(trackIndex, mTracks.size());

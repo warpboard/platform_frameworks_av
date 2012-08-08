@@ -63,6 +63,9 @@ sp<MetaData> MakeAACCodecSpecificData(
 bool ExtractDimensionsFromVOLHeader(
         const uint8_t *data, size_t size, int32_t *width, int32_t *height);
 
+bool ExtractDimensionsFromH263Header(
+        const uint8_t *data, size_t size, int32_t *width, int32_t *height);
+
 bool GetMPEGAudioFrameSize(
         uint32_t header, size_t *frame_size,
         int *out_sampling_rate = NULL, int *out_channels = NULL,
