@@ -883,11 +883,6 @@ status_t MPEG4Extractor::parseChunk(off64_t *offset, int depth) {
                 return ERROR_IO;
             }
 
-            if (U32_AT(buffer) != 0) {
-                // Should be version 0, flags 0.
-                return ERROR_MALFORMED;
-            }
-
             uint32_t entry_count = U32_AT(&buffer[4]);
 
             if (entry_count > 1) {
