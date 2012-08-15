@@ -170,7 +170,11 @@ SfRequestContext::SfRequestContext() {
 
     mUserAgent = ua.c_str();
 
+#if 0
     set_net_log(new SfNetLog());
+#else
+    set_net_log(NULL);
+#endif
 
     set_host_resolver(
         net::CreateSystemHostResolver(
