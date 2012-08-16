@@ -43,6 +43,11 @@ namespace android {
     do { unsigned tmp = y; ALOGV(x, tmp); } while (0)
 
 static const size_t kTSPacketSize = 188;
+static const unsigned kLowestAudioPriority = 0xffffffff;
+static const unsigned kPrivateOrInvalidStreamType = 0x6;
+static const unsigned kAudioPriorityTag = 0x52;
+static const unsigned kAVCStreamType = 0x1b;
+static const unsigned kAACStreamType = 0xf;
 
 struct ATSParser::Program : public RefBase {
     Program(ATSParser *parser, unsigned programNumber, unsigned programMapPID);
@@ -82,6 +87,10 @@ private:
     unsigned mProgramNumber;
     unsigned mProgramMapPID;
     KeyedVector<unsigned, sp<Stream> > mStreams;
+    sp<Stream> mVideoStream;
+    sp<Stream> mAudioStream;
+    unsigned mAudioStreamPriority;
+
     bool mFirstPTSValid;
     uint64_t mFirstPTS;
 
@@ -165,6 +174,9 @@ ATSParser::Program::Program(
     : mParser(parser),
       mProgramNumber(programNumber),
       mProgramMapPID(programMapPID),
+      mVideoStream(0),
+      mAudioStream(0),
+      mAudioStreamPriority(kLowestAudioPriority),
       mFirstPTSValid(false),
       mFirstPTS(0) {
     ALOGV("new program number %u", programNumber);
@@ -215,6 +227,7 @@ void ATSParser::Program::signalEOS(status_t finalResult) {
 struct StreamInfo {
     unsigned mType;
     unsigned mPID;
+    unsigned mPriority;
 };
 
 status_t ATSParser::Program::parseProgramMap(ABitReader *br) {
@@ -260,6 +273,7 @@ status_t ATSParser::Program::parseProgramMap(ABitReader *br) {
     while (infoBytesRemaining > 0) {
         CHECK_GE(infoBytesRemaining, 5u);
 
+        unsigned audioPriority = kLowestAudioPriority;
         unsigned streamType = br->getBits(8);
         ALOGV("    stream_type = 0x%02x", streamType);
 
@@ -281,14 +295,22 @@ status_t ATSParser::Program::parseProgramMap(ABitReader *br) {
 #else
         unsigned info_bytes_remaining = ES_info_length;
         while (info_bytes_remaining >= 2) {
-            MY_LOGV("      tag = 0x%02x", br->getBits(8));
+            unsigned tag = br->getBits(8);
+            MY_LOGV("      tag = 0x%02x", tag);
 
             unsigned descLength = br->getBits(8);
             ALOGV("      len = %u", descLength);
 
             CHECK_GE(info_bytes_remaining, 2 + descLength);
 
-            br->skipBits(descLength * 8);
+            if (streamType == kAACStreamType && descLength == 1
+                    && tag == kAudioPriorityTag) {
+                // AAC audio stream priority according to ARIB spec
+                audioPriority = br->getBits(8);
+                ALOGV("      audio priority= 0x%x", audioPriority);
+            } else {
+                br->skipBits(descLength * 8);
+            }
 
             info_bytes_remaining -= descLength + 2;
         }
@@ -298,6 +320,7 @@ status_t ATSParser::Program::parseProgramMap(ABitReader *br) {
         StreamInfo info;
         info.mType = streamType;
         info.mPID = elementaryPID;
+        info.mPriority = audioPriority; // only used for audio streams currently
         infos.push(info);
 
         infoBytesRemaining -= 5 + ES_info_length;
@@ -307,16 +330,58 @@ status_t ATSParser::Program::parseProgramMap(ABitReader *br) {
     MY_LOGV("  CRC = 0x%08x", br->getBits(32));
 
     bool PIDsChanged = false;
+    bool needUpdateAudioPid = true;
+    bool updateAudioPid = false;
+    StreamInfo audioInfo;
+    audioInfo.mType = kPrivateOrInvalidStreamType; // treat as invalid type for comparisons
+    audioInfo.mPriority = kLowestAudioPriority;
     for (size_t i = 0; i < infos.size(); ++i) {
         StreamInfo &info = infos.editItemAt(i);
 
         ssize_t index = mStreams.indexOfKey(info.mPID);
 
-        if (index >= 0 && mStreams.editValueAt(index)->type() != info.mType) {
-            ALOGI("uh oh. stream PIDs have changed.");
-            PIDsChanged = true;
-            break;
+        if (index >= 0) {
+            if (mStreams.editValueAt(index)->type() != info.mType) {
+                ALOGI("uh oh. stream PIDs have changed.");
+                PIDsChanged = true;
+                break;
+            } else {
+                // If we have already added an audiostream from this program map
+                // we should avoid adding a second one.
+                if (mAudioStream != 0 && info.mType == mAudioStream->type()) {
+                    // Data is still coming from original stream ID, no need to update
+                    needUpdateAudioPid = false;
+                }
+            }
+        } else {
+            // If PID does not exist in vector, check if there is already
+            // an instance of this type of stream, and make a new
+            // association from new PID to the same stream.
+            if (info.mType != kPrivateOrInvalidStreamType) {
+                ALOGV("Got a new stream with PID 0x%x, of type 0x%x", info.mPID, info.mType);
+            }
+            if (mVideoStream != 0 && info.mType == mVideoStream->type()) {
+                ALOGV("Adding a video stream with PID 0x%x", info.mPID);
+                mStreams.add(info.mPID, mVideoStream);
+            }
+            if (mAudioStream != 0 && info.mType == mAudioStream->type()) {
+                if (audioInfo.mType == kPrivateOrInvalidStreamType
+                        || audioInfo.mPriority > info.mPriority) {
+                    audioInfo = info;
+                    updateAudioPid = true;
+                }
+            }
         }
+    }
+    // Added only in case if we need to update the PID because of no further
+    // data from old stream or a higher priority stream is available
+    if (updateAudioPid &&
+            (needUpdateAudioPid || (audioInfo.mPriority < mAudioStreamPriority))) {
+        ALOGV("Adding an audio stream with PID 0x%x", audioInfo.mPID);
+        mStreams.add(audioInfo.mPID, mAudioStream);
+        // To keep a track and update again here, if new stream is available
+        mAudioStream->setPID(audioInfo.mPID);
+        mAudioStreamPriority = audioInfo.mPriority;
     }
 
     if (PIDsChanged) {
@@ -375,15 +440,37 @@ status_t ATSParser::Program::parseProgramMap(ABitReader *br) {
             return ERROR_MALFORMED;
         }
     }
-
+    // Initial selection of streams from first program map
     for (size_t i = 0; i < infos.size(); ++i) {
         StreamInfo &info = infos.editItemAt(i);
 
         ssize_t index = mStreams.indexOfKey(info.mPID);
 
-        if (index < 0) {
+        if (index < 0 && info.mType != kPrivateOrInvalidStreamType) {
+            // Don't add private data streams
             sp<Stream> stream = new Stream(this, info.mPID, info.mType);
-            mStreams.add(info.mPID, stream);
+            if (mVideoStream == 0 && info.mType == kAVCStreamType) {
+                // Support AVC for PID changes only
+                mVideoStream = stream;
+                mStreams.add(info.mPID, stream); //only add the needed streams
+            } else if (info.mType == kAACStreamType) { // AAC support only
+                // If there is a new audio AAC stream which has more priority
+                // add it and remove the old one
+                if (mAudioStream == 0 || info.mPriority < mAudioStreamPriority) {
+                    // It will not hit the second run even if its priority is higher
+                    // as its index will always be positive, and is handled previously
+                    // in updateAudioPid.
+                    if (mAudioStream != 0) {
+                        mStreams.removeItem(mAudioStream->pid());
+                    }
+                    mAudioStream = stream;
+                    mStreams.add(info.mPID, stream);
+                    mAudioStreamPriority = info.mPriority;
+                }
+            } else if (info.mType != kAVCStreamType && info.mType != kAACStreamType) {
+                // For non-AAC priority independent and non-AVC streams handling.
+                mStreams.add(info.mPID, stream);
+            }
         }
     }
 
