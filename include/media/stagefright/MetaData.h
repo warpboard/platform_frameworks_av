@@ -56,6 +56,7 @@ enum {
     kKeyVorbisBooks       = 'vboo',  // raw data
     kKeyWantsNALFragments = 'NALf',
     kKeyIsSyncFrame       = 'sync',  // int32_t (bool)
+    kKeyIsFakeSync        = 'fake',  // int32_t (bool)
     kKeyIsCodecConfig     = 'conf',  // int32_t (bool)
     kKeyTime              = 'time',  // int64_t (usecs)
     kKeyDecodingTime      = 'decT',  // int64_t (decoding timestamp in usecs)

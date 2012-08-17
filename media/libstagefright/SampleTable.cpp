@@ -160,6 +160,10 @@ bool SampleTable::isValid() const {
         && mTimeToSample != NULL;
 }
 
+bool SampleTable::isSyncTableValid() const {
+    return mSyncSampleOffset >= 0;
+}
+
 status_t SampleTable::setChunkOffsetParams(
         uint32_t type, off64_t data_offset, size_t data_size) {
     if (mChunkOffsetOffset >= 0) {

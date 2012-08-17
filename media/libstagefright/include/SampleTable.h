@@ -82,6 +82,8 @@ public:
 
     status_t findThumbnailSample(uint32_t *sample_index);
 
+    bool isSyncTableValid() const;
+
 protected:
     ~SampleTable();
 
