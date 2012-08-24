@@ -2418,8 +2418,17 @@ AudioFlinger::MixerThread::~MixerThread()
         ALOG_ASSERT(fastTrack->mBufferProvider != NULL);
         delete fastTrack->mBufferProvider;
         sq->end(false /*didModify*/);
-        delete mFastMixer;
 #ifdef AUDIO_WATCHDOG
+
+        if (mFastMixer != 0) {
+            mFastMixer.clear();
+        }
+#ifdef SOAKER
+        if (mSoaker != NULL) {
+            mSoaker->requestExitAndWait();
+        }
+        delete mSoaker;
+#endif
         if (mAudioWatchdog != 0) {
             mAudioWatchdog->requestExit();
             mAudioWatchdog->requestExitAndWait();
