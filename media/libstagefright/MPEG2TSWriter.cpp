@@ -254,9 +254,15 @@ void MPEG2TSWriter::SourceInfo::postAVCFrame(MediaBuffer *buffer) {
     sp<AMessage> notify = mNotify->dup();
     notify->setInt32("what", kNotifyBuffer);
 
+    bool addStartcode = buffer->range_length() < 4 ||
+                        memcmp((const uint8_t *)buffer->data() + buffer->range_offset(), "\x00\x00\x00\x01", 4);
+    int startcode = addStartcode ? 4 : 0;
+
     sp<ABuffer> copy =
-        new ABuffer(buffer->range_length());
-    memcpy(copy->data(),
+        new ABuffer(startcode + buffer->range_length());
+    if (addStartcode)
+        memcpy(copy->data(), "\x00\x00\x00\x01", 4);
+    memcpy(copy->data() + startcode,
            (const uint8_t *)buffer->data()
             + buffer->range_offset(),
            buffer->range_length());
