@@ -2048,8 +2048,13 @@ status_t MPEG4Source::read(
 
         uint32_t syncSampleIndex;
         if (err == OK) {
-            err = mSampleTable->findSyncSampleNear(
-                    sampleIndex, &syncSampleIndex, findFlags);
+            const char* mime;
+            if (mFormat->findCString(kKeyMIMEType, &mime) && !strncmp(mime, "audio/", 6)) {
+                syncSampleIndex = sampleIndex;
+            } else {
+                err = mSampleTable->findSyncSampleNear(
+                        sampleIndex, &syncSampleIndex, findFlags);
+            }
         }
 
         uint32_t sampleTime;
