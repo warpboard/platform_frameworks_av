@@ -148,8 +148,6 @@ struct MyHandler : public AHandler {
             mSessionURL.append(":");
             mSessionURL.append(StringPrintf("%u", port));
             mSessionURL.append(path);
-
-            ALOGI("rewritten session url: '%s'", mSessionURL.c_str());
         }
 
         mSessionHost = host;
