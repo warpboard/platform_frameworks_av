@@ -94,11 +94,7 @@ void SDPLoader::onLoad(const sp<AMessage> &msg) {
     KeyedVector<String8, String8> *headers = NULL;
     msg->findPointer("headers", (void **)&headers);
 
-    if (!(mFlags & kFlagIncognito)) {
-        ALOGI("onLoad '%s'", url.c_str());
-    } else {
-        ALOGI("onLoad <URL suppressed>");
-    }
+    ALOGI("onLoad <URL suppressed>");
 
     if (!mCancelled) {
         err = mHTTPDataSource->connect(url.c_str(), headers);
