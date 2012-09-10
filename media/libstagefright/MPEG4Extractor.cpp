@@ -1437,6 +1437,7 @@ status_t MPEG4Extractor::parseChunk(off64_t *offset, int depth) {
                 mFileMetaData->setData(
                     kKeyAlbumArt, MetaData::TYPE_NONE,
                     buffer + kSkipBytesOfDataBox, chunk_data_size - kSkipBytesOfDataBox);
+                delete[] buffer;
             }
 
             *offset += chunk_size;
