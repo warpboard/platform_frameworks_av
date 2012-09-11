@@ -2378,6 +2378,16 @@ void OMXCodec::onEvent(OMX_EVENTTYPE event, OMX_U32 data1, OMX_U32 data2) {
         {
             CODEC_LOGE("ERROR(0x%08lx, %ld)", data1, data2);
 
+            // we should hanlde error occur in initialization that calling MediaSource::stop()
+            // when mState equals to LOADED_TO_IDLE, it means OMXComponet is initializing
+            // only in initialization stage.
+            if(mState == LOADED_TO_IDLE)
+            {
+               freeBuffersOnPort(kPortIndexInput);
+               freeBuffersOnPort(kPortIndexOutput);
+               mSource->stop();
+            }
+
             setState(ERROR);
             break;
         }
