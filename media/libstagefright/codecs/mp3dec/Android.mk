@@ -40,7 +40,19 @@ LOCAL_SRC_FILES += \
  	src/pvmp3_mdct_18.cpp \
  	src/pvmp3_dct_9.cpp \
  	src/pvmp3_dct_16.cpp
-endif
+
+ifeq ($(TARGET_ARCH),mips)
+LOCAL_CFLAGS += -DMIPS_ASM -DMIPS_ARCH
+
+ifeq ($(ARCH_MIPS_HAS_DSP),true)
+LOCAL_SRC_FILES += \
+    src/mips_dsp/pvmp3_mdct_18.S \
+    src/mips_dsp/pvmp3_polyphase_filter_window.S
+LOCAL_CFLAGS += -DMIPS_DSP
+endif #mips dsp
+
+endif #mips
+endif #arm
 
 LOCAL_C_INCLUDES := \
         frameworks/av/media/libstagefright/include \
