@@ -146,6 +146,9 @@ status_t convertMetaDataToMessage(
         ptr += 6;
         size -= 6;
 
+        msg->setInt32("avc_profile", profile);
+        msg->setInt32("avc_level", level);
+
         sp<ABuffer> buffer = new ABuffer(1024);
         buffer->setRange(0, 0);
 

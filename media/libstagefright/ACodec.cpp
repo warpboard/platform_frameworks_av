@@ -921,6 +921,23 @@ status_t ACodec::configureCodec(
             } else {
                 err = setupVideoDecoder(mime, width, height);
             }
+
+            if (mQuirks & OMXCodec::kRequiresSetProfileLevel) {
+                int32_t level;
+                status_t err;
+                if (msg->findInt32("avc_level", &level)) {
+                    OMX_VIDEO_PARAM_AVCTYPE avcVideoParams;
+                    InitOMXParams(&avcVideoParams);
+                    avcVideoParams.nPortIndex = kPortIndexInput;
+                    err = mOMX->getParameter(
+                        mNode, OMX_IndexParamVideoAvc, &avcVideoParams, sizeof(avcVideoParams));
+                    CHECK_EQ(err, (status_t)OK);
+                    avcVideoParams.eLevel = (OMX_VIDEO_AVCLEVELTYPE)level;
+                    err = mOMX->setParameter(
+                        mNode, OMX_IndexParamVideoAvc, &avcVideoParams, sizeof(avcVideoParams));
+                    CHECK_EQ(err, (status_t)OK);
+               }
+            }
         }
     } else if (!strcasecmp(mime, MEDIA_MIMETYPE_AUDIO_AAC)) {
         int32_t numChannels, sampleRate;
