@@ -55,6 +55,7 @@ public:
 
     status_t start(MetaData *params);
     status_t stop();
+    void setDone();
     status_t pause();
     bool reachedEOS();
 
@@ -641,6 +642,12 @@ status_t MPEG4Writer::reset() {
             release();
             return OK;
         }
+    }
+
+    // Set track threads to done.
+    for (List<Track *>::iterator it = mTracks.begin(); it != mTracks.end();
+        it++) {
+        (*it)->setDone();
     }
 
     status_t err = OK;
@@ -1546,6 +1553,11 @@ status_t MPEG4Writer::Track::pause() {
     return OK;
 }
 
+void MPEG4Writer::Track::setDone() {
+    ALOGD("Setting %s track to done", mIsAudio? "Audio": "Video");
+    mDone = true;
+}
+
 status_t MPEG4Writer::Track::stop() {
     ALOGD("Stopping %s track", mIsAudio? "Audio": "Video");
     if (!mStarted) {
@@ -1553,9 +1565,6 @@ status_t MPEG4Writer::Track::stop() {
         return ERROR_END_OF_STREAM;
     }
 
-    if (mDone) {
-        return OK;
-    }
     mDone = true;
 
     void *dummy;
@@ -1571,6 +1580,7 @@ status_t MPEG4Writer::Track::stop() {
         }
     }
 
+    mStarted = false;
     ALOGD("%s track stopped", mIsAudio? "Audio": "Video");
     return err;
 }
