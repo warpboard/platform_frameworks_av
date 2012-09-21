@@ -525,14 +525,14 @@ status_t SampleTable::findSampleAtTime(
 
     uint32_t left = 0;
     uint32_t right = mNumSampleSizes;
-    while (left < right) {
+    while (left < right - 1) {
         uint32_t center = (left + right) / 2;
         uint32_t centerTime = mSampleTimeEntries[center].mCompositionTime;
 
         if (req_time < centerTime) {
             right = center;
         } else if (req_time > centerTime) {
-            left = center + 1;
+            left = center;
         } else {
             left = center;
             break;
@@ -619,14 +619,14 @@ status_t SampleTable::findSyncSampleNear(
 
     uint32_t left = 0;
     uint32_t right = mNumSyncSamples;
-    while (left < right) {
+    while (left < right - 1) {
         uint32_t center = left + (right - left) / 2;
         uint32_t x = mSyncSamples[center];
 
         if (start_sample_index < x) {
             right = center;
         } else if (start_sample_index > x) {
-            left = center + 1;
+            left = center;
         } else {
             left = center;
             break;
