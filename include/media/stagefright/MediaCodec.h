@@ -106,6 +106,8 @@ struct MediaCodec : public AHandler {
     status_t getInputBuffers(Vector<sp<ABuffer> > *buffers) const;
     status_t getOutputBuffers(Vector<sp<ABuffer> > *buffers) const;
 
+    status_t getName(AString *componentName) const;
+
 protected:
     virtual ~MediaCodec();
     virtual void onMessageReceived(const sp<AMessage> &msg);
@@ -145,6 +147,7 @@ private:
         kWhatDequeueInputTimedOut       = 'dITO',
         kWhatDequeueOutputTimedOut      = 'dOTO',
         kWhatCodecNotify                = 'codc',
+        kWhatGetName                    = 'getN',
     };
 
     enum {
@@ -169,6 +172,7 @@ private:
     sp<ALooper> mLooper;
     sp<ALooper> mCodecLooper;
     sp<ACodec> mCodec;
+    AString mComponentName;
     uint32_t mReplyID;
     uint32_t mFlags;
     sp<SurfaceTextureClient> mNativeWindow;

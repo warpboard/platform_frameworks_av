@@ -302,6 +302,20 @@ status_t MediaCodec::getOutputFormat(sp<AMessage> *format) const {
     return OK;
 }
 
+status_t MediaCodec::getName(AString *name) const {
+    sp<AMessage> msg = new AMessage(kWhatGetName, id());
+
+    sp<AMessage> response;
+    status_t err;
+    if ((err = PostAndAwaitResponse(msg, &response)) != OK) {
+        return err;
+    }
+
+    CHECK(response->findString("name", name));
+
+    return OK;
+}
+
 status_t MediaCodec::getInputBuffers(Vector<sp<ABuffer> > *buffers) const {
     sp<AMessage> msg = new AMessage(kWhatGetBuffers, id());
     msg->setInt32("portIndex", kPortIndexInput);
@@ -520,16 +534,15 @@ void MediaCodec::onMessageReceived(const sp<AMessage> &msg) {
                     CHECK_EQ(mState, INITIALIZING);
                     setState(INITIALIZED);
 
-                    AString componentName;
-                    CHECK(msg->findString("componentName", &componentName));
+                    CHECK(msg->findString("componentName", &mComponentName));
 
-                    if (componentName.startsWith("OMX.google.")) {
+                    if (mComponentName.startsWith("OMX.google.")) {
                         mFlags |= kFlagIsSoftwareCodec;
                     } else {
                         mFlags &= ~kFlagIsSoftwareCodec;
                     }
 
-                    if (componentName.endsWith(".secure")) {
+                    if (mComponentName.endsWith(".secure")) {
                         mFlags |= kFlagIsSecure;
                     } else {
                         mFlags &= ~kFlagIsSecure;
@@ -1129,6 +1142,25 @@ void MediaCodec::onMessageReceived(const sp<AMessage> &msg) {
 
             sp<AMessage> response = new AMessage;
             response->setMessage("format", mOutputFormat);
+            response->postReply(replyID);
+            break;
+        }
+
+        case kWhatGetName:
+        {
+            uint32_t replyID;
+            CHECK(msg->senderAwaitsResponse(&replyID));
+
+            if (mComponentName.empty()) {
+                sp<AMessage> response = new AMessage;
+                response->setInt32("err", INVALID_OPERATION);
+
+                response->postReply(replyID);
+                break;
+            }
+
+            sp<AMessage> response = new AMessage;
+            response->setString("name", mComponentName.c_str());
             response->postReply(replyID);
             break;
         }
