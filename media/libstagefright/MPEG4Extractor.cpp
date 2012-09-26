@@ -1220,19 +1220,18 @@ status_t MPEG4Extractor::parseChunk(off64_t *offset, int depth) {
 
         case FOURCC('a', 'v', 'c', 'C'):
         {
-            char buffer[256];
-            if (chunk_data_size > (off64_t)sizeof(buffer)) {
-                return ERROR_BUFFER_TOO_SMALL;
-            }
+            uint8_t *buffer = new uint8_t[chunk_data_size];
 
             if (mDataSource->readAt(
                         data_offset, buffer, chunk_data_size) < chunk_data_size) {
+                delete[] buffer;
                 return ERROR_IO;
             }
 
             mLastTrack->meta->setData(
                     kKeyAVCC, kTypeAVCC, buffer, chunk_data_size);
 
+            delete[] buffer;
             *offset += chunk_size;
             break;
         }
