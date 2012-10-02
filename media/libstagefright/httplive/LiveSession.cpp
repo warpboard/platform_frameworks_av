@@ -40,6 +40,9 @@
 
 namespace android {
 
+static const size_t kMaxReadChunkSize = 65536;
+static const size_t kBufferCapacityGrowSize = 32768;
+
 LiveSession::LiveSession(uint32_t flags, bool uidValid, uid_t uid)
     : mFlags(flags),
       mUIDValid(uidValid),
@@ -260,7 +263,7 @@ status_t LiveSession::fetchFile(
     status_t err = source->getSize(&size);
 
     if (err != OK) {
-        size = 65536;
+        size = kMaxReadChunkSize;
     }
 
     sp<ABuffer> buffer = new ABuffer(size);
@@ -270,7 +273,7 @@ status_t LiveSession::fetchFile(
         size_t bufferRemaining = buffer->capacity() - buffer->size();
 
         if (bufferRemaining == 0) {
-            bufferRemaining = 32768;
+            bufferRemaining = kBufferCapacityGrowSize;
 
             ALOGV("increasing download buffer to %d bytes",
                  buffer->size() + bufferRemaining);
@@ -296,7 +299,8 @@ status_t LiveSession::fetchFile(
 
         ssize_t n = source->readAt(
                 buffer->size(), buffer->data() + buffer->size(),
-                maxBytesToRead);
+                source == mHTTPDataSource && maxBytesToRead > kMaxReadChunkSize ?
+                    kMaxReadChunkSize : maxBytesToRead);
 
         if (n < 0) {
             return n;
