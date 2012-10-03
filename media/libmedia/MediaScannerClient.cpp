@@ -203,13 +203,15 @@ void MediaScannerClient::endFile()
         int size = mNames->size();
         uint32_t encoding = kEncodingAll;
 
-        // compute a bit mask containing all possible encodings
-        for (int i = 0; i < mNames->size(); i++)
-            encoding &= possibleEncodings(mValues->getEntry(i));
-
-        // if the locale encoding matches, then assume we have a native encoding.
-        if (encoding & mLocaleEncoding)
-            convertValues(mLocaleEncoding);
+        if (mLocaleEncoding != kEncodingShiftJIS) {
+            // compute a bit mask containing all possible encodings
+            for (int i = 0; i < mNames->size(); i++)
+                encoding &= possibleEncodings(mValues->getEntry(i));
+ 
+            // if the locale encoding matches, then assume we have a native encoding.
+            if (encoding & mLocaleEncoding)
+                convertValues(mLocaleEncoding);
+        }
 
         // finally, push all name/value pairs to the client
         for (int i = 0; i < mNames->size(); i++) {
