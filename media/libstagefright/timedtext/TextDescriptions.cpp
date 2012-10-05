@@ -71,13 +71,22 @@ status_t TextDescriptions::extract3GPPLocalDescriptions(
         const uint8_t *data, ssize_t size,
         int timeMs, Parcel *parcel, int depth) {
     if (depth == 0) {
+        if (size <= 2) {
+            // Parcel with datasize 0 for empty string / TTXT clearscreen.
+            return OK;
+        }
+
+        ssize_t textLen = (*data) << 8 | (*(data + 1));
+
+        if (size < textLen + 2) {
+            return OK;
+        }
+
         parcel->writeInt32(KEY_LOCAL_SETTING);
 
         // write start time to display this text sample
         parcel->writeInt32(KEY_START_TIME);
         parcel->writeInt32(timeMs);
-
-        ssize_t textLen = (*data) << 8 | (*(data + 1));
 
         // write text sample length and text sample itself
         parcel->writeInt32(KEY_STRUCT_TEXT);
@@ -85,19 +94,19 @@ status_t TextDescriptions::extract3GPPLocalDescriptions(
         parcel->writeInt32(textLen);
         parcel->write(data + 2, textLen);
 
-        if (size > textLen) {
-            data += (textLen + 2);
-            size -= (textLen + 2);
-        } else {
-            return OK;
-        }
+        data += (textLen + 2);
+        size -= (textLen + 2);
+    }
+
+    if (size < 8) {
+        return OK;
     }
 
     const uint8_t *tmpData = data;
     ssize_t chunkSize = U32_AT(tmpData);
     uint32_t chunkType = U32_AT(tmpData + 4);
 
-    if (chunkSize <= 0) {
+    if (chunkSize <= 0 || size < chunkSize) {
         return OK;
     }
 
@@ -286,6 +295,9 @@ status_t TextDescriptions::extract3GPPLocalDescriptions(
 // To extract box 'tx3g' defined in 3GPP TS 26.245, and store it in a Parcel
 status_t TextDescriptions::extract3GPPGlobalDescriptions(
         const uint8_t *data, ssize_t size, Parcel *parcel, int depth) {
+    if (size < 8) {
+        return OK;
+    }
 
     ssize_t chunkSize = U32_AT(data);
     uint32_t chunkType = U32_AT(data + 4);

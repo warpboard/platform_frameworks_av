@@ -64,7 +64,7 @@ status_t TimedText3GPPSource::read(
 // description and append it at the end of the text.
 status_t TimedText3GPPSource::extractAndAppendLocalDescriptions(
         int64_t timeUs, const MediaBuffer *textBuffer, Parcel *parcel) {
-    const void *data;
+    const uint8_t *data;
     size_t size = 0;
     int32_t flag = TextDescriptions::LOCAL_DESCRIPTIONS;
 
@@ -72,14 +72,14 @@ status_t TimedText3GPPSource::extractAndAppendLocalDescriptions(
     CHECK(mSource->getFormat()->findCString(kKeyMIMEType, &mime));
     CHECK(strcasecmp(mime, MEDIA_MIMETYPE_TEXT_3GPP) == 0);
 
-    data = textBuffer->data();
-    size = textBuffer->size();
+    data = (const uint8_t *)textBuffer->data() + textBuffer->range_offset();
+    size = textBuffer->range_length();
 
     if (size > 0) {
       parcel->freeData();
       flag |= TextDescriptions::IN_BAND_TEXT_3GPP;
       return TextDescriptions::getParcelOfDescriptions(
-          (const uint8_t *)data, size, flag, timeUs / 1000, parcel);
+          data, size, flag, timeUs / 1000, parcel);
     }
     return OK;
 }
