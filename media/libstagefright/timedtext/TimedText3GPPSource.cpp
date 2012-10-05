@@ -72,8 +72,8 @@ status_t TimedText3GPPSource::extractAndAppendLocalDescriptions(
     CHECK(mSource->getFormat()->findCString(kKeyMIMEType, &mime));
     CHECK(strcasecmp(mime, MEDIA_MIMETYPE_TEXT_3GPP) == 0);
 
-    data = textBuffer->data();
-    size = textBuffer->size();
+    data = textBuffer->data() + textBuffer->range_offset();
+    size = textBuffer->range_length();
 
     if (size > 0) {
       parcel->freeData();
