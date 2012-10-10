@@ -123,6 +123,7 @@ void h264bsdInterpolateVerHalf(
   u32 partWidth,
   u32 partHeight);
 
+#if !(MIPS_DSP_R2_LE)
 void h264bsdInterpolateVerQuarter(
   u8 *ref,
   u8 *mb,
@@ -133,6 +134,7 @@ void h264bsdInterpolateVerQuarter(
   u32 partWidth,
   u32 partHeight,
   u32 verOffset);
+#endif /* #if !(MIPS_DSP_R2_LE) */
 
 void h264bsdInterpolateHorHalf(
   u8 *ref,

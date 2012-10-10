@@ -747,7 +747,11 @@ u32 DecodeRunBefore(u32 bits, u32 zerosLeft)
 
 u32 h264bsdDecodeResidualBlockCavlc(
   strmData_t *pStrmData,
+#if MIPS_DSP_R2_LE
+  i16 *coeffLevel,
+#else
   i32 *coeffLevel,
+#endif /* #if MIPS_DSP_R2_LE */
   i32 nc,
   u32 maxNumCoeff)
 {

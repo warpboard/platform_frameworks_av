@@ -181,7 +181,17 @@ static void Intra4x4VerticalRightPrediction(u8 *data, u8 *above, u8 *left);
 static void Intra4x4HorizontalDownPrediction(u8 *data, u8 *above, u8 *left);
 static void Intra4x4VerticalLeftPrediction(u8 *data, u8 *above);
 static void Intra4x4HorizontalUpPrediction(u8 *data, u8 *left);
+#if MIPS_DSP_R2_LE
+/*-----------------------------------------------------------------------------
+    residual type changed from i32 to i16 . This allows compiler to generate
+    more efficient code for MIPS platform. All necessarychanges are done in the
+    h264bsd_macroblock_layer.c and h264bsd_calvc.h files.
+ -----------------------------------------------------------------------------*/
+
+void h264bsdAddResidual(u8 *data, i16 *residual, u32 blockNum);
+#else /* #if MIPS_DSP_R2_LE */
 void h264bsdAddResidual(u8 *data, i32 *residual, u32 blockNum);
+#endif /* #if MIPS_DSP_R2_LE */
 
 static void Write4x4To16x16(u8 *data, u8 *data4x4, u32 blockNum);
 #endif /* H264DEC_OMXDL */
@@ -619,7 +629,12 @@ void h264bsdGetNeighbourPels(image_t *image, u8 *above, u8 *left, u32 mbNum)
 
 ------------------------------------------------------------------------------*/
 
-u32 h264bsdIntra16x16Prediction(mbStorage_t *pMb, u8 *data, i32 residual[][16],
+u32 h264bsdIntra16x16Prediction(mbStorage_t *pMb, u8 *data,
+#if MIPS_DSP_R2_LE
+                                i16 residual[][16],
+#else
+                                i32 residual[][16],
+#endif /* #if MIPS_DSP_R2_LE */
                                 u8 *above, u8 *left, u32 constrainedIntraPred)
 {
 
@@ -837,7 +852,12 @@ u32 h264bsdIntra4x4Prediction(mbStorage_t *pMb, u8 *data,
 
 ------------------------------------------------------------------------------*/
 
-u32 h264bsdIntraChromaPrediction(mbStorage_t *pMb, u8 *data, i32 residual[][16],
+u32 h264bsdIntraChromaPrediction(mbStorage_t *pMb, u8 *data,
+#if MIPS_DSP_R2_LE
+                                i16 residual[][16],
+#else
+                                i32 residual[][16],
+#endif /* #if MIPS_DSP_R2_LE */
                     u8 *above, u8 *left, u32 predMode, u32 constrainedIntraPred)
 {
 
@@ -919,6 +939,7 @@ u32 h264bsdIntraChromaPrediction(mbStorage_t *pMb, u8 *data, i32 residual[][16],
 
 ------------------------------------------------------------------------------*/
 #ifndef H264DEC_OMXDL
+#if !(MIPS_DSP_R2_LE)
 void h264bsdAddResidual(u8 *data, i32 *residual, u32 blockNum)
 {
 
@@ -982,6 +1003,7 @@ void h264bsdAddResidual(u8 *data, i32 *residual, u32 blockNum)
     }
 
 }
+#endif /* #if MIPS_DSP_R2_LE */
 #endif
 /*------------------------------------------------------------------------------
 

@@ -144,7 +144,21 @@ typedef struct
 #else
     i16 totalCoeff[27];
 #endif
+
+#if MIPS_DSP_R2_LE
+/*-----------------------------------------------------------------------------
+    level type changed from i32 to i16 . This allows compiler to generate more
+    efficient code for MIPS platform. All necessary changes are done in the
+    h264bsd_macroblock_layer.c and h264bsd_calvc.c files.
+
+    pragma __attribute__ ((aligned (32))) level[26][16] alignes memory pointer
+    to 32 bytes to allow prefetching.
+ ------------------------------------------------------------------------------*/
+
+    i16 __attribute__ ((aligned (32))) level[26][16];
+#else /* #if MIPS_DSP_R2_LE */
     i32 level[26][16];
+#endif /* #if MIPS_DSP_R2_LE */
     u32 coeffMap[24];
 } residual_t;
 

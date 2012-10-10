@@ -22,10 +22,7 @@ LOCAL_SRC_FILES := \
 	./source/h264bsd_slice_group_map.c \
 	./source/h264bsd_intra_prediction.c \
 	./source/h264bsd_inter_prediction.c \
-	./source/h264bsd_reconstruct.c \
 	./source/h264bsd_dpb.c \
-	./source/h264bsd_image.c \
-	./source/h264bsd_deblocking.c \
 	./source/h264bsd_conceal.c \
 	./source/h264bsd_vui.c \
 	./source/h264bsd_pic_order_cnt.c \
@@ -94,6 +91,32 @@ ifeq ($(ARCH_ARM_HAVE_NEON),true)
     LOCAL_C_INCLUDES += $(LOCAL_PATH)/./omxdl/arm_neon/api \
                         $(LOCAL_PATH)/./omxdl/arm_neon/vc/api \
                         $(LOCAL_PATH)/./omxdl/arm_neon/vc/m4p10/api
+endif
+
+ifeq ($(TARGET_ARCH),mips)
+    ifneq ($(ARCH_HAS_BIGENDIAN),true)
+       ifeq ($(ARCH_MIPS_DSP_REV),2)
+            LOCAL_CFLAGS += -DMIPS_DSP_R2_LE
+            LOCAL_SRC_FILES  += ./source/mips/h264bsd_transform_mips.c \
+                ./source/mips/h264bsd_stream_mips.c \
+                ./source/mips/h264bsd_reconstruct_mips.c \
+                ./source/mips/h264bsd_image_mips.c \
+                ./source/mips/h264bsd_intra_prediction_mips.c \
+                ./source/mips/h264bsd_deblocking_mips.c
+        else
+            LOCAL_SRC_FILES += ./source/h264bsd_reconstruct.c \
+                ./source/h264bsd_image.c \
+                ./source/h264bsd_deblocking.c
+        endif
+    else
+        LOCAL_SRC_FILES += ./source/h264bsd_reconstruct.c \
+            ./source/h264bsd_image.c \
+            ./source/h264bsd_deblocking.c
+    endif
+else
+    LOCAL_SRC_FILES += ./source/h264bsd_reconstruct.c \
+        ./source/h264bsd_image.c \
+        ./source/h264bsd_deblocking.c
 endif
 
 LOCAL_SHARED_LIBRARIES := \

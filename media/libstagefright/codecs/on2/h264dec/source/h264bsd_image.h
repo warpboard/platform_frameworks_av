@@ -60,8 +60,19 @@ typedef struct
 void h264bsdWriteMacroblock(image_t *image, u8 *data);
 
 #ifndef H264DEC_OMXDL
+#if MIPS_DSP_R2_LE
+/*-----------------------------------------------------------------------------
+    coeffLevel type changed from i32 to i16 . This allows compiler to generate
+    more efficient code for MIPS platform. All necessary changes are done in the
+    h264bsd_macroblock_layer.c and h264bsd_calvc.h files.
+ -----------------------------------------------------------------------------*/
+
+void h264bsdWriteOutputBlocks(image_t *image, u32 mbNum, u8 *data,
+    i16 residual[][16]);
+#else
 void h264bsdWriteOutputBlocks(image_t *image, u32 mbNum, u8 *data,
     i32 residual[][16]);
+#endif /* #if MIPS_DSP_R2_LE */
 #endif
 
 #endif /* #ifdef H264SWDEC_IMAGE_H */

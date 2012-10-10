@@ -43,6 +43,9 @@
 #endif
 
 #include "basetype.h"
+#if MIPS_DSP_R2_LE
+#include "./mips/h264bsd_util_mips.h"
+#endif /* #if MIPS_DSP_R2_LE */
 #include "h264bsd_stream.h"
 #include "h264bsd_image.h"
 
@@ -66,7 +69,17 @@
 /* value to be returned by GetBits if stream buffer is empty */
 #define END_OF_STREAM 0xFFFFFFFFU
 
+#if MIPS_DSP_R2_LE
+/*-----------------------------------------------------------------------------
+    EMPTY_RESIDUAL_INDICATOR constant changed because of changing type of values
+    that are compared with EMPTY_RESIDUAL_INDICATOR (buffer level from residual_t
+    struct type changed from int to short).
+------------------------------------------------------------------------------*/
+
+#define EMPTY_RESIDUAL_INDICATOR 0x7fff
+#else
 #define EMPTY_RESIDUAL_INDICATOR 0xFFFFFF
+#endif /* #if MIPS_DSP_R2_LE */
 
 /* macro to mark a residual block empty, i.e. contain zero coefficients */
 #define MARK_RESIDUAL_EMPTY(residual) ((residual)[0] = EMPTY_RESIDUAL_INDICATOR)
@@ -122,6 +135,43 @@
 #define EPRINT(msg)
 #endif
 
+#if MIPS_DSP_R2_LE
+static __inline u32 MIN(int x, int y)
+{
+   u32 r;
+   r = y ^ ((x ^ y) & -(x < y));
+   return (r);
+}
+
+static __inline u32 MAX(int x, int y)
+{
+   u32 r;
+   r = x ^ ((x ^ y) & -(x < y));
+   return (r);
+}
+
+static __inline int CLIP3(int a, int b, int x)
+{
+   register int x1, x2;
+   x1 = ABS(x-a);
+   x2 = ABS(x-b);
+   x = x1 + (a+b);
+   x -= x2;
+   x >>= 1;
+   return (x);
+}
+
+static __inline int CLIP1(int x)
+{
+   register int x1, x2;
+   x1 = ABS(x);
+   x2 = ABS(x - 255);
+   x = x1 + 255;
+   x -= x2;
+   x >>= 1;
+   return (x);
+}
+#else
 /* macro to get smaller of two values */
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
@@ -136,6 +186,7 @@
 
 /* macro to clip a value z, so that 0 <= z =< 255 */
 #define CLIP1(z) (((z) < 0) ? 0 : (((z) > 255) ? 255 : (z)))
+#endif /* #if MIPS_DSP_R2_LE */
 
 /* macro to allocate memory */
 #define ALLOCATE(ptr, count, type) \
