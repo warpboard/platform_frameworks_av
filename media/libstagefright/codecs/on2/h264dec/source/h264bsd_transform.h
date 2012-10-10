@@ -46,9 +46,21 @@
     4. Function prototypes
 ------------------------------------------------------------------------------*/
 
+#if MIPS_DSP_R2_LE
+/*-----------------------------------------------------------------------------
+    data type changed from i32 to i16 . This allows compiler to generate more
+    efficient code for MIPS platform. All necessary changes are done in the
+    h264bsd_transform.c file.
+ -----------------------------------------------------------------------------*/
+
+u32 h264bsdProcessBlock(i16 *data, u32 qp, u32 skip, u32 coeffMap);
+void h264bsdProcessLumaDc(i16 *data, u32 qp);
+void h264bsdProcessChromaDc(i16 *data, u32 qp);
+#else
 u32 h264bsdProcessBlock(i32 *data, u32 qp, u32 skip, u32 coeffMap);
 void h264bsdProcessLumaDc(i32 *data, u32 qp);
 void h264bsdProcessChromaDc(i32 *data, u32 qp);
+#endif /* #if MIPS_DSP_R2_LE */
 
 #endif /* #ifdef H264SWDEC_TRANSFORM_H */
 

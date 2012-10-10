@@ -105,7 +105,20 @@ static u32 ProcessIntra16x16Residual(mbStorage_t *pMb, u8 *data, u32 constrained
 
 
 #else
-static u32 ProcessResidual(mbStorage_t *pMb, i32 residualLevel[][16], u32 *);
+static u32 ProcessResidual(mbStorage_t *pMb,
+#if MIPS_DSP_R2_LE
+/*-----------------------------------------------------------------------------
+    residualLevel[][16] type changed from i32 to i16 . This allows compiler to
+    generate more efficient code for MIPS platform. All necessarychanges are
+    done in the h264bsd_macroblock_layer.c and h264bsd_calvc.h files.
+ -----------------------------------------------------------------------------*/
+
+                            i16 residualLevel[][16],
+#else
+                            i32 residualLevel[][16],
+#endif /* #if MIPS_DSP_R2_LE */
+                            u32 *);
+
 #endif
 
 /*------------------------------------------------------------------------------
@@ -169,7 +182,12 @@ u32 h264bsdDecodeMacroblockLayer(strmData_t *pStrmData,
 
     if (pMbLayer->mbType == I_PCM)
     {
+#if MIPS_DSP_R2_LE
+        i16 *level;
+#else
         i32 *level;
+#endif /* #if MIPS_DSP_R2_LE */
+
         while( !h264bsdIsByteAligned(pStrmData) )
         {
             /* pcm_alignment_zero_bit */
@@ -707,7 +725,12 @@ u32 DecodeResidual(strmData_t *pStrmData, residual_t *pResidual,
     u32 blockCoded;
     u32 blockIndex;
     u32 is16x16;
+#if MIPS_DSP_R2_LE
+    i16 (*level)[16];
+#else
     i32 (*level)[16];
+#endif /* #if MIPS_DSP_R2_LE */
+
 
 /* Code */
 
@@ -996,7 +1019,11 @@ u32 h264bsdDecodeMacroblock(mbStorage_t *pMb, macroblockLayer_t *pMbLayer,
 #else
         i16 *tot = pMb->totalCoeff;
 #endif
+#if MIPS_DSP_R2_LE
+        i16 *lev = pMbLayer->residual.level[0];
+#else
         i32 *lev = pMbLayer->residual.level[0];
+#endif /* #if MIPS_DSP_R2_LE */
 
         pMb->qpY = 0;
 
@@ -1336,17 +1363,32 @@ u32 ProcessIntra4x4Residual(mbStorage_t *pMb,
 
 ------------------------------------------------------------------------------*/
 
-u32 ProcessResidual(mbStorage_t *pMb, i32 residualLevel[][16], u32 *coeffMap)
+u32 ProcessResidual(mbStorage_t *pMb,
+#if MIPS_DSP_R2_LE
+                    i16 residualLevel[][16],
+#else
+                    i32 residualLevel[][16],
+#endif /* #if MIPS_DSP_R2_LE */
+                    u32 *coeffMap)
 {
 
 /* Variables */
 
     u32 i;
     u32 chromaQp;
+#if MIPS_DSP_R2_LE
+    i16 (*blockData)[16];
+    i16 (*blockDc)[16];
+#else
     i32 (*blockData)[16];
     i32 (*blockDc)[16];
+#endif /* #if MIPS_DSP_R2_LE */
     i16 *totalCoeff;
+#if MIPS_DSP_R2_LE
+    i16 *chromaDc;
+#else
     i32 *chromaDc;
+#endif /* #if MIPS_DSP_R2_LE */
     const u32 *dcCoeffIdx;
 
 /* Code */

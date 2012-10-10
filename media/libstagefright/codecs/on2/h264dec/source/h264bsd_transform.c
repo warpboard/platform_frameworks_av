@@ -91,6 +91,7 @@ static const u8 qpDiv6[52] = {0,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,3,3,3,3,3,3,
             HANTRO_NOK      processed data not in valid range [-512, 511]
 
 ------------------------------------------------------------------------------*/
+#if !(MIPS_DSP_R2_LE)
 u32 h264bsdProcessBlock(i32 *data, u32 qp, u32 skip, u32 coeffMap)
 {
 
@@ -229,6 +230,7 @@ u32 h264bsdProcessBlock(i32 *data, u32 qp, u32 skip, u32 coeffMap)
     return(HANTRO_OK);
 
 }
+#endif /* #if !(MIPS_DSP_R2_LE) */
 
 /*------------------------------------------------------------------------------
 
@@ -249,7 +251,13 @@ u32 h264bsdProcessBlock(i32 *data, u32 qp, u32 skip, u32 coeffMap)
             none
 
 ------------------------------------------------------------------------------*/
-void h264bsdProcessLumaDc(i32 *data, u32 qp)
+void h264bsdProcessLumaDc(
+#if MIPS_DSP_R2_LE
+                            i16 *data,
+#else
+                            i32 *data,
+#endif /* #if MIPS_DSP_R2_LE */
+                             u32 qp)
 {
 
 /* Variables */
@@ -258,8 +266,11 @@ void h264bsdProcessLumaDc(i32 *data, u32 qp)
     u32 row,col;
     u32 qpMod, qpDiv;
     i32 levScale;
+#if MIPS_DSP_R2_LE
+    i16 *ptr;
+#else
     i32 *ptr;
-
+#endif /* #if MIPS_DSP_R2_LE */
 /* Code */
 
     qpMod = qpMod6[qp];
@@ -353,6 +364,7 @@ void h264bsdProcessLumaDc(i32 *data, u32 qp)
             none
 
 ------------------------------------------------------------------------------*/
+#if !MIPS_DSP_R2_LE
 void h264bsdProcessChromaDc(i32 *data, u32 qp)
 {
 
@@ -396,6 +408,7 @@ void h264bsdProcessChromaDc(i32 *data, u32 qp)
     data[7] = ((tmp1 - tmp2) * levScale) >> levShift;
 
 }
+#endif /* #if !(MIPS_DSP_R2_LE) */
 
 /*lint +e701 +e702 */
 

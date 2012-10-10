@@ -50,7 +50,17 @@
 
 u32 h264bsdDecodeResidualBlockCavlc(
   strmData_t *pStrmData,
+#if MIPS_DSP_R2_LE
+/*-----------------------------------------------------------------------------
+    coeffLevel type changed from i32 to i16 . This allows compiler to generate
+    more efficient code for MIPS platform. All necessary changes are done in the
+    h264bsd_macroblock_layer.c and h264bsd_transform.c files.
+ -----------------------------------------------------------------------------*/
+
+  i16 *coeffLevel,
+#else /* #if MIPS_DSP_R2_LE */
   i32 *coeffLevel,
+#endif /* #if MIPS_DSP_R2_LE */
   i32 nc,
   u32 maxNumCoeff);
 

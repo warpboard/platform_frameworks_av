@@ -111,7 +111,7 @@ u32 h264bsdGetBits(strmData_t *pStrmData, u32 numBits)
             bits read from stream
 
 ------------------------------------------------------------------------------*/
-
+#if !(MIPS_DSP_R2_LE)
 u32 h264bsdShowBits32(strmData_t *pStrmData)
 {
 
@@ -164,6 +164,7 @@ u32 h264bsdShowBits32(strmData_t *pStrmData)
         return (0);
 
 }
+#endif /* #if !(MIPS_DSP_R2_LE) */
 
 /*------------------------------------------------------------------------------
 
