@@ -188,6 +188,34 @@
 ; FUNCTION CODE
 ----------------------------------------------------------------------------*/
 
+#ifdef MDSP_REV1
+
+const Int32 W_64rx4_new[120] =
+{
+
+    0x7F610000,  0x0C8C0000,  0x7D890000,  0x18F90000,  0x7A7C0000,  0x25280000,
+    0x7D890000,  0x18F90000,  0x76410000,  0x30FB0000,  0x6A6D0000,  0x471C0000,
+    0x7A7C0000,  0x25280000,  0x6A6D0000,  0x471C0000,  0x51330000,  0x62F10000,
+    0x76410000,  0x30FB0000,  0x5A820000,  0x5A820000,  0x30FB0000,  0x76410000,
+    0x70E20000,  0x3C560000,  0x471C0000,  0x6A6D0000,  0x0C8C0000,  0x7F610000,
+    0x6A6D0000,  0x471C0000,  0x30FB0000,  0x76410000,  0xE7050000,  0x7D890000,
+    0x62F10000,  0x51330000,  0x18F90000,  0x7D890000,  0xC3A80000,  0x70E20000,
+    0x5A820000,  0x5A820000,  0x00000000,  0x7FFF0000,  0xA57C0000,  0x5A820000,
+    0x51330000,  0x62F10000,  0xE7050000,  0x7D890000,  0x8F1C0000,  0x3C560000,
+    0x471C0000,  0x6A6D0000,  0xCF030000,  0x76410000,  0x82750000,  0x18F90000,
+    0x3C560000,  0x70E20000,  0xB8E20000,  0x6A6D0000,  0x809D0000,  0xF3720000,
+    0x30FB0000,  0x76410000,  0xA57C0000,  0x5A820000,  0x89BD0000,  0xCF030000,
+    0x25280000,  0x7A7C0000,  0x95910000,  0x471C0000,  0x9D0D0000,  0xAECB0000,
+    0x18F90000,  0x7D890000,  0x89BD0000,  0x30FB0000,  0xB8E20000,  0x95910000,
+    0x0C8C0000,  0x7F610000,  0x82750000,  0x18F90000,  0xDAD60000,  0x85820000,
+    0x76410000,  0x30FB0000,  0x5A820000,  0x5A820000,  0x30FB0000,  0x76410000,
+    0x5A820000,  0x5A820000,  0x00000000,  0x7FFF0000,  0xA57C0000,  0x5A820000,
+    0x30FB0000,  0x76410000,  0xA57C0000,  0x5A820000,  0x89BD0000,  0xCF030000,
+};
+
+#endif /* MDSP_REV1 */
+
+
 Int fft_rx4_short(
     Int32      Data[],
     Int32      *peak_value)
@@ -199,10 +227,22 @@ Int fft_rx4_short(
     Int     j;
     Int     k;
     Int     i;
+
+#ifndef MDSP_REV1
+
     Int32   exp_jw1;
     Int32   exp_jw2;
     Int32   exp_jw3;
+    const Int32  *pw = W_64rx4;
 
+#else /* MDSP_REV1 */
+
+    Int32  rTmp0, rTmp1;
+    Int32  iTmp0, iTmp1;
+    Int32  z, z1;
+    const Int32  *p_w = W_64rx4_new;
+
+#endif /* MDSP_REV1 */
 
     Int32   t1;
     Int32   t2;
@@ -217,7 +257,6 @@ Int fft_rx4_short(
     Int32   *pData2;
     Int32   *pData3;
     Int32   *pData4;
-    const Int32  *pw;
     Int32   temp1;
     Int32   temp2;
     Int32   temp3;
@@ -240,8 +279,6 @@ Int fft_rx4_short(
     }
 
     n2 = FFT_RX4_SHORT;
-
-    pw = W_64rx4;
 
 
     /* shift down to avoid possible overflow in first pass of the loop */
@@ -309,6 +346,8 @@ Int fft_rx4_short(
 
 
         }  /* i */
+
+#ifndef MDSP_REV1
 
         for (j = 1; j < n2; j++)
         {
@@ -380,6 +419,124 @@ Int fft_rx4_short(
             }  /* i */
 
         }  /*  j */
+
+#else /* MDSP_REV1 */
+
+        for (j = 1; j < n2; j++)
+        {
+
+            for (i = j; i < FFT_RX4_SHORT; i += n1)
+            {
+                pData1 = &Data[ i<<1];
+                pData3 = pData1 + n3;
+                pData2 = pData1 + n1;
+                pData4 = pData3 + n1;
+
+                temp1   = *(pData1);
+                temp2   = *(pData2++);
+                temp1   >>= shift;
+                temp2   >>= shift;
+
+                r1      = temp1 + temp2;
+                r2      = temp1 - temp2;
+                temp3   = *(pData3++);
+                temp4   = *(pData4++);
+                temp3   >>= shift;
+                temp4   >>= shift;
+
+                t1      = temp3 + temp4;
+                t2      = temp3 - temp4;
+
+                *(pData1++) = (r1 + t1) >> exp;
+                r1          = (r1 - t1) >> exp;
+
+                temp1   = *pData1;
+                temp2   = *pData2;
+                temp1   >>= shift;
+                temp2   >>= shift;
+
+                s1      = temp1 + temp2;
+                s2      = temp1 - temp2;
+
+                s3      = (s2 + t2) >> exp;
+                s2      = (s2 - t2) >> exp;
+
+                temp3   = *pData3;
+                temp4   = *pData4 ;
+                temp3   >>= shift;
+                temp4   >>= shift;
+
+                t1      = temp3 + temp4;
+                t2      = temp3 - temp4;
+
+                *pData1  = (s1 + t1) >> exp;
+                s1       = (s1 - t1) >> exp;
+
+
+                __asm__ volatile(
+
+                    "lw       %[rTmp0],    8(%[p_w])                  \n\t"
+                    "lw       %[iTmp0],    12(%[p_w])                 \n\t"
+                    "subu     %[r3],       %[r2],         %[t2]       \n\t"
+                    "addu     %[r2],       %[r2],         %[t2]       \n\t"
+                    "lw       %[rTmp1],    0(%[p_w])                  \n\t"
+                    "lw       %[iTmp1],    4(%[p_w])                  \n\t"
+                    "srav     %[r2],       %[r2],         %[exp]      \n\t"
+                    "mult     $ac0,        %[rTmp0],      %[s1]       \n\t"
+                    "mult     $ac1,        %[rTmp0],      %[r1]       \n\t"
+                    "mult     $ac2,        %[rTmp1],      %[s2]       \n\t"
+                    "mult     $ac3,        %[rTmp1],      %[r2]       \n\t"
+                    "msub     $ac0,        %[r1],         %[iTmp0]    \n\t"
+                    "madd     $ac1,        %[s1],         %[iTmp0]    \n\t"
+                    "msub     $ac2,        %[r2],         %[iTmp1]    \n\t"
+                    "madd     $ac3,        %[s2],         %[iTmp1]    \n\t"
+                    "mfhi     %[z],        $ac0                       \n\t"
+                    "mfhi     %[z1],       $ac1                       \n\t"
+                    "mfhi     %[rTmp1],    $ac2                       \n\t"
+                    "mfhi     %[iTmp1],    $ac3                       \n\t"
+                    "srav     %[r3],       %[r3],         %[exp]      \n\t"
+                    "lw       %[rTmp0],    16(%[p_w])                 \n\t"
+                    "lw       %[iTmp0],    20(%[p_w])                 \n\t"
+                    "sll      %[z],        %[z],          1           \n\t"
+                    "sw       %[z],        0(%[pData2])               \n\t"
+                    "sll      %[z1],       %[z1],         1           \n\t"
+                    "sw       %[z1],       -4(%[pData2])              \n\t"
+                    "mult     $ac0,        %[rTmp0],      %[s3]       \n\t"
+                    "mult     $ac1,        %[rTmp0],      %[r3]       \n\t"
+                    "msub     $ac0,        %[r3],         %[iTmp0]    \n\t"
+                    "madd     $ac1,        %[s3],         %[iTmp0]    \n\t"
+                    "mfhi     %[z],        $ac0                       \n\t"
+                    "mfhi     %[z1],       $ac1                       \n\t"
+                    "sll      %[rTmp1],    %[rTmp1],      1           \n\t"
+                    "sw       %[rTmp1],    0(%[pData3])               \n\t"
+                    "sll      %[iTmp1],    %[iTmp1],      1           \n\t"
+                    "addiu    %[pData2],   %[pData2],     -4          \n\t"
+                    "sw       %[iTmp1],    -4(%[pData3])              \n\t"
+                    "addiu    %[pData3],   %[pData3],     -4          \n\t"
+                    "sll      %[z],        %[z],          1           \n\t"
+                    "sw       %[z],        0(%[pData4])               \n\t"
+                    "sll      %[z1],       %[z1],         1           \n\t"
+                    "sw       %[z1],       -4(%[pData4])              \n\t"
+                    "addiu    %[pData4],   %[pData4],     -4          \n\t"
+
+                    : [z] "=&r" (z), [z1] "=&r" (z1), [r2] "+r" (r2), [r3] "=&r" (r3),
+                      [pData2] "+r" (pData2), [pData3] "+r" (pData3),
+                      [pData4] "+r" (pData4), [rTmp0] "=&r" (rTmp0),
+                      [iTmp0] "=&r" (iTmp0), [rTmp1] "=&r" (rTmp1),
+                      [iTmp1] "=&r" (iTmp1)
+                    : [s1] "r" (s1), [s2] "r" (s2), [s3] "r" (s3), [r1] "r" (r1),
+                      [t2] "r" (t2), [exp] "r" (exp), [p_w] "r" (p_w)
+                    : "hi", "lo", "$ac1hi", "$ac1lo", "$ac2hi", "$ac2lo",
+                      "$ac3hi", "$ac3lo", "memory"
+                );
+
+            }  /* i */
+
+            p_w +=6;
+
+        }  /*  j */
+
+#endif /* MDSP_REV1 */
 
         /*
          *  this will reset exp and shift to zero for the second pass of the

@@ -452,6 +452,15 @@ void esc_iquant_scaling(
     UInt32 approxOneThird;
     Int32   mult_high;
 
+#ifdef MDSP_REV2
+    Int    xx;
+    Int    yy;
+    UInt   absY;
+    UInt   absXX;
+    UInt   absYY;
+    UInt32 scale2;
+    const Int16 *ipoint;
+#endif /* MDSP_REV2 */
 
 #if ( defined(_ARM) || defined(_ARM_V4))
 
@@ -496,6 +505,8 @@ loop:
             if (maxInput < TABLESIZE)
             {
 
+#ifndef MDSP_REV2
+
                 for (i = sfbWidth - 1; i >= 0; i -= 4)
                 {
                     x = quantSpec[i];
@@ -530,6 +541,68 @@ loop:
                         coef[i-3] = fxp_mul32_by_16(mult_high, scale) << 1;
                     }
                 } /* end for (i = sfbWidth - 1; i >= 0; i--) */
+
+#else /* MDSP_REV2 */
+
+                scale2 = scale<<16;
+
+                for (i = sfbWidth - 1; i >= 0; i -= 4)
+                {
+
+                    ipoint = &(quantSpec[i]);
+
+                    __asm__ volatile (
+                        "lh         %[x],       0(%[ipoint])            \n\t"
+                        "lh         %[y],       -2(%[ipoint])           \n\t"
+                        "lh         %[xx],      -4(%[ipoint])           \n\t"
+                        "lh         %[yy],      -6(%[ipoint])           \n\t"
+
+                        "absq_s.w   %[absX],    %[x]                    \n\t"
+                        "absq_s.w   %[absY],    %[y]                    \n\t"
+                        "absq_s.w   %[absXX],   %[xx]                   \n\t"
+                        "absq_s.w   %[absYY],   %[yy]                   \n\t"
+
+                        "sll        %[absX],    %[absX],    2           \n\t"
+                        "sll        %[absY],    %[absY],    2           \n\t"
+                        "sll        %[absXX],   %[absXX],   2           \n\t"
+                        "sll        %[absYY],   %[absYY],   2           \n\t"
+
+                        "lwx        %[absX],    %[absX](%[iQT])         \n\t"
+                        "lwx        %[absY],    %[absY](%[iQT])         \n\t"
+                        "lwx        %[absXX],   %[absXX](%[iQT])        \n\t"
+                        "lwx        %[absYY],   %[absYY](%[iQT])        \n\t"
+
+                        "srlv       %[absX],    %[absX],    %[shift]    \n\t"
+                        "srlv       %[absY],    %[absY],    %[shift]    \n\t"
+                        "srlv       %[absXX],   %[absXX],   %[shift]    \n\t"
+                        "srlv       %[absYY],   %[absYY],   %[shift]    \n\t"
+
+                        "mul        %[absX],    %[absX],    %[x]        \n\t"
+                        "mul        %[absY],    %[absY],    %[y]        \n\t"
+                        "mul        %[absXX],   %[absXX],   %[xx]       \n\t"
+                        "mul        %[absYY],   %[absYY],   %[yy]       \n\t"
+
+                        "mulq_s.w   %[absX],    %[absX],    %[scale2]   \n\t"
+                        "mulq_s.w   %[absY],    %[absY],    %[scale2]   \n\t"
+                        "mulq_s.w   %[absXX],   %[absXX],   %[scale2]   \n\t"
+                        "mulq_s.w   %[absYY],   %[absYY],   %[scale2]   \n\t"
+
+                        : [absX] "=&r" (absX), [absY] "=&r" (absY),
+                          [absXX] "=&r" (absXX), [absYY] "=&r" (absYY),
+                          [xx] "=&r" (xx), [yy] "=&r" (yy), [x] "=&r" (x), [y] "=&r" (y)
+                        : [shift] "r" (shift), [ipoint] "r" (ipoint),
+                          [scale2] "r" (scale2), [iQT] "r" (inverseQuantTable)
+                        : "memory", "hi", "lo"
+                    );
+
+                    if (x)  coef[i]   = absX;
+                    if (y)  coef[i-1] = absY;
+                    if (xx) coef[i-2] = absXX;
+                    if (yy) coef[i-3] = absYY;
+
+                } /* end for (i = sfbWidth - 1; i >= 0; i--) */
+
+#endif /* MDSP_REV2 */
 
             } /* end if (maxInput < TABLESIZE)*/
 

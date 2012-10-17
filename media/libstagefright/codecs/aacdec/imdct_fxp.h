@@ -82,6 +82,12 @@ extern "C"
 
     extern const Int32 exp_rotation_N_256[64];
     extern const Int32 exp_rotation_N_2048[512];
+
+#ifdef MDSP_REV1
+    extern const Int32 exp_rotation_N_256_modified[128];
+    extern const Int32 exp_rotation_N_2048_modified[1024];
+#endif /* MDSP_REV1 */
+
     /*
     extern const Int exp_rotation_N_256[128];
     extern const Int exp_rotation_N_2048[1024];

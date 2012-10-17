@@ -273,7 +273,20 @@ Int imdct_fxp(Int32   data_quant[],
               Int32   max)
 {
 
-    Int32     exp_jw;
+#ifndef MDSP_REV1
+    Int32   exp_jw;
+    Int     shift1 = 0;
+    Int     k;
+#else /* MDSP_REV1 */
+    Int32   exp_jw_r;
+    Int32   exp_jw_i;
+    Int32   exp_jw_r1;
+    Int32   exp_jw_i1;
+    Int     shift1;
+    Int32   temp_re32_1;
+    Int32   temp_im32_1;
+#endif /* MDSP_REV1 */
+
     Int     shift = 0;
 
     const   Int32 *p_rotate;
@@ -285,14 +298,11 @@ Int imdct_fxp(Int32   data_quant[],
     Int32   temp_re32;
     Int32   temp_im32;
 
-    Int     shift1 = 0;
     Int32   temp1;
     Int32   temp2;
 
-    Int     k;
     Int     n_2   = n >> 1;
     Int     n_4   = n >> 2;
-
 
 
     if (max != 0)
@@ -301,12 +311,20 @@ Int imdct_fxp(Int32   data_quant[],
         switch (n)
         {
             case SHORT_WINDOW_TYPE:
+#ifndef MDSP_REV1
                 p_rotate = exp_rotation_N_256;
+#else /* MDSP_REV1 */
+                p_rotate = exp_rotation_N_256_modified;
+#endif /* MDSP_REV1 */
                 shift = 21;           /* log2(n)-1 + 14 acomodates 2/N factor */
                 break;
 
             case LONG_WINDOW_TYPE:
+#ifndef MDSP_REV1
                 p_rotate = exp_rotation_N_2048;
+#else /* MDSP_REV1 */
+                p_rotate = exp_rotation_N_2048_modified;
+#endif /* MDSP_REV1 */
                 shift = 24;           /* log2(n)-1 +14 acomodates 2/N factor */
                 break;
 
@@ -331,6 +349,7 @@ Int imdct_fxp(Int32   data_quant[],
         p_data_1 =  data_quant;             /* uses first  half of buffer */
         p_data_2 = &data_quant[n_2 - 1];    /* uses second half of buffer */
 
+#ifndef MDSP_REV1
         p_rotate_2 = &p_rotate[n_4-1];
 
         shift1 = pv_normalize(max) - 1;     /* -1 to leave room for addition */
@@ -438,6 +457,146 @@ Int imdct_fxp(Int32   data_quant[],
 
             }
         }
+#else /* MDSP_REV1 */
+        p_rotate_2 = &p_rotate[(n_4 - 1) << 1];
+
+        __asm__ volatile(
+            ".set    push                                            \n\t"
+            ".set    noreorder                                       \n\t"
+
+            "sra     %[n_4],         %[n_4],         1               \n\t"
+            "clz     %[shift1],      %[max]                          \n\t"
+            "sll     %[n_4],         %[n_4],         3               \n\t"
+            "addiu   %[shift1],      %[shift1],      -2              \n\t"
+            "addu    %[n_4],         %[p_rotate],    %[n_4]          \n\t"
+            "addu    %[Q_format],    %[Q_format],    %[shift1]       \n\t"
+            "lw      %[temp_re32],   0(%[p_data_1])                  \n\t"
+            "lw      %[temp_im32],   0(%[p_data_2])                  \n\t"
+            "addu    %[p_data_1],    %[p_data_1],    4               \n\t"
+            "addu    %[p_data_2],    %[p_data_2],    -4              \n\t"
+            "addiu   %[Q_format],    %[Q_format],    -16             \n\t"
+            "blt     %[shift1],      $zero,          3f              \n\t"
+            " xor    %[max],         %[max],         %[max]          \n\t"
+            "sllv    %[temp_im32],   %[temp_im32],   %[shift1]       \n\t"
+            "sllv    %[temp_re32],   %[temp_re32],   %[shift1]       \n\t"
+        "1:                                                          \n\t"
+            "lw      %[exp_jw_r],    0(%[p_rotate])                  \n\t"
+            "lw      %[exp_jw_i],    4(%[p_rotate])                  \n\t"
+            "lw      %[exp_jw_r1],   0(%[p_rotate_2])                \n\t"
+            "lw      %[exp_jw_i1],   4(%[p_rotate_2])                \n\t"
+            "mult    $ac0,           %[temp_im32],   %[exp_jw_r]     \n\t"
+            "mult    $ac1,           %[temp_re32],   %[exp_jw_r]     \n\t"
+            "lw      %[temp_im32_1], 0(%[p_data_1])                  \n\t"
+            "lw      %[temp_re32_1], 0(%[p_data_2])                  \n\t"
+            "addiu   %[p_rotate],    %[p_rotate],    8               \n\t"
+            "msub    $ac0,           %[temp_re32],   %[exp_jw_i]     \n\t"
+            "madd    $ac1,           %[temp_im32],   %[exp_jw_i]     \n\t"
+            "addiu   %[p_rotate_2],  %[p_rotate_2],  -8              \n\t"
+            "sllv    %[temp_im32_1], %[temp_im32_1], %[shift1]       \n\t"
+            "sllv    %[temp_re32_1], %[temp_re32_1], %[shift1]       \n\t"
+            "mfhi    %[temp1],       $ac0                            \n\t"
+            "mfhi    %[temp2],       $ac1                            \n\t"
+            "mult    $ac2,           %[temp_im32_1], %[exp_jw_r1]    \n\t"
+            "mult    $ac3,           %[temp_re32_1], %[exp_jw_r1]    \n\t"
+            "lw      %[temp_re32],   4(%[p_data_1])                  \n\t"
+            "lw      %[temp_im32],   -4(%[p_data_2])                 \n\t"
+            "msub    $ac2,           %[temp_re32_1], %[exp_jw_i1]    \n\t"
+            "madd    $ac3,           %[temp_im32_1], %[exp_jw_i1]    \n\t"
+            "subu    %[temp2],       $zero,          %[temp2]        \n\t"
+            "sw      %[temp1],       -4(%[p_data_1])                 \n\t"
+            "sw      %[temp2],       0(%[p_data_1])                  \n\t"
+            "sllv    %[temp_re32],   %[temp_re32],   %[shift1]       \n\t"
+            "sllv    %[temp_im32],   %[temp_im32],   %[shift1]       \n\t"
+            "mfhi    %[temp_re32_1], $ac2                            \n\t"
+            "mfhi    %[temp_im32_1], $ac3                            \n\t"
+            "sra     %[exp_jw_r],    %[temp1],       31              \n\t"
+            "sra     %[exp_jw_i],    %[temp2],       31              \n\t"
+            "xor     %[temp1],       %[exp_jw_r],    %[temp1]        \n\t"
+            "xor     %[temp2],       %[exp_jw_i],    %[temp2]        \n\t"
+            "or      %[max],         %[max],         %[temp1]        \n\t"
+            "or      %[max],         %[max],         %[temp2]        \n\t"
+            "subu    %[temp2],       $zero,          %[temp_im32_1]  \n\t"
+            "sw      %[temp_re32_1], 0(%[p_data_2])                  \n\t"
+            "sw      %[temp2],       4(%[p_data_2])                  \n\t"
+            "addiu   %[p_data_1],    %[p_data_1],    8               \n\t"
+            "addiu   %[p_data_2],    %[p_data_2],    -8              \n\t"
+            "sra     %[exp_jw_r1],   %[temp_re32_1], 31              \n\t"
+            "sra     %[exp_jw_i1],   %[temp2],       31              \n\t"
+            "xor     %[temp1],       %[exp_jw_r1],   %[temp_re32_1]  \n\t"
+            "xor     %[temp2],       %[exp_jw_i1],   %[temp2]        \n\t"
+            "or      %[max],         %[max],         %[temp1]        \n\t"
+            "bne     %[n_4],         %[p_rotate],    1b              \n\t"
+            " or     %[max],         %[max],         %[temp2]        \n\t"
+            "b       4f                                              \n\t"
+            " nop                                                    \n\t"
+        "3:                                                          \n\t"
+            "sra     %[temp_im32],   %[temp_im32],   1               \n\t"
+            "sra     %[temp_re32],   %[temp_re32],   1               \n\t"
+        "2:                                                          \n\t"
+            "lw      %[exp_jw_r],    0(%[p_rotate])                  \n\t"
+            "lw      %[exp_jw_i],    4(%[p_rotate])                  \n\t"
+            "lw      %[exp_jw_r1],   0(%[p_rotate_2])                \n\t"
+            "lw      %[exp_jw_i1],   4(%[p_rotate_2])                \n\t"
+            "mult    $ac0,           %[temp_im32],   %[exp_jw_r]     \n\t"
+            "mult    $ac1,           %[temp_re32],   %[exp_jw_r]     \n\t"
+            "lw      %[temp_im32_1], 0(%[p_data_1])                  \n\t"
+            "lw      %[temp_re32_1], 0(%[p_data_2])                  \n\t"
+            "addiu   %[p_rotate],    %[p_rotate],    8               \n\t"
+            "msub    $ac0,           %[temp_re32],   %[exp_jw_i]     \n\t"
+            "madd    $ac1,           %[temp_im32],   %[exp_jw_i]     \n\t"
+            "addiu   %[p_rotate_2],  %[p_rotate_2],  -8              \n\t"
+            "sra     %[temp_im32_1], %[temp_im32_1], 1               \n\t"
+            "sra     %[temp_re32_1], %[temp_re32_1], 1               \n\t"
+            "mfhi    %[temp1],       $ac0                            \n\t"
+            "mfhi    %[temp2],       $ac1                            \n\t"
+            "mult    $ac2,           %[temp_im32_1], %[exp_jw_r1]    \n\t"
+            "mult    $ac3,           %[temp_re32_1], %[exp_jw_r1]    \n\t"
+            "lw      %[temp_re32],   4(%[p_data_1])                  \n\t"
+            "lw      %[temp_im32],   -4(%[p_data_2])                 \n\t"
+            "msub    $ac2,           %[temp_re32_1], %[exp_jw_i1]    \n\t"
+            "madd    $ac3,           %[temp_im32_1], %[exp_jw_i1]    \n\t"
+            "subu    %[temp2],       $zero,          %[temp2]        \n\t"
+            "sw      %[temp1],       -4(%[p_data_1])                 \n\t"
+            "sw      %[temp2],       0(%[p_data_1])                  \n\t"
+            "sra     %[temp_re32],   %[temp_re32],   1               \n\t"
+            "sra     %[temp_im32],   %[temp_im32],   1               \n\t"
+            "mfhi    %[temp_re32_1], $ac2                            \n\t"
+            "mfhi    %[temp_im32_1], $ac3                            \n\t"
+            "sra     %[exp_jw_r],    %[temp1],       31              \n\t"
+            "sra     %[exp_jw_i],    %[temp2],       31              \n\t"
+            "xor     %[temp1],       %[exp_jw_r],    %[temp1]        \n\t"
+            "xor     %[temp2],       %[exp_jw_i],    %[temp2]        \n\t"
+            "or      %[max],         %[max],         %[temp1]        \n\t"
+            "or      %[max],         %[max],         %[temp2]        \n\t"
+            "subu    %[temp2],       $zero,          %[temp_im32_1]  \n\t"
+            "sw      %[temp_re32_1], 0(%[p_data_2])                  \n\t"
+            "sw      %[temp2],       4(%[p_data_2])                  \n\t"
+            "addiu   %[p_data_1],    %[p_data_1],    8               \n\t"
+            "addiu   %[p_data_2],    %[p_data_2],    -8              \n\t"
+            "sra     %[exp_jw_r1],   %[temp_re32_1], 31              \n\t"
+            "sra     %[exp_jw_i1],   %[temp2],       31              \n\t"
+            "xor     %[temp1],       %[exp_jw_r1],   %[temp_re32_1]  \n\t"
+            "xor     %[temp2],       %[exp_jw_i1],   %[temp2]        \n\t"
+            "or      %[max],         %[max],         %[temp1]        \n\t"
+            "bne     %[n_4],         %[p_rotate],    2b              \n\t"
+            " or     %[max],         %[max],         %[temp2]        \n\t"
+        "4:                                                          \n\t"
+
+            ".set    pop                                             \n\t"
+
+            : [temp1] "=&r" (temp1), [temp2] "=&r" (temp2), [p_data_1] "+r" (p_data_1),
+              [p_data_2] "+r" (p_data_2), [temp_re32] "=&r" (temp_re32),
+              [temp_im32] "=&r" (temp_im32), [max] "+r" (max), [p_rotate] "+r" (p_rotate),
+              [p_rotate_2] "+r" (p_rotate_2), [exp_jw_r] "=&r" (exp_jw_r),
+              [exp_jw_i] "=&r" (exp_jw_i), [n_4] "+r" (n_4), [exp_jw_r1] "=&r" (exp_jw_r1),
+              [exp_jw_i1] "=&r" (exp_jw_i1), [temp_re32_1] "=&r" (temp_re32_1),
+              [temp_im32_1] "=&r" (temp_im32_1), [shift1] "=&r" (shift1),
+              [Q_format] "+r" (Q_format)
+            :
+            : "memory", "hi", "lo", "$ac1hi", "$ac1lo", "$ac2hi", "$ac2lo",
+              "$ac3hi", "$ac3lo"
+        );
+#endif /* MDSP_REV1 */
 
 
         if (n != SHORT_WINDOW_TYPE)

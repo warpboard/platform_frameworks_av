@@ -198,11 +198,22 @@ Int inv_long_complex_rot(
     Int16     J;
     const   Int32 *p_rotate2;
 
-
+#ifdef MDSP_REV1
+    Int32   temp1, temp2, temp3, temp4;
+    Int32   temp_re2, temp_im2;
+    const   Int32 *p_rotate2_1, *p_rotate_1;
+#endif /* MDSP_REV1 */
 
 
     p_rotate    =  &exp_rotation_N_2048[255];
     p_rotate2   =  &exp_rotation_N_2048[256];
+
+
+#ifdef MDSP_REV1
+    p_rotate_1    =  &exp_rotation_N_2048_modified[510];
+    p_rotate2_1   =  &exp_rotation_N_2048_modified[512];
+#endif /* MDSP_REV1 */
+
 
     pData_in_ref1  =  Data;
     pData_in_ref2  = &Data[TWICE_INV_LONG_CX_ROT_LENGTH];
@@ -242,6 +253,119 @@ Int inv_long_complex_rot(
 
     exp -= 1;
 
+
+#ifdef MDSP_REV1
+
+    J=J*4;
+    I=I*4;
+
+    for (i = INV_LONG_CX_ROT_LENGTH >> 1; i != 0; i--)
+    {
+
+        __asm__ volatile (
+
+            "addu       %[pData_in_2],     %[pData_in_ref1],    %[J]        \n\t"
+            "addu       %[pData_in_1],     %[pData_in_ref2],    %[I]        \n\t"
+            "lw         %[temp_im],        0(%[pData_in_2])                 \n\t"
+            "lw         %[temp_re],        4(%[pData_in_2])                 \n\t"
+            "lw         %[temp1],          0(%[p_rotate2])                  \n\t"
+            "lw         %[temp2],          4(%[p_rotate2])                  \n\t"
+            "lw         %[temp_re2],       0(%[pData_in_1])                 \n\t"
+            "lw         %[temp_im2],       -4(%[pData_in_1])                \n\t"
+            "lw         %[temp3],          0(%[p_rotate])                   \n\t"
+            "lw         %[temp4],          4(%[p_rotate])                   \n\t"
+
+            "mult       $ac0,              %[temp_re],          %[temp1]    \n\t"
+            "mult       $ac1,              %[temp_im],          %[temp1]    \n\t"
+            "mult       $ac2,              %[temp_re2],         %[temp3]    \n\t"
+            "mult       $ac3,              %[temp_im2],         %[temp3]    \n\t"
+
+            "msub       $ac0,              %[temp_im],          %[temp2]    \n\t"
+            "madd       $ac1,              %[temp_re],          %[temp2]    \n\t"
+            "msub       $ac2,              %[temp_im2],         %[temp4]    \n\t"
+            "madd       $ac3,              %[temp_re2],         %[temp4]    \n\t"
+
+            "addu       %[pData_in_2],     %[pData_in_ref2],    %[J]        \n\t"
+
+            "mfhi       %[temp_re_0],      $ac0                             \n\t"
+            "mfhi       %[temp_im_0],      $ac1                             \n\t"
+            "mfhi       %[temp_re_1],      $ac2                             \n\t"
+            "mfhi       %[temp_im_1],      $ac3                             \n\t"
+
+            "addu       %[pData_in_1],     %[pData_in_ref1],    %[I]        \n\t"
+            "addiu      %[J],              %[J],                8           \n\t"
+            "addiu      %[I],              %[I],                -8          \n\t"
+
+            "srav       %[temp_re_0],      %[temp_re_0],        %[exp]      \n\t"
+            "srav       %[temp_im_0],      %[temp_im_0],        %[exp]      \n\t"
+            "srav       %[temp_re_1],      %[temp_re_1],        %[exp]      \n\t"
+            "srav       %[temp_im_1],      %[temp_im_1],        %[exp]      \n\t"
+
+            "lw         %[temp_im],        0(%[pData_in_2])                 \n\t"
+            "lw         %[temp_re],        4(%[pData_in_2])                 \n\t"
+            "lw         %[temp1],          8(%[p_rotate2])                  \n\t"
+            "lw         %[temp2],          12(%[p_rotate2])                 \n\t"
+            "lw         %[temp_re2],       0(%[pData_in_1])                 \n\t"
+            "lw         %[temp_im2],       -4(%[pData_in_1])                \n\t"
+            "lw         %[temp3],          -8(%[p_rotate])                  \n\t"
+            "lw         %[temp4],          -4(%[p_rotate])                  \n\t"
+
+            "sh         %[temp_re_0],      0(%[px_1])                       \n\t"
+            "sh         %[temp_im_1],      -2(%[px_1])                      \n\t"
+            "sh         %[temp_im_0],      0(%[px_4])                       \n\t"
+            "sh         %[temp_re_1],      2(%[px_4])                       \n\t"
+
+            "mult       $ac0,              %[temp_re],          %[temp1]    \n\t"
+            "mult       $ac1,              %[temp_im],          %[temp1]    \n\t"
+            "mult       $ac2,              %[temp_re2],         %[temp3]    \n\t"
+            "mult       $ac3,              %[temp_im2],         %[temp3]    \n\t"
+
+            "msub       $ac0,              %[temp_im],          %[temp2]    \n\t"
+            "madd       $ac1,              %[temp_re],          %[temp2]    \n\t"
+            "msub       $ac2,              %[temp_im2],         %[temp4]    \n\t"
+            "madd       $ac3,              %[temp_re2],         %[temp4]    \n\t"
+            "addiu      %[pData_in_2],     %[pData_in_2],       8           \n\t"
+
+            "mfhi       %[temp_re_1],      $ac0                             \n\t"
+            "mfhi       %[temp_im_1],      $ac1                             \n\t"
+            "mfhi       %[temp_re_0],      $ac2                             \n\t"
+            "mfhi       %[temp_im_0],      $ac3                             \n\t"
+
+            "addiu      %[pData_in_1],     %[pData_in_1],       -8          \n\t"
+            "addiu      %[px_1],           %[px_1],             -8          \n\t"
+            "addiu      %[px_4],           %[px_4],             8           \n\t"
+
+            "srav       %[temp_re_1],      %[temp_re_1],        %[exp]      \n\t"
+            "srav       %[temp_im_1],      %[temp_im_1],        %[exp]      \n\t"
+            "srav       %[temp_re_0],      %[temp_re_0],        %[exp]      \n\t"
+            "srav       %[temp_im_0],      %[temp_im_0],        %[exp]      \n\t"
+
+            "sh         %[temp_re_1],      4(%[px_1])                       \n\t"
+            "sh         %[temp_im_1],      -4(%[px_4])                      \n\t"
+            "sh         %[temp_re_0],      -2(%[px_4])                      \n\t"
+            "sh         %[temp_im_0],      2(%[px_1])                       \n\t"
+
+            "addiu      %[p_rotate2],      %[p_rotate2],        16          \n\t"
+            "addiu      %[p_rotate],       %[p_rotate],         -16         \n\t"
+
+            : [temp_re_0] "=&r" (temp_re_0), [temp_im_0] "=&r" (temp_im_0),
+              [temp_re_1] "=&r" (temp_re_1), [temp_im_1] "=&r" (temp_im_1),
+              [temp1] "=&r" (temp1), [temp2] "=&r" (temp2), [temp3] "=&r" (temp3),
+              [temp4] "=&r" (temp4), [p_rotate2] "+r" (p_rotate2_1),
+              [p_rotate] "+r" (p_rotate_1), [temp_re] "=&r" (temp_re),
+              [temp_im] "=&r" (temp_im), [temp_re2] "=&r" (temp_re2),
+              [temp_im2] "=&r" (temp_im2), [pData_in_2] "=&r" (pData_in_2),
+              [pData_in_1] "=&r" (pData_in_1), [px_1] "+r" (px_1),
+              [px_4] "+r" (px_4), [J] "+r" (J), [I] "+r" (I)
+            : [exp] "r" (exp), [pData_in_ref1] "r" (pData_in_ref1),
+              [pData_in_ref2] "r" (pData_in_ref2)
+            : "hi", "lo", "$ac1hi", "$ac1lo", "$ac2hi",
+              "$ac2lo", "$ac3hi", "$ac3lo", "memory"
+        );
+
+    }
+
+#else /* MDSP_REV1 */
 
     for (i = INV_LONG_CX_ROT_LENGTH >> 1; i != 0; i--)
     {
@@ -334,6 +458,8 @@ Int inv_long_complex_rot(
         *(px_1--)  = (Int16)(cmplx_mul32_by_16(temp_im,   temp_re,  exp_jw) >> exp);
 
     }
+
+#endif /* MDSP_REV1 */
 
     /*
      *                                           <--px1 px4-->

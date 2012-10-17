@@ -149,12 +149,33 @@ extern "C"
 
     __inline  Int32 cmplx_mul32_by_16(Int32 x, const Int32 y, Int32 exp_jw)
     {
-        Int32  rTmp0 = (Int16)(exp_jw >> 16);
-        Int32  iTmp0 = exp_jw;
-        Int32  z;
+
+        Int32  z, rTmp0, iTmp0;
+
+#ifdef MDSP_REV1
+
+        __asm__ volatile(
+
+            "preceq.w.phl   %[rTmp0],   %[exp_jw]       \n\t"
+            "preceq.w.phr   %[iTmp0],   %[exp_jw]       \n\t"
+            "mult           %[rTmp0],   %[x]            \n\t"
+            "madd           %[iTmp0],   %[y]            \n\t"
+            "mfhi           %[z]                        \n\t"
+
+            : [z] "=r" (z), [rTmp0] "=&r" (rTmp0), [iTmp0] "=&r" (iTmp0)
+            : [exp_jw] "r" (exp_jw), [x] "r" (x), [y] "r" (y)
+            : "hi", "lo"
+        );
+
+#else /* MDSP_REV1 */
+
+        rTmp0 = (Int16)(exp_jw >> 16);
+        iTmp0 = exp_jw;
 
         z  = (Int32)(((int64_t)x * (rTmp0 << 16)) >> 32);
         z += (Int32)(((int64_t)y * (iTmp0 << 16)) >> 32);
+
+#endif /* MDSP_REV1 */
 
         return (z);
     }

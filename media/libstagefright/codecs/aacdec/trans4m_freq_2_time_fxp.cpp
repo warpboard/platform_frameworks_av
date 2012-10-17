@@ -1657,11 +1657,20 @@ void trans4m_freq_2_time_fxp_2(
                         const Int16 *pLong_Window_2 = &Long_Window_fxp[wnd_shape_this_bk][LONG_WINDOW_m_1];
 
                         Int32 * pFreq2T   = (Int32 *)pFreqInfo;
-                        Int32 * pFreq2T_2 = &pFreq2T[HALF_LONG_WINDOW];
                         Int32 * win = (Int32 *) & Long_Window_fxp[wnd_shape_prev_bk][0];
 
                         Int shift = exp + 15 - SCALING;
+#ifndef MDSP_REV1
+                        Int32 * pFreq2T_2 = &pFreq2T[HALF_LONG_WINDOW];
+#else /* MDSP_REV1 */
+                        Int32 ashift = shift+1;
+                        Int32 scale = 1 << ashift;
+                        Int32 mShift = ashift + SCALING;
+                        Int32 round = 1 << (mShift-1);
+                        Int32 one1 = 1;
+#endif /* MDSP_REV1 */
 
+#ifndef MDSP_REV1
                         for (i = HALF_LONG_WINDOW; i != 0; i--)
                         {
                             Int16 win1, win2;
@@ -1692,6 +1701,102 @@ void trans4m_freq_2_time_fxp_2(
                             *(pOverlap_and_Add_Buffer_1++) = temp;
                             *(pOverlap_and_Add_Buffer_1++) = test2;
                         }
+#else /* MDSP_REV1 */
+
+                        i = HALF_LONG_WINDOW>>1;
+
+                        __asm__ volatile (
+                            ".set push                                                      \n\t"
+                            ".set noreorder                                                 \n\t"
+                            "mult           $ac1,           %[round],           %[one1]     \n\t"
+                            "mult           $ac2,           %[round],           %[one1]     \n\t"
+                            "mult           $ac0,           %[round],           %[one1]     \n\t"
+                            "mult           $ac3,           %[round],           %[one1]     \n\t"
+
+                            "1:                                                             \n\t"
+                            "lw             $t2,            0(%[pOaABuffer])                \n\t"
+                            "lw             $t3,            4(%[pOaABuffer])                \n\t"
+                            "lw             $t0,            0(%[win])                       \n\t"
+                            "lw             $t1,            0(%[pFreq2T])                   \n\t"
+                            "lw             $t6,            8(%[pOaABuffer])                \n\t"
+                            "lw             $t7,            12(%[pOaABuffer])               \n\t"
+                            "lw             $t4,            4(%[win])                       \n\t"
+                            "lw             $t5,            4(%[pFreq2T])                   \n\t"
+
+                            "madd           $ac1,           $t2,                %[scale]    \n\t"
+                            "madd           $ac2,           $t3,                %[scale]    \n\t"
+                            "maq_s.w.phr    $ac1,           $t0,                $t1         \n\t"
+                            "maq_s.w.phl    $ac2,           $t0,                $t1         \n\t"
+
+                            "madd           $ac0,           $t6,                %[scale]    \n\t"
+                            "madd           $ac3,           $t7,                %[scale]    \n\t"
+                            "maq_s.w.phr    $ac0,           $t4,                $t5         \n\t"
+                            "maq_s.w.phl    $ac3,           $t4,                $t5         \n\t"
+
+                            "lw             $t2,            2048(%[pFreq2T])                \n\t"
+                            "lw             $t6,            2052(%[pFreq2T])                \n\t"
+                            "addiu          %[pFreq2T],     %[pFreq2T],         8           \n\t"
+                            "lw             $t3,            -2(%[pLongW_2])                 \n\t"
+                            "lw             $t7,            -6(%[pLongW_2])                 \n\t"
+
+                            "extrv_s.h      $t0,            $ac1,               %[mShift]   \n\t"
+                            "extrv_s.h      $t1,            $ac2,               %[mShift]   \n\t"
+                            "extrv_s.h      $t4,            $ac0,               %[mShift]   \n\t"
+                            "extrv_s.h      $t5,            $ac3,               %[mShift]   \n\t"
+
+                            "rotr           $t3,            $t3,                16          \n\t"
+                            "rotr           $t7,            $t7,                16          \n\t"
+
+                            "mult           $ac0,           $zero,              $zero       \n\t"
+                            "mult           $ac3,           $zero,              $zero       \n\t"
+                            "mult           $ac1,           $zero,              $zero       \n\t"
+                            "mult           $ac2,           $zero,              $zero       \n\t"
+                            "maq_s.w.phr    $ac0,           $t2,                $t3         \n\t"
+                            "maq_s.w.phl    $ac3,           $t2,                $t3         \n\t"
+                            "maq_s.w.phr    $ac1,           $t6,                $t7         \n\t"
+                            "maq_s.w.phl    $ac2,           $t6,                $t7         \n\t"
+
+                            "addiu          %[pInterlOut],  %[pInterlOut],      16          \n\t"
+                            "addiu          %[pOaABuffer],  %[pOaABuffer],      16          \n\t"
+                            "addiu          %[pLongW_2],    %[pLongW_2],        -8          \n\t"
+
+                            "extrv.w        $t2,            $ac0,               %[shift]    \n\t"
+                            "extrv.w        $t3,            $ac3,               %[shift]    \n\t"
+                            "extrv.w        $t6,            $ac1,               %[shift]    \n\t"
+                            "extrv.w        $t7,            $ac2,               %[shift]    \n\t"
+
+                            "addiu          %[win],         %[win],             8           \n\t"
+
+                            "sh             $t0,            -16(%[pInterlOut])              \n\t"
+                            "sh             $t1,            -12(%[pInterlOut])              \n\t"
+                            "sh             $t4,            -8(%[pInterlOut])               \n\t"
+                            "sh             $t5,            -4(%[pInterlOut])               \n\t"
+
+                            "addiu          %[i],           %[i],               -1          \n\t"
+
+                            "mult           $ac1,           %[round],           %[one1]     \n\t"
+                            "mult           $ac2,           %[round],           %[one1]     \n\t"
+                            "mult           $ac0,           %[round],           %[one1]     \n\t"
+                            "mult           $ac3,           %[round],           %[one1]     \n\t"
+
+                            "sw             $t2,            -16(%[pOaABuffer])              \n\t"
+                            "sw             $t6,            -8(%[pOaABuffer])               \n\t"
+                            "sw             $t7,            -4(%[pOaABuffer])               \n\t"
+                            "bgtz           %[i],           1b                              \n\t"
+                            "sw             $t3,            -12(%[pOaABuffer])              \n\t"
+                            ".set pop                                                       \n\t"
+
+                            : [pOaABuffer] "+r" (pOverlap_and_Add_Buffer_1),
+                              [pFreq2T] "+r" (pFreq2T), [pInterlOut] "+r" (pInterleaved_output),
+                              [win] "+r" (win), [pLongW_2] "+r" (pLong_Window_2),
+                              [i] "+r" (i)
+                            : [shift] "r" (ashift), [scale] "r" (scale),
+                              [mShift] "r" (mShift), [round] "r" (round), [one1] "r" (one1)
+                            : "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7",
+                              "memory", "hi", "lo", "$ac1hi", "$ac1lo",
+                              "$ac2hi", "$ac2lo", "$ac3hi", "$ac3lo"
+                        );
+#endif /* MDSP_REV1 */
 
                     }
 
@@ -1700,6 +1805,7 @@ void trans4m_freq_2_time_fxp_2(
                 break;
 
                 case LONG_START_SEQUENCE:
+                {
 
                     pFreq_2_Time_data_2 =
                         &pFreq_2_Time_data_1[ HALF_LONG_WINDOW];
@@ -1720,6 +1826,17 @@ void trans4m_freq_2_time_fxp_2(
                      */
 
                     shift = exp + 15 - SCALING;
+
+#ifdef MDSP_REV1
+
+                    Int32 ashift = shift+1;
+                    Int32 scale = 1 << ashift;
+                    Int32 mShift = ashift + SCALING;
+                    Int32 round = 1 << (mShift-1);
+                    Int32 one1 = 1;
+#endif /* MDSP_REV1 */
+
+#ifndef MDSP_REV1
 
                     for (i = HALF_LONG_WINDOW; i != 0; i--)
                     {
@@ -1743,7 +1860,72 @@ void trans4m_freq_2_time_fxp_2(
 
                         pInterleaved_output_2    += 2;
                     }
+#else /* MDSP_REV1 */
 
+                    i = HALF_LONG_WINDOW>>1;
+
+                    __asm__ volatile (
+                        "1:                                                              \n\t"
+                        "mult           $ac1,           %[round],            %[one1]     \n\t"
+                        "mult           $ac2,           %[round],            %[one1]     \n\t"
+                        "mult           $ac0,           %[round],            %[one1]     \n\t"
+                        "mult           $ac3,           %[round],            %[one1]     \n\t"
+
+                        "lh             $t2,            0(%[pFreq_2_T_1])                \n\t"
+                        "lh             $t3,            0(%[pLong_W_1])                  \n\t"
+                        "lw             $t0,            0(%[pOverlap_1])                 \n\t"
+                        "lh             $t5,            2(%[pFreq_2_T_1])                \n\t"
+                        "lh             $t6,            2(%[pLong_W_1])                  \n\t"
+                        "lw             $t4,            4(%[pOverlap_1])                 \n\t"
+
+                        "madd           $ac1,           $t0,                 %[scale]    \n\t"
+                        "maq_s.w.phr    $ac1,           $t2,                 $t3         \n\t"
+                        "madd           $ac0,           $t4,                 %[scale]    \n\t"
+                        "maq_s.w.phr    $ac0,           $t5,                 $t6         \n\t"
+
+                        "lh             $t2,            1024(%[pFreq_2_T_1])             \n\t"
+                        "lh             $t3,            1024(%[pLong_W_1])               \n\t"
+                        "lw             $t1,            2048(%[pOverlap_1])              \n\t"
+                        "lh             $t5,            1026(%[pFreq_2_T_1])             \n\t"
+                        "lh             $t6,            1026(%[pLong_W_1])               \n\t"
+                        "lw             $t7,            2052(%[pOverlap_1])              \n\t"
+
+                        "madd           $ac2,           $t1,                 %[scale]    \n\t"
+                        "maq_s.w.phr    $ac2,           $t2,                 $t3         \n\t"
+                        "extrv_s.h      $t0,            $ac1,                %[mShift]   \n\t"
+
+                        "madd           $ac3,           $t7,                 %[scale]    \n\t"
+                        "maq_s.w.phr    $ac3,           $t5,                 $t6         \n\t"
+                        "extrv_s.h      $t4,            $ac0,                %[mShift]   \n\t"
+                        "addiu          %[pFreq_2_T_1], %[pFreq_2_T_1],      4           \n\t"
+
+                        "addiu          %[pInterlOut],  %[pInterlOut],       8           \n\t"
+                        "extrv_s.h      $t1,            $ac2,                %[mShift]   \n\t"
+                        "addiu          %[pLong_W_1],   %[pLong_W_1],        4           \n\t"
+                        "addiu          %[i],           %[i],                -1          \n\t"
+                        "extrv_s.h      $t7,            $ac3,                %[mShift]   \n\t"
+                        "addiu          %[pOverlap_1],  %[pOverlap_1],       8           \n\t"
+
+                        "sh             $t0,            -8(%[pInterlOut])                \n\t"
+                        "sh             $t1,            2040(%[pInterlOut])              \n\t"
+                        "sh             $t4,            -4(%[pInterlOut])                \n\t"
+                        "sh             $t7,            2044(%[pInterlOut])              \n\t"
+
+                        "bgtz           %[i],           1b                               \n\t"
+
+                        : [pFreq_2_T_1] "+r" (pFreq_2_Time_data_1),
+                          [pLong_W_1] "+r" (pLong_Window_1),
+                          [pOverlap_1] "+r" (pOverlap_and_Add_Buffer_1),
+                          [pInterlOut] "+r" (pInterleaved_output),
+                          [i]"+r"(i)
+                        : [shift] "r" (ashift), [scale] "r" (scale),
+                          [mShift] "r" (mShift), [round] "r" (round), [one1] "r" (one1)
+                        : "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7",
+                          "memory", "hi", "lo", "$ac1hi", "$ac1lo",
+                          "$ac2hi", "$ac2lo", "$ac3hi", "$ac3lo"
+                    );
+
+#endif /* MDSP_REV1 */
 
                     /*
                      *  data unchanged from  LONG_WINDOW to W_L_START_1
@@ -1755,20 +1937,7 @@ void trans4m_freq_2_time_fxp_2(
 
                     exp -= SCALING;
 
-                    if (exp >= 0)
-                    {
-
-                        for (i = (W_L_START_1 - LONG_WINDOW) >> 1; i != 0; i--)
-                        {
-                            *(pOverlap_and_Add_Buffer_1++) =
-                                *(pFreq_2_Time_data_1++) >> exp;
-                            *(pOverlap_and_Add_Buffer_1++) =
-                                *(pFreq_2_Time_data_1++) >> exp;
-
-                        }
-
-                    }
-                    else if (exp < 0)
+                    if (exp < 0)
                     {
 
                         Int shift = -exp;
@@ -1781,6 +1950,21 @@ void trans4m_freq_2_time_fxp_2(
                         }
 
                     }
+
+                    else if (exp >= 0)
+                    {
+
+                        for (i = (W_L_START_1 - LONG_WINDOW) >> 1; i != 0; i--)
+                        {
+                            *(pOverlap_and_Add_Buffer_1++) =
+                                *(pFreq_2_Time_data_1++) >> exp;
+                            *(pOverlap_and_Add_Buffer_1++) =
+                                *(pFreq_2_Time_data_1++) >> exp;
+
+                        }
+
+                    }
+
                     else
                     {
 
@@ -1809,6 +1993,7 @@ void trans4m_freq_2_time_fxp_2(
                                                 HALF_SHORT_WINDOW;
 
                     {
+#ifndef MDSP_REV1
                         Int16 win1, win2;
                         Int16  dat1, dat2;
                         Int32  temp2;
@@ -1828,6 +2013,64 @@ void trans4m_freq_2_time_fxp_2(
                             *(pOverlap_and_Add_Buffer_2++) = temp2;
 
                         }
+
+#else /* MDSP_REV1 */
+
+                        Int32 win1, win2;
+                        Int32 res1, res2, res3, res4;
+                        Int32 dat1, dat2;
+                        Int32 temp2;
+                        Int32 shift2;
+
+                        shift2 = shift+1;
+                        i = HALF_SHORT_WINDOW>>1;
+
+                        __asm__ volatile (
+                            "pref           0,              64(%[pFreq_2])              \n\t"
+                            "pref           0,              96(%[pFreq_2])              \n\t"
+                            "pref           0,              192(%[pFreq_2])             \n\t"
+                            "pref           0,              224(%[pFreq_2])             \n\t"
+
+                            "pref           0,              -64(%[pShort])              \n\t"
+                            "pref           0,              -96(%[pShort])              \n\t"
+                            "pref           0,              -192(%[pShort])             \n\t"
+                            "pref           0,              -224(%[pShort])             \n\t"
+
+                            "1:                                                         \n\t"
+                            "lw             %[dat1],        0(%[pFreq_2])               \n\t"
+                            "lw             %[dat2],        128(%[pFreq_2])             \n\t"
+                            "lw             %[win1],        -2(%[pShort])               \n\t"
+                            "lw             %[win2],        -130(%[pShort])             \n\t"
+                            "addiu          %[pFreq_2],     %[pFreq_2],     4           \n\t"
+                            "addiu          %[pShort],      %[pShort],      -4          \n\t"
+                            "rotr           %[win1],        %[win1],        16          \n\t"
+                            "rotr           %[win2],        %[win2],        16          \n\t"
+                            "muleq_s.w.phl  %[res1],        %[dat1],        %[win1]     \n\t"
+                            "muleq_s.w.phr  %[res2],        %[dat1],        %[win1]     \n\t"
+                            "muleq_s.w.phl  %[res3],        %[dat2],        %[win2]     \n\t"
+                            "muleq_s.w.phr  %[res4],        %[dat2],        %[win2]     \n\t"
+                            "addiu          %[i],           %[i],           -1          \n\t"
+                            "srav           %[res1],        %[res1],        %[shift2]   \n\t"
+                            "srav           %[res2],        %[res2],        %[shift2]   \n\t"
+                            "srav           %[res3],        %[res3],        %[shift2]   \n\t"
+                            "srav           %[res4],        %[res4],        %[shift2]   \n\t"
+                            "sw             %[res2],        0(%[pOverlap])              \n\t"
+                            "sw             %[res1],        4(%[pOverlap])              \n\t"
+                            "sw             %[res4],        256(%[pOverlap])            \n\t"
+                            "sw             %[res3],        260(%[pOverlap])            \n\t"
+                            "addiu          %[pOverlap],    %[pOverlap],    8           \n\t"
+                            "bgtz           %[i],           1b                          \n\t"
+
+                            : [win1] "=&r" (win1), [win2] "=&r" (win2), [dat1] "=&r"(dat1),
+                              [dat2] "=&r"(dat2), [res1] "=&r" (res1), [res2] "=&r" (res2),
+                              [res3] "=&r" (res3), [res4] "=&r" (res4),
+                              [pFreq_2] "+r" (pFreq_2_Time_data_1), [i] "+r" (i),
+                              [pOverlap] "+r" (pOverlap_and_Add_Buffer_1),
+                              [pShort] "+r" (pShort_Window_1)
+                            : [shift2] "r" (shift2)
+                            : "hi", "lo", "memory"
+                        );
+#endif /* MDSP_REV1 */
                     }
 
                     pOverlap_and_Add_Buffer_1 += HALF_SHORT_WINDOW;
@@ -1842,8 +2085,9 @@ void trans4m_freq_2_time_fxp_2(
 
                     break;
 
-
+                }
                 case LONG_STOP_SEQUENCE:
+                {
 
                     pOverlap_and_Add_Buffer_1 = &Time_data[ W_L_STOP_2];
 
@@ -1853,22 +2097,7 @@ void trans4m_freq_2_time_fxp_2(
 
                     exp -= SCALING;
 
-
-                    if (exp > 0)
-                    {
-                        Int16 tmp1 = (*(pFreq_2_Time_data_1++) >> exp);
-                        temp = *(pOverlap_and_Add_Buffer_1++);
-
-                        for (i = (LONG_WINDOW - W_L_STOP_2); i != 0; i--)
-                        {
-                            limiter(*(pInterleaved_output), (temp + tmp1));
-
-                            pInterleaved_output += 2;
-                            tmp1 = *(pFreq_2_Time_data_1++) >> exp;
-                            temp = *(pOverlap_and_Add_Buffer_1++);
-                        }
-                    }
-                    else if (exp < 0)
+                    if (exp < 0)
                     {
                         shift = -exp;
 
@@ -1881,6 +2110,21 @@ void trans4m_freq_2_time_fxp_2(
 
                             pInterleaved_output += 2;
                             temp1 = ((Int32) * (pFreq_2_Time_data_1++)) << shift;
+                            temp = *(pOverlap_and_Add_Buffer_1++);
+                        }
+                    }
+
+                    else if (exp > 0)
+                    {
+                        Int16 tmp1 = (*(pFreq_2_Time_data_1++) >> exp);
+                        temp = *(pOverlap_and_Add_Buffer_1++);
+
+                        for (i = (LONG_WINDOW - W_L_STOP_2); i != 0; i--)
+                        {
+                            limiter(*(pInterleaved_output), (temp + tmp1));
+
+                            pInterleaved_output += 2;
+                            tmp1 = *(pFreq_2_Time_data_1++) >> exp;
                             temp = *(pOverlap_and_Add_Buffer_1++);
                         }
                     }
@@ -1919,6 +2163,16 @@ void trans4m_freq_2_time_fxp_2(
                     shift = exp + 15 - SCALING;
 
 
+#ifdef MDSP_REV1
+                    Int32 ashift = shift+1;
+                    Int32 scale = 1 << ashift;
+                    Int32 mShift = ashift + SCALING;
+                    Int32 round = 1 << (mShift-1);
+                    Int32 one1 = 1;
+#endif /* MDSP_REV1 */
+
+#ifndef MDSP_REV1
+
                     for (i = HALF_SHORT_WINDOW; i != 0; i--)
                     {
 
@@ -1945,8 +2199,67 @@ void trans4m_freq_2_time_fxp_2(
                         pInterleaved_output_2 += 2;
 
                     }
+#else /* MDSP_REV1 */
 
+                    i = HALF_SHORT_WINDOW>>1;
 
+                    __asm__ volatile (
+                        "1:                                                             \n\t"
+                        "mult           $ac1,           %[round],           %[one1]     \n\t"
+                        "mult           $ac2,           %[round],           %[one1]     \n\t"
+                        "mult           $ac0,           %[round],           %[one1]     \n\t"
+                        "mult           $ac3,           %[round],           %[one1]     \n\t"
+
+                        "lh             $t2,            0(%[pFreq_2_T_1])               \n\t"
+                        "lh             $t3,            0(%[pShort_W_1])                \n\t"
+                        "lw             $t0,            0(%[pOverlap_1])                \n\t"
+                        "lh             $t5,            2(%[pFreq_2_T_1])               \n\t"
+                        "lh             $t6,            2(%[pShort_W_1])                \n\t"
+                        "lw             $t4,            4(%[pOverlap_1])                \n\t"
+
+                        "madd           $ac1,           $t0,                %[scale]    \n\t"
+                        "maq_s.w.phr    $ac1,           $t2,                $t3         \n\t"
+                        "madd           $ac0,           $t4,                %[scale]    \n\t"
+                        "maq_s.w.phr    $ac0,           $t5,                $t6         \n\t"
+
+                        "lh             $t2,            128(%[pFreq_2_T_1])             \n\t"
+                        "lh             $t3,            128(%[pShort_W_1])              \n\t"
+                        "lw             $t1,            256(%[pOverlap_1])              \n\t"
+                        "lh             $t5,            130(%[pFreq_2_T_1])             \n\t"
+                        "lh             $t6,            130(%[pShort_W_1])              \n\t"
+                        "lw             $t7,            260(%[pOverlap_1])              \n\t"
+
+                        "madd           $ac2,           $t1,                %[scale]    \n\t"
+                        "maq_s.w.phr    $ac2,           $t2,                $t3         \n\t"
+                        "extrv_s.h      $t0,            $ac1,               %[mShift]   \n\t"
+                        "madd           $ac3,           $t7,                %[scale]    \n\t"
+                        "maq_s.w.phr    $ac3,           $t5,                $t6         \n\t"
+                        "extrv_s.h      $t4,            $ac0,               %[mShift]   \n\t"
+                        "addiu          %[pFreq_2_T_1], %[pFreq_2_T_1],     4           \n\t"
+                        "addiu          %[pShort_W_1],  %[pShort_W_1],      4           \n\t"
+                        "extrv_s.h      $t1,            $ac2,               %[mShift]   \n\t"
+                        "extrv_s.h      $t7,            $ac3,               %[mShift]   \n\t"
+                        "addiu          %[pOverlap_1],  %[pOverlap_1],      8           \n\t"
+                        "addiu          %[pInterlOut],  %[pInterlOut],      8           \n\t"
+                        "addiu          %[i],           %[i],               -1          \n\t"
+
+                        "sh             $t0,            -8(%[pInterlOut])               \n\t"
+                        "sh             $t1,            248(%[pInterlOut])              \n\t"
+                        "sh             $t4,            -4(%[pInterlOut])               \n\t"
+                        "sh             $t7,            252(%[pInterlOut])              \n\t"
+                        "bgtz           %[i],           1b                              \n\t"
+
+                        : [pFreq_2_T_1] "+r" (pFreq_2_Time_data_1),
+                          [pShort_W_1] "+r" (pShort_Window_1),
+                          [pOverlap_1] "+r" (pOverlap_and_Add_Buffer_1),
+                          [pInterlOut] "+r" (pInterleaved_output), [i]"+r"(i)
+                        : [shift] "r" (ashift), [scale] "r" (scale),
+                          [mShift] "r" (mShift), [round] "r" (round), [one1] "r" (one1)
+                        : "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7",
+                          "memory", "hi", "lo", "$ac1hi", "$ac1lo",
+                          "$ac2hi", "$ac2lo", "$ac3hi", "$ac3lo"
+                    );
+#endif /* MDSP_REV1 */
 
                     pFreq_2_Time_data_2 = &pFreqInfo[LONG_WINDOW];
 
@@ -1992,7 +2305,7 @@ void trans4m_freq_2_time_fxp_2(
 
                     break;
 
-
+                }
 
             } /* switch (wnd_seq) */
 
@@ -2145,6 +2458,7 @@ void trans4m_freq_2_time_fxp_2(
 
                 shift = exp + 15 - SCALING;
 
+#ifndef MDSP_REV1
 
                 for (i = SHORT_WINDOW; i != 0; i--)
                 {
@@ -2162,6 +2476,54 @@ void trans4m_freq_2_time_fxp_2(
                     *(pOverlap_and_Add_Buffer_1++)  =  fxp_mul_16_by_16(dat1, win1) >> shift;
 
                 }
+
+#else /* MDSP_REV1 */
+
+                Int16 win1, win2;
+                Int16  dat1, dat2;
+                Int32 pom1,pom2;
+
+                Int32 ashift = shift+1;
+
+                i = SHORT_WINDOW;
+
+                __asm__ volatile (
+                    "1:                                                         \n\t"
+                    "lh             %[dat2],        256(%[pFreq_2_T_1])         \n\t"
+                    "lh             %[win2],        0(%[pShort_W_2])            \n\t"
+                    "lw             %[temp],        512(%[pOverlap_1])          \n\t"
+                    "lh             %[dat1],        0(%[pFreq_2_T_1])           \n\t"
+                    "lh             %[win1],        0(%[pShort_W_1])            \n\t"
+
+                    "muleq_s.w.phr  %[pom1],        %[dat2],        %[win2]     \n\t"
+                    "addiu          %[pShort_W_2],  %[pShort_W_2],  -2          \n\t"
+                    "addiu          %[pFreq_2_T_1], %[pFreq_2_T_1], 2           \n\t"
+                    "addiu          %[pShort_W_1],  %[pShort_W_1],  2           \n\t"
+                    "srav           %[pom1],        %[pom1],        %[ashift]   \n\t"
+                    "addu           %[pom1],        %[pom1],        %[temp]     \n\t"
+                    "muleq_s.w.phr  %[pom2],        %[dat1],        %[win1]     \n\t"
+                    "srav           %[pom2],        %[pom2],        %[ashift]   \n\t"
+
+                    "sw             %[pom1],        512(%[pOverlap_1])          \n\t"
+                    "sw             %[pom2],        0(%[pOverlap_1])            \n\t"
+
+                    "addiu          %[pOverlap_1],  %[pOverlap_1],  4           \n\t"
+                    "addiu          %[i],           %[i],           -1          \n\t"
+
+                    "bgtz           %[i],           1b                          \n\t"
+
+                    : [pFreq_2_T_1] "+r" (pFreq_2_Time_data_1),
+                      [pShort_W_1] "+r" (pShort_Window_1),
+                      [pOverlap_1] "+r" (pOverlap_and_Add_Buffer_1),
+                      [pShort_W_2] "+r" (pShort_Window_2),
+                      [dat2] "=&r" (dat2), [win2] "=&r" (win2),
+                      [temp] "=&r" (temp), [dat1] "=&r" (dat1),
+                      [win1] "=&r" (win1), [pom1] "=&r" (pom1),
+                      [pom2] "=&r" (pom2), [i] "+r" (i)
+                    : [ashift] "r" (ashift)
+                    : "memory", "hi", "lo"
+                );
+#endif /* MDSP_REV1 */
 
             }   /* if (exp < 16) */
             else

@@ -175,7 +175,32 @@ else # pv
           window_tables_fxp.cpp \
           pvmp4setaudioconfig.cpp \
 
-  LOCAL_CFLAGS := -DAAC_PLUS -DHQ_SBR -DPARAMETRICSTEREO -DOSCL_IMPORT_REF= -DOSCL_EXPORT_REF= -DOSCL_UNUSED_ARG=
+  ifeq ($(TARGET_ARCH),mips)
+    ifneq ($(ARCH_HAS_BIGENDIAN),true)
+        LOCAL_CFLAGS := -DOSCL_IMPORT_REF= -DOSCL_EXPORT_REF= -DOSCL_UNUSED_ARG=
+    else
+        LOCAL_CFLAGS := -DAAC_PLUS -DHQ_SBR -DPARAMETRICSTEREO -DOSCL_IMPORT_REF= -DOSCL_EXPORT_REF= -DOSCL_UNUSED_ARG=
+    endif #bigendian
+  else
+    LOCAL_CFLAGS := -DAAC_PLUS -DHQ_SBR -DPARAMETRICSTEREO -DOSCL_IMPORT_REF= -DOSCL_EXPORT_REF= -DOSCL_UNUSED_ARG=
+  endif #mips
+
+  ifeq ($(TARGET_ARCH),mips)
+    ifneq ($(ARCH_HAS_BIGENDIAN),true)
+        ifeq ($(ARCH_MIPS_DSP_REV),2)
+            LOCAL_CFLAGS += -DMDSP_REV2=1
+            LOCAL_CFLAGS += -DMDSP_REV1=1
+            LOCAL_CFLAGS += -DMIPS32=1
+        else
+            ifeq ($(ARCH_MIPS_DSP_REV),1)
+                LOCAL_CFLAGS += -DMDSP_REV1=1
+                LOCAL_CFLAGS += -DMIPS32=1
+            else
+                LOCAL_CFLAGS += -DMIPS32=1
+            endif # mips_dsp_rev1
+        endif # mips_dsp_rev2
+    endif #bigendian
+  endif #mips
 
   LOCAL_C_INCLUDES := \
           frameworks/av/media/libstagefright/include \

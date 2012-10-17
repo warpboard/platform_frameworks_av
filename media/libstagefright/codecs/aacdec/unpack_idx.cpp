@@ -342,6 +342,84 @@ void unpack_idx(
 
     OSCL_UNUSED_ARG(pInputStream);
 
+#ifdef MDSP_REV1
+
+    const Int dim = pHuffCodebook->dim;
+    Int temp1, temp2, temp3;
+    Int temp_max = *max;
+
+
+    __asm__ volatile(
+        ".set      push                                                     \n\t"
+        ".set      noreorder                                                \n\t"
+
+        "addiu     %[temp1],          $zero,              4                 \n\t"
+        "bne       %[dim],            %[temp1],           1f                \n\t"
+        " nop                                                               \n\t"
+        "sll       %[temp1],          %[codeword_indx],   0x1               \n\t"
+        "sll       %[temp2],          %[codeword_indx],   0x4               \n\t"
+        "addu      %[temp3],          %[temp2],           %[temp1]          \n\t"
+        "addu      %[temp_spec],      %[temp3],           %[codeword_indx]  \n\t"
+        "sra       %[temp_spec],      %[temp_spec],       9                 \n\t"
+        "sll       %[temp1],          %[temp_spec],       0x5               \n\t"
+        "sll       %[temp2],          %[temp_spec],       0x2               \n\t"
+        "subu      %[temp3],          %[temp1],           %[temp2]          \n\t"
+        "subu      %[temp3],          %[temp3],           %[temp_spec]      \n\t"
+        "subu      %[codeword_indx],  %[codeword_indx],   %[temp3]          \n\t"
+        "subu      %[temp_spec],      %[temp_spec],       %[off]            \n\t"
+        "sh        %[temp_spec],      0(%[pQuantSpec])                      \n\t"
+        "absq_s.w  %[temp_spec],      %[temp_spec]                          \n\t"
+        "slt       %[temp2],          %[temp_max],        %[temp_spec]      \n\t"
+        "movn      %[temp_max],       %[temp_spec],       %[temp2]          \n\t"
+        "sll       %[temp1],          %[codeword_indx],   0x6               \n\t"
+        "sll       %[temp2],          %[codeword_indx],   0x3               \n\t"
+        "subu      %[temp3],          %[temp1],           %[temp2]          \n\t"
+        "addu      %[temp_spec],      %[temp3],           %[codeword_indx]  \n\t"
+        "sra       %[temp_spec],      %[temp_spec],       9                 \n\t"
+        "sll       %[temp1],          %[temp_spec],       0x3               \n\t"
+        "addu      %[temp2],          %[temp_spec],       %[temp1]          \n\t"
+        "subu      %[codeword_indx],  %[codeword_indx],   %[temp2]          \n\t"
+        "sll       %[temp1],          %[mod],             0x2               \n\t"
+        "subu      %[temp_spec],      %[temp_spec],       %[off]            \n\t"
+        "sh        %[temp_spec],      2(%[pQuantSpec])                      \n\t"
+        "absq_s.w  %[temp_spec],      %[temp_spec]                          \n\t"
+        "lwx       %[temp3],          %[temp1](%[div_mod])                  \n\t"
+        "slt       %[temp2],          %[temp_max],        %[temp_spec]      \n\t"
+        "movn      %[temp_max],       %[temp_spec],       %[temp2]          \n\t"
+        "mul       %[temp_spec],      %[codeword_indx],   %[temp3]          \n\t"
+        "b         2f                                                       \n\t"
+        " addiu    %[pQuantSpec],     %[pQuantSpec],      4                 \n\t"
+        "1:                                                                 \n\t"
+        "sll       %[temp1],          %[mod],             0x2               \n\t"
+        "lwx       %[temp2],          %[temp1](%[div_mod])                  \n\t"
+        "mul       %[temp_spec],      %[codeword_indx],   %[temp2]          \n\t"
+        "2:                                                                 \n\t"
+        "sra       %[temp_spec],      %[temp_spec],       13                \n\t"
+        "mul       %[temp1],          %[temp_spec],       %[mod]            \n\t"
+        "subu      %[codeword_indx],  %[codeword_indx],   %[temp1]          \n\t"
+        "subu      %[temp_spec],      %[temp_spec],       %[off]            \n\t"
+        "sh        %[temp_spec],      0(%[pQuantSpec])                      \n\t"
+        "absq_s.w  %[temp_spec],      %[temp_spec]                          \n\t"
+        "slt       %[temp2],          %[temp_max],        %[temp_spec]      \n\t"
+        "movn      %[temp_max],       %[temp_spec],       %[temp2]          \n\t"
+        "subu      %[codeword_indx],  %[codeword_indx],   %[off]            \n\t"
+        "sh        %[codeword_indx],  2(%[pQuantSpec])                      \n\t"
+        "absq_s.w  %[codeword_indx],  %[codeword_indx]                      \n\t"
+        "slt       %[temp2],          %[temp_max],        %[codeword_indx]  \n\t"
+        "movn      %[temp_max],       %[codeword_indx],   %[temp2]          \n\t"
+
+        ".set      pop                                                      \n\t"
+
+        : [temp1] "=&r" (temp1), [temp2] "=&r" (temp2), [temp3] "=&r" (temp3),
+          [temp_max] "+r" (temp_max), [temp_spec] "=&r" (temp_spec),
+          [pQuantSpec] "+r" (pQuantSpec), [codeword_indx] "+r" (codeword_indx)
+        : [dim] "r" (dim), [off] "r" (off), [mod] "r" (mod), [div_mod] "r" (div_mod)
+        : "memory", "hi", "lo"
+    );
+
+    *max = temp_max;
+
+#else /* MDSP_REV1 */
 
     if (pHuffCodebook->dim == DIMENSION_4)
     {
@@ -414,6 +492,9 @@ void unpack_idx(
 
 
     return ;
+
+#endif /* MDSP_REV1 */
+
 } /* unpack_idx */
 
 
