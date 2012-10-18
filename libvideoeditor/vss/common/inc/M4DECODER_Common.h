@@ -135,6 +135,11 @@ typedef enum
     M4DECODER_kOptionID_VideoDecodersAndCapabilities =
         M4OSA_OPTION_ID_CREATE(M4_READ, M4DECODER_COMMON, 0x10),
 
+    /**
+     * Set the mode of the video decoder */
+    M4DECODER_kOptionID_VideoDecodersThumbnailMode =
+        M4OSA_OPTION_ID_CREATE(M4_READ, M4DECODER_COMMON, 0x20),
+
     /* common to MPEG4 decoders */
     /**
      * Get the DecoderConfigInfo */

@@ -118,6 +118,8 @@ typedef struct {
     // Time interval between two consequtive/neighboring video frames.
     M4_MediaTime            mFrameIntervalMs;
 
+    // Indicate whether the decoder is used to generate the thumbnail.
+    M4OSA_Int32             mThumbnail;
 } VideoEditorVideoDecoder_Context;
 
 } //namespace android
