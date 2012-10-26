@@ -51,49 +51,26 @@ DrmManager::~DrmManager() {
 
 int DrmManager::addUniqueId(bool isNative) {
     Mutex::Autolock _l(mLock);
+    static int lastUniqueId = 0;
+    int uniqueId = -1;
+    const int uniqueIdRange = sizeof(mUniqueIdArray);
 
-    int temp = 0;
-    bool foundUniqueId = false;
-    const int size = mUniqueIdVector.size();
-    const int uniqueIdRange = 0xfff;
-    int maxLoopTimes = (uniqueIdRange - 1) / 2;
-    srand(time(NULL));
-
-    while (!foundUniqueId) {
-        temp = rand() & uniqueIdRange;
-
-        if (isNative) {
-            // set a flag to differentiate DrmManagerClient
-            // created from native side and java side
-            temp |= 0x1000;
+    for (int index=0; index < uniqueIdRange ; ++index) {
+        if (mUniqueIdArray[(lastUniqueId + index + 1) % uniqueIdRange] == 0) {
+            uniqueId = (lastUniqueId + index + 1) % uniqueIdRange;
+            mUniqueIdArray[uniqueId] = 1;
+            lastUniqueId = uniqueId;
+            break;
         }
-
-        int index = 0;
-        for (; index < size; ++index) {
-            if (mUniqueIdVector.itemAt(index) == temp) {
-                foundUniqueId = false;
-                break;
-            }
-        }
-        if (index == size) {
-            foundUniqueId = true;
-        }
-
-        maxLoopTimes --;
-        LOG_FATAL_IF(maxLoopTimes <= 0, "cannot find an unique ID for this session");
     }
 
-    mUniqueIdVector.push(temp);
-    return temp;
+    return uniqueId;
 }
 
 void DrmManager::removeUniqueId(int uniqueId) {
     Mutex::Autolock _l(mLock);
-    for (unsigned int i = 0; i < mUniqueIdVector.size(); i++) {
-        if (uniqueId == mUniqueIdVector.itemAt(i)) {
-            mUniqueIdVector.removeAt(i);
-            break;
-        }
+    if (uniqueId >= 0 && uniqueId < (int)sizeof(mUniqueIdArray)) {
+        mUniqueIdArray[uniqueId] = 0;
     }
 }
 
