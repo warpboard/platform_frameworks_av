@@ -144,7 +144,7 @@ private:
     bool canHandle(int uniqueId, const String8& path);
 
 private:
-    Vector<int> mUniqueIdVector;
+    unsigned char mUniqueIdArray[0x1000];
     static const String8 EMPTY_STRING;
 
     int mDecryptSessionId;
