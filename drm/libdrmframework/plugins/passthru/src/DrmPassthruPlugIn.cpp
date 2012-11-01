@@ -92,10 +92,7 @@ DrmInfoStatus* DrmPassthruPlugIn::onProcessDrmInfo(int uniqueId, const DrmInfo* 
         case DrmInfoRequest::TYPE_RIGHTS_ACQUISITION_INFO: {
             String8 licenseString("dummy_license_string");
             const int bufferSize = licenseString.size();
-            char* data = NULL;
-            data = new char[bufferSize];
-            memcpy(data, licenseString.string(), bufferSize);
-            const DrmBuffer* buffer = new DrmBuffer(data, bufferSize);
+            const DrmBuffer* buffer = new DrmBuffer(licenseString.string(), bufferSize);
             drmInfoStatus = new DrmInfoStatus(DrmInfoStatus::STATUS_OK,
                     DrmInfoRequest::TYPE_RIGHTS_ACQUISITION_INFO, buffer, drmInfo->getMimeType());
             break;
@@ -147,11 +144,8 @@ DrmInfo* DrmPassthruPlugIn::onAcquireDrmInfo(int uniqueId, const DrmInfoRequest*
     if (NULL != drmInfoRequest) {
         String8 dataString("dummy_acquistion_string");
         int length = dataString.length();
-        char* data = NULL;
-        data = new char[length];
-        memcpy(data, dataString.string(), length);
         drmInfo = new DrmInfo(drmInfoRequest->getInfoType(),
-            DrmBuffer(data, length), drmInfoRequest->getMimeType());
+            DrmBuffer(dataString.string(), length), drmInfoRequest->getMimeType());
     }
     return drmInfo;
 }
@@ -219,11 +213,7 @@ DrmConvertedStatus* DrmPassthruPlugIn::onConvertData(
     DrmBuffer* convertedData = NULL;
 
     if (NULL != inputData && 0 < inputData->length) {
-        int length = inputData->length;
-        char* data = NULL;
-        data = new char[length];
-        convertedData = new DrmBuffer(data, length);
-        memcpy(convertedData->data, inputData->data, length);
+        convertedData = new DrmBuffer(inputData->data, inputData->length);
     }
     return new DrmConvertedStatus(DrmConvertedStatus::STATUS_OK, convertedData, 0 /*offset*/);
 }
