@@ -73,10 +73,43 @@ public:
     }
 
     DrmBuffer(char* dataBytes, int dataLength) :
-        data(dataBytes),
+        data(NULL),
         length(dataLength) {
+
+        initData(dataBytes);
     }
 
+    DrmBuffer(const DrmBuffer &that) :
+        data(NULL),
+        length(that.length) {
+
+        initData(that.data);
+    }
+
+    DrmBuffer& operator=(const DrmBuffer &that) {
+        delete[] data;
+        data = NULL;
+
+        length = that.length;
+
+        initData(that.data);
+        return (*this);
+    }
+
+    ~DrmBuffer() {
+        delete[] data;
+        data = NULL;
+    }
+
+private:
+    void initData(const char* newData) {
+        if (length > 0 && newData != NULL) {
+            data = new char[length];
+            memcpy(data, newData, length);
+        } else {
+            length = 0;
+        }
+    }
 };
 
 /**

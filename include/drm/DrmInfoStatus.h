@@ -51,7 +51,8 @@ public:
      * Destructor for DrmInfoStatus
      */
     virtual ~DrmInfoStatus() {
-
+        delete drmBuffer;
+        drmBuffer = NULL;
     }
 
 public:

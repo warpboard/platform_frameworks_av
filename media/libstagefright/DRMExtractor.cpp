@@ -142,12 +142,6 @@ status_t DRMSource::read(MediaBuffer **buffer, const ReadOptions *options) {
 
     if ((err = mDrmManagerClient->decrypt(mDecryptHandle, mTrackId,
             &encryptedDrmBuffer, &pDecryptedDrmBuffer)) != NO_ERROR) {
-
-        if (decryptedDrmBuffer.data) {
-            delete [] decryptedDrmBuffer.data;
-            decryptedDrmBuffer.data = NULL;
-        }
-
         return err;
     }
     CHECK(pDecryptedDrmBuffer == &decryptedDrmBuffer);
@@ -187,11 +181,6 @@ status_t DRMSource::read(MediaBuffer **buffer, const ReadOptions *options) {
             srcOffset += mNALLengthSize;
 
             if (srcOffset + nalLength > len) {
-                if (decryptedDrmBuffer.data) {
-                    delete [] decryptedDrmBuffer.data;
-                    decryptedDrmBuffer.data = NULL;
-                }
-
                 return ERROR_MALFORMED;
             }
 
@@ -216,11 +205,6 @@ status_t DRMSource::read(MediaBuffer **buffer, const ReadOptions *options) {
     } else {
         memcpy(src, decryptedDrmBuffer.data, decryptedDrmBuffer.length);
         (*buffer)->set_range((*buffer)->range_offset(), decryptedDrmBuffer.length);
-    }
-
-    if (decryptedDrmBuffer.data) {
-        delete [] decryptedDrmBuffer.data;
-        decryptedDrmBuffer.data = NULL;
     }
 
     return OK;

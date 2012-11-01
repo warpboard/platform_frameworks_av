@@ -52,7 +52,8 @@ public:
      * Destructor for DrmConvertedStatus
      */
     virtual ~DrmConvertedStatus() {
-
+        delete convertedData;
+        convertedData = NULL;
     }
 
 public:

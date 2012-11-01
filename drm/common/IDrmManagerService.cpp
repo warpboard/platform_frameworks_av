@@ -282,8 +282,7 @@ DrmInfoStatus* BpDrmManagerService::processDrmInfo(int uniqueId, const DrmInfo* 
             const int bufferSize = reply.readInt32();
             char* data = NULL;
             if (0 < bufferSize) {
-                data = new char[bufferSize];
-                reply.read(data, bufferSize);
+                data = (char *) reply.readInplace(bufferSize);
             }
             drmBuffer = new DrmBuffer(data, bufferSize);
         }
@@ -329,8 +328,7 @@ DrmInfo* BpDrmManagerService::acquireDrmInfo(int uniqueId, const DrmInfoRequest*
         char* data = NULL;
 
         if (0 < bufferSize) {
-            data = new char[bufferSize];
-            reply.read(data, bufferSize);
+            data = (char *) reply.readInplace(bufferSize);
         }
         drmInfo = new DrmInfo(infoType, DrmBuffer(data, bufferSize), reply.readString8());
 
@@ -532,8 +530,7 @@ DrmConvertedStatus* BpDrmManagerService::convertData(
             const int bufferSize = reply.readInt32();
             char* data = NULL;
             if (0 < bufferSize) {
-                data = new char[bufferSize];
-                reply.read(data, bufferSize);
+                data = (char *) reply.readInplace(bufferSize);
             }
             convertedData = new DrmBuffer(data, bufferSize);
         }
@@ -564,8 +561,7 @@ DrmConvertedStatus* BpDrmManagerService::closeConvertSession(int uniqueId, int c
             const int bufferSize = reply.readInt32();
             char* data = NULL;
             if (0 < bufferSize) {
-                data = new char[bufferSize];
-                reply.read(data, bufferSize);
+                data = (char *) reply.readInplace(bufferSize);
             }
             convertedData = new DrmBuffer(data, bufferSize);
         }
@@ -984,8 +980,6 @@ status_t BnDrmManagerService::onTransact(
                 if (0 < bufferSize) {
                     reply->write(drmBuffer->data, bufferSize);
                 }
-                delete [] drmBuffer->data;
-                delete drmBuffer; drmBuffer = NULL;
             }
         }
         delete drmInfo; drmInfo = NULL;
@@ -1244,8 +1238,6 @@ status_t BnDrmManagerService::onTransact(
                 if (0 < bufferSize) {
                     reply->write(convertedData->data, bufferSize);
                 }
-                delete [] convertedData->data;
-                delete convertedData; convertedData = NULL;
             }
         }
         delete inputData; inputData = NULL;
@@ -1275,8 +1267,6 @@ status_t BnDrmManagerService::onTransact(
                 if (0 < bufferSize) {
                     reply->write(convertedData->data, bufferSize);
                 }
-                delete [] convertedData->data;
-                delete convertedData; convertedData = NULL;
             }
         }
         delete drmConvertedStatus; drmConvertedStatus = NULL;
