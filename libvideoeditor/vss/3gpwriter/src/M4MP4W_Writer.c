@@ -3701,11 +3701,13 @@ M4OSA_ERR M4MP4W_closeWrite( M4OSA_Context context )
         M4MP4W_table32ToBE(mMp4FileDataPtr->audioTrackPtr->TABLE_STTS,
             2 * (mMp4FileDataPtr->audioTrackPtr->CommonData.sttsTableEntryNb
             - 1));
-        CLEANUPonERR(M4MP4W_putBlock((const M4OSA_UChar
-            *)mMp4FileDataPtr->audioTrackPtr->TABLE_STTS,
-            ( mMp4FileDataPtr->audioTrackPtr->CommonData.sttsTableEntryNb - 1)
-            * 8,
-            mMp4FileDataPtr->fileWriterFunctions, fileWriterContext)); /*audio*/
+        if(mMp4FileDataPtr->audioTrackPtr->CommonData.sttsTableEntryNb>1){
+            CLEANUPonERR(M4MP4W_putBlock((const M4OSA_UChar
+                *)mMp4FileDataPtr->audioTrackPtr->TABLE_STTS,
+                ( mMp4FileDataPtr->audioTrackPtr->CommonData.sttsTableEntryNb - 1)
+                * 8,
+                mMp4FileDataPtr->fileWriterFunctions, fileWriterContext)); /*audio*/
+        }
 
         /* stsd */
         CLEANUPonERR(M4MP4W_putBE32(a_stsdSize,
