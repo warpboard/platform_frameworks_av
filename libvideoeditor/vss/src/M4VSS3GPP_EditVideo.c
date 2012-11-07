@@ -1227,6 +1227,7 @@ M4OSA_ERR M4VSS3GPP_intVPP( M4VPP_Context pContext, M4VIFI_ImagePlane *pPlaneIn,
         * Render Clip2 */
         if( pC->pC2->isRenderDup == M4OSA_FALSE )
         {
+            pC->bIssecondClip = M4OSA_TRUE;
 
             err = M4VSS3GPP_intRenderFrameWithEffect(pC, pC->pC2, ts, M4OSA_FALSE,
                                                 pTempPlaneClip2, pTemp2,
