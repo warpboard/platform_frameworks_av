@@ -36,6 +36,8 @@ protected:
 
     status_t onSetOnInfoListener(int uniqueId, const IDrmEngine::OnInfoListener* infoListener);
 
+    status_t onSetOnErrorListener(int uniqueId, const IDrmEngine::OnErrorListener* errorListener);
+
     status_t onTerminate(int uniqueId);
 
     bool onCanHandle(int uniqueId, const String8& path);
@@ -94,6 +96,8 @@ protected:
 
 private:
     DecryptHandle* openDecryptSessionImpl();
+    const IDrmEngine::OnInfoListener* mInfoListener;
+    const IDrmEngine::OnErrorListener* mErrorListener;
 };
 
 };
