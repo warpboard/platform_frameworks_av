@@ -24,6 +24,7 @@
 namespace android {
 
 class DrmInfoEvent;
+class DrmErrorEvent;
 
 /**
  * This is the interface class for DRM service listener.
@@ -34,6 +35,7 @@ class IDrmServiceListener : public IInterface
 public:
     enum {
         NOTIFY = IBinder::FIRST_CALL_TRANSACTION,
+        NOTIFY_ERROR
     };
 
 public:
@@ -41,6 +43,7 @@ public:
 
 public:
     virtual status_t notify(const DrmInfoEvent& event) = 0;
+    virtual status_t notifyError(const DrmErrorEvent& event) = 0;
 };
 
 /**
@@ -53,6 +56,7 @@ public:
             : BpInterface<IDrmServiceListener>(impl) {}
 
     virtual status_t notify(const DrmInfoEvent& event);
+    virtual status_t notifyError(const DrmErrorEvent& event);
 };
 
 /**

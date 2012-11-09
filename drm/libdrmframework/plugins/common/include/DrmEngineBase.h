@@ -42,6 +42,8 @@ public:
 
     status_t setOnInfoListener(int uniqueId, const IDrmEngine::OnInfoListener* infoListener);
 
+    status_t setOnErrorListener(int uniqueId, const IDrmEngine::OnErrorListener* infoListener);
+
     status_t terminate(int uniqueId);
 
     bool canHandle(int uniqueId, const String8& path);
@@ -161,6 +163,26 @@ protected:
      */
     virtual status_t onSetOnInfoListener(
             int uniqueId, const IDrmEngine::OnInfoListener* infoListener) = 0;
+
+    /**
+     * Register a callback to be invoked when the caller required to
+     * receive necessary information
+     *
+     * @param[in] uniqueId Unique identifier for a session. uniqueId is a random
+     *                     number generated in the DRM service. If the DrmManagerClient
+     *                     is created in native code, uniqueId will be a number ranged
+     *                     from 0x1000 to 0x1fff. If it comes from Java code, the uniqueId
+     *                     will be a number ranged from 0x00 to 0xfff. So bit 0x1000 in
+     *                     uniqueId could be used in DRM plugins to differentiate native
+     *                     OnErrorListener and Java OnErrorListener.
+     * @param[in] errorListener Listener
+     * @return status_t
+     *     Returns DRM_NO_ERROR for success, DRM_ERROR_UNKNOWN for failure
+     */
+    virtual status_t onSetOnErrorListener(
+            int uniqueId, const IDrmEngine::OnErrorListener* errorListener) {
+        return DRM_NO_ERROR;
+    }
 
     /**
      * Terminate the plug-in

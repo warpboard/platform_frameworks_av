@@ -47,7 +47,7 @@ class ActionDescription;
  * The DrmManagerService class creates an instance of this class.
  *
  */
-class DrmManager : public IDrmEngine::OnInfoListener {
+class DrmManager : public IDrmEngine::OnInfoListener, public IDrmEngine::OnErrorListener{
 public:
     DrmManager();
     virtual ~DrmManager();
@@ -133,6 +133,8 @@ public:
             void* buffer, ssize_t numBytes, off64_t offset);
 
     void onInfo(const DrmInfoEvent& event);
+
+    void onError(const DrmErrorEvent& event);
 
 private:
     String8 getSupportedPlugInId(int uniqueId, const String8& path, const String8& mimeType);
