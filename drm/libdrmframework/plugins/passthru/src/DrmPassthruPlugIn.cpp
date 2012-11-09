@@ -24,6 +24,7 @@
 #include <drm/DrmInfo.h>
 #include <drm/DrmInfoEvent.h>
 #include <drm/DrmInfoStatus.h>
+#include <drm/DrmErrorEvent.h>
 #include <drm/DrmConvertedStatus.h>
 #include <drm/DrmInfoRequest.h>
 #include <drm/DrmSupportInfo.h>
@@ -100,6 +101,21 @@ DrmInfoStatus* DrmPassthruPlugIn::onProcessDrmInfo(int uniqueId, const DrmInfo* 
                     DrmInfoRequest::TYPE_RIGHTS_ACQUISITION_INFO, buffer, drmInfo->getMimeType());
             break;
         }
+        default: {
+            String8 extraInfo = drmInfo->get(String8("extraInfo"));
+            if (mErrorListener != NULL) {
+                DrmErrorEvent* tempError = new DrmErrorEvent(uniqueId,
+                        DrmErrorEvent::TYPE_NOT_SUPPORTED, extraInfo);
+                 if (tempError != NULL) {
+                        IDrmEngine::OnErrorListener &temp =
+                                const_cast<IDrmEngine::OnErrorListener&> (*mErrorListener);
+                        temp.onError(*tempError);
+                        delete tempError;
+                    }
+                }
+
+            break;
+        }
         }
     }
     ALOGV("DrmPassthruPlugIn::onProcessDrmInfo - Exit");
@@ -109,16 +125,29 @@ DrmInfoStatus* DrmPassthruPlugIn::onProcessDrmInfo(int uniqueId, const DrmInfo* 
 status_t DrmPassthruPlugIn::onSetOnInfoListener(
             int uniqueId, const IDrmEngine::OnInfoListener* infoListener) {
     ALOGV("DrmPassthruPlugIn::onSetOnInfoListener : %d", uniqueId);
+    mInfoListener = infoListener;
     return DRM_NO_ERROR;
 }
 
+status_t DrmPassthruPlugIn::onSetOnErrorListener(
+            int uniqueId, const IDrmEngine::OnErrorListener* errorListener) {
+    ALOGV("DrmPassthruPlugIn::onSetOnErrorListener : %d", uniqueId);
+    mErrorListener = errorListener;
+    return DRM_NO_ERROR;
+}
+
+
 status_t DrmPassthruPlugIn::onInitialize(int uniqueId) {
     ALOGV("DrmPassthruPlugIn::onInitialize : %d", uniqueId);
+    mInfoListener = NULL;
+    mErrorListener = NULL;
     return DRM_NO_ERROR;
 }
 
 status_t DrmPassthruPlugIn::onTerminate(int uniqueId) {
     ALOGV("DrmPassthruPlugIn::onTerminate : %d", uniqueId);
+    mInfoListener = NULL;
+    mErrorListener = NULL;
     return DRM_NO_ERROR;
 }
 

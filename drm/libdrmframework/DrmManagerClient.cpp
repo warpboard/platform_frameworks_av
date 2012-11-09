@@ -32,11 +32,17 @@ DrmManagerClient::~DrmManagerClient() {
     DrmManagerClientImpl::remove(mUniqueId);
     mDrmManagerClientImpl->removeClient(mUniqueId);
     mDrmManagerClientImpl->setOnInfoListener(mUniqueId, NULL);
+    mDrmManagerClientImpl->setOnErrorListener(mUniqueId, NULL);
 }
 
 status_t DrmManagerClient::setOnInfoListener(
                     const sp<DrmManagerClient::OnInfoListener>& infoListener) {
     return mDrmManagerClientImpl->setOnInfoListener(mUniqueId, infoListener);
+}
+
+status_t DrmManagerClient::setOnErrorListener(
+                    const sp<DrmManagerClient::OnErrorListener>& infoListener) {
+    return mDrmManagerClientImpl->setOnErrorListener(mUniqueId, infoListener);
 }
 
 DrmConstraints* DrmManagerClient::getConstraints(const String8* path, const int action) {

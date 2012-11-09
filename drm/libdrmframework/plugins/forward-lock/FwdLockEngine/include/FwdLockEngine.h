@@ -26,6 +26,7 @@
 #include <DrmInfoRequest.h>
 #include <DrmSupportInfo.h>
 #include <DrmInfoEvent.h>
+#include <DrmErrorEvent.h>
 
 #include "SessionMap.h"
 #include "FwdLockConv.h"
@@ -87,6 +88,17 @@ status_t onInitialize(int uniqueId);
  *     Returns DRM_NO_ERROR for success, DRM_ERROR_UNKNOWN for failure
  */
 status_t onSetOnInfoListener(int uniqueId, const IDrmEngine::OnInfoListener* infoListener);
+
+/**
+ * Register a callback to be invoked when the caller required to
+ * receive necessary information.
+ *
+ * @param uniqueId Unique identifier for a session
+ * @param errorListener Listener
+ * @return status_t
+ *     Returns DRM_NO_ERROR for success, DRM_ERROR_UNKNOWN for failure
+ */
+status_t onSetOnErrorListener(int uniqueId, const IDrmEngine::OnErrorListener* errorListener);
 
 /**
  * Terminate the plug-in and release resources bound to it.
