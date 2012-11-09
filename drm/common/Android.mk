@@ -29,6 +29,7 @@ LOCAL_SRC_FILES:= \
     IDrmManagerService.cpp \
     IDrmServiceListener.cpp \
     DrmInfoEvent.cpp \
+    DrmErrorEvent.cpp \
     ReadWriteUtils.cpp
 
 LOCAL_C_INCLUDES := \

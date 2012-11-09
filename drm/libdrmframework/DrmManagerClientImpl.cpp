@@ -86,6 +86,15 @@ status_t DrmManagerClientImpl::setOnInfoListener(
             (NULL != infoListener.get()) ? this : NULL);
 }
 
+status_t DrmManagerClientImpl::setOnErrorListener(
+            int uniqueId,
+            const sp<DrmManagerClient::OnErrorListener>& infoListener) {
+    Mutex::Autolock _l(mLock);
+    mOnErrorListener = infoListener;
+    return getDrmManagerService()->setDrmServiceListener(uniqueId,
+            (NULL != infoListener.get()) ? this : NULL);
+}
+
 status_t DrmManagerClientImpl::installDrmEngine(
         int uniqueId, const String8& drmEngineFile) {
     status_t status = DRM_ERROR_UNKNOWN;
@@ -337,6 +346,15 @@ status_t DrmManagerClientImpl::notify(const DrmInfoEvent& event) {
         Mutex::Autolock _l(mLock);
         sp<DrmManagerClient::OnInfoListener> listener = mOnInfoListener;
         listener->onInfo(event);
+    }
+    return DRM_NO_ERROR;
+}
+
+status_t DrmManagerClientImpl::notifyError(const DrmErrorEvent& event) {
+    if (NULL != mOnErrorListener.get()) {
+        Mutex::Autolock _l(mLock);
+        sp<DrmManagerClient::OnErrorListener> listener = mOnErrorListener;
+        listener->onError(event);
     }
     return DRM_NO_ERROR;
 }
