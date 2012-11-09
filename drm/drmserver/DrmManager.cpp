@@ -21,6 +21,7 @@
 #include <utils/String8.h>
 #include <drm/DrmInfo.h>
 #include <drm/DrmInfoEvent.h>
+#include <drm/DrmErrorEvent.h>
 #include <drm/DrmRights.h>
 #include <drm/DrmConstraints.h>
 #include <drm/DrmMetadata.h>
@@ -152,6 +153,7 @@ void DrmManager::addClient(int uniqueId) {
             IDrmEngine& rDrmEngine = mPlugInManager.getPlugIn(plugInIdList.itemAt(index));
             rDrmEngine.initialize(uniqueId);
             rDrmEngine.setOnInfoListener(uniqueId, this);
+            rDrmEngine.setOnErrorListener(uniqueId, this);
         }
     }
 }
@@ -192,6 +194,7 @@ status_t DrmManager::installDrmEngine(int uniqueId, const String8& absolutePath)
     IDrmEngine& rDrmEngine = mPlugInManager.getPlugIn(absolutePath);
     rDrmEngine.initialize(uniqueId);
     rDrmEngine.setOnInfoListener(uniqueId, this);
+    rDrmEngine.setOnErrorListener(uniqueId, this);
 
     DrmSupportInfo* info = rDrmEngine.getSupportInfo(0);
     mSupportInfoToPlugInIdMap.add(*info, absolutePath);
@@ -630,6 +633,18 @@ void DrmManager::onInfo(const DrmInfoEvent& event) {
         if (uniqueId == event.getUniqueId()) {
             sp<IDrmServiceListener> serviceListener = mServiceListeners.valueFor(uniqueId);
             serviceListener->notify(event);
+        }
+    }
+}
+
+void DrmManager::onError(const DrmErrorEvent& event) {
+    Mutex::Autolock _l(mListenerLock);
+    for (unsigned int index = 0; index < mServiceListeners.size(); index++) {
+        int uniqueId = mServiceListeners.keyAt(index);
+
+        if (uniqueId == event.getUniqueId()) {
+            sp<IDrmServiceListener> serviceListener = mServiceListeners.valueFor(uniqueId);
+            serviceListener->notifyError(event);
         }
     }
 }

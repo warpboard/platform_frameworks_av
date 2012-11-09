@@ -72,6 +72,18 @@ public:
             int uniqueId, const sp<DrmManagerClient::OnInfoListener>& infoListener);
 
     /**
+     * Register a callback to be invoked when the caller required to
+     * receive necessary information
+     *
+     * @param[in] uniqueId Unique identifier for a session
+     * @param[in] errorListener Listener
+     * @return status_t
+     *            Returns DRM_NO_ERROR for success, DRM_ERROR_UNKNOWN for failure
+     */
+    status_t setOnErrorListener(
+            int uniqueId, const sp<DrmManagerClient::OnErrorListener>& errorListener);
+
+    /**
      * Get constraint information associated with input content
      *
      * @param[in] uniqueId Unique identifier for a session
@@ -409,6 +421,15 @@ public:
      */
     status_t notify(const DrmInfoEvent& event);
 
+    /**
+     * Notify the event to the registered listener
+     *
+     * @param[in] event The event to be notified
+     * @return status_t
+     *     Returns DRM_NO_ERROR for success, DRM_ERROR_UNKNOWN for failure
+     */
+    status_t notifyError(const DrmErrorEvent& event);
+
 private:
     /**
      * Install new DRM Engine Plug-in at the runtime
@@ -423,6 +444,7 @@ private:
 private:
     Mutex mLock;
     sp<DrmManagerClient::OnInfoListener> mOnInfoListener;
+    sp<DrmManagerClient::OnErrorListener> mOnErrorListener;
 
     class DeathNotifier: public IBinder::DeathRecipient {
         public:
