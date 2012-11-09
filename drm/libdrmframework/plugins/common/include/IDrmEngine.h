@@ -30,6 +30,7 @@ class DrmConvertedStatus;
 class DrmInfoRequest;
 class DrmSupportInfo;
 class DrmInfoEvent;
+class DrmErrorEvent;
 
 /**
  * This class is an interface for plug-in user
@@ -51,6 +52,13 @@ public:
         virtual ~OnInfoListener() { }
     };
 
+    class OnErrorListener {
+
+    public:
+        virtual void onError(const DrmErrorEvent& event) = 0;
+
+        virtual ~OnErrorListener() { }
+    };
 public:
 
     //////////////////////////////////
@@ -77,6 +85,18 @@ public:
      */
     virtual status_t setOnInfoListener(
             int uniqueId, const IDrmEngine::OnInfoListener* infoListener) = 0;
+
+    /**
+     * Register a callback to be invoked when the caller required to
+     * receive necessary information
+     *
+     * @param[in] uniqueId Unique identifier for a session
+     * @param[in] errorListener Listener
+     * @return status_t
+     *     Returns DRM_NO_ERROR for success, DRM_ERROR_UNKNOWN for failure
+     */
+    virtual status_t setOnErrorListener(
+            int uniqueId, const IDrmEngine::OnErrorListener* errorListener) = 0;
 
     /**
      * Terminate the plug-in

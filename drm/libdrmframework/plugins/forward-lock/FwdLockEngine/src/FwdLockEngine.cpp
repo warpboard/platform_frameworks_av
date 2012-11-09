@@ -153,6 +153,15 @@ FwdLockEngine::onSetOnInfoListener(int uniqueId, const IDrmEngine::OnInfoListene
     return DRM_NO_ERROR;
 }
 
+android::status_t
+FwdLockEngine::onSetOnErrorListener(int uniqueId, const IDrmEngine::OnErrorListener* errorListener) {
+    // Not used
+    LOG_VERBOSE("FwdLockEngine::onSetOnErrorListener");
+
+    return DRM_NO_ERROR;
+}
+
+
 android::status_t FwdLockEngine::onTerminate(int uniqueId) {
     LOG_VERBOSE("FwdLockEngine::onTerminate");
 
