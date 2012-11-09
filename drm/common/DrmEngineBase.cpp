@@ -44,6 +44,11 @@ status_t DrmEngineBase::setOnInfoListener(
     return onSetOnInfoListener(uniqueId, infoListener);
 }
 
+status_t DrmEngineBase::setOnErrorListener(
+    int uniqueId, const IDrmEngine::OnErrorListener* errorListener) {
+    return onSetOnErrorListener(uniqueId, errorListener);
+}
+
 status_t DrmEngineBase::terminate(int uniqueId) {
     return onTerminate(uniqueId);
 }
