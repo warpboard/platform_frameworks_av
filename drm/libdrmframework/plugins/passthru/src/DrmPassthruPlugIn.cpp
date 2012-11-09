@@ -24,6 +24,7 @@
 #include <drm/DrmInfo.h>
 #include <drm/DrmInfoEvent.h>
 #include <drm/DrmInfoStatus.h>
+#include <drm/DrmErrorEvent.h>
 #include <drm/DrmConvertedStatus.h>
 #include <drm/DrmInfoRequest.h>
 #include <drm/DrmSupportInfo.h>
@@ -89,6 +90,36 @@ DrmInfoStatus* DrmPassthruPlugIn::onProcessDrmInfo(int uniqueId, const DrmInfo* 
                     DrmInfoRequest::TYPE_UNREGISTRATION_INFO, emptyBuffer, drmInfo->getMimeType());
             break;
         }
+        case DrmInfoRequest::TYPE_VENDOR_SPECIFIC_INFO: {
+            const DrmBuffer* emptyBuffer = new DrmBuffer();
+            drmInfoStatus = new DrmInfoStatus(DrmInfoStatus::STATUS_OK,
+                    DrmInfoRequest::TYPE_VENDOR_SPECIFIC_INFO, emptyBuffer, drmInfo->getMimeType());
+            String8 extraInfo = drmInfo->get(String8("extraInfo"));
+            if (strcmp(extraInfo.string(), "InfoEvent") == 0) {
+                if (mInfoListener != NULL) {
+                    DrmInfoEvent* tempInfo = new DrmInfoEvent(uniqueId,
+                            DrmInfoEvent::TYPE_VENDOR_SPECIFIC, extraInfo);
+                    if (tempInfo != NULL) {
+                        IDrmEngine::OnInfoListener &temp =
+                                const_cast<IDrmEngine::OnInfoListener&> (*mInfoListener);
+                        temp.onInfo(*tempInfo);
+                        delete tempInfo;
+                    }
+                }
+            } else if (strcmp(extraInfo.string(), "ErrorEvent") == 0) {
+                if (mErrorListener != NULL) {
+                    DrmErrorEvent* tempError = new DrmErrorEvent(uniqueId,
+                            DrmErrorEvent::TYPE_VENDOR_SPECIFIC_ERROR, extraInfo);
+                    if (tempError != NULL) {
+                        IDrmEngine::OnErrorListener &temp =
+                                const_cast<IDrmEngine::OnErrorListener&> (*mErrorListener);
+                        temp.onError(*tempError);
+                        delete tempError;
+                    }
+                }
+            }
+            break;
+        }
         case DrmInfoRequest::TYPE_RIGHTS_ACQUISITION_INFO: {
             String8 licenseString("dummy_license_string");
             const int bufferSize = licenseString.size();
@@ -109,16 +140,29 @@ DrmInfoStatus* DrmPassthruPlugIn::onProcessDrmInfo(int uniqueId, const DrmInfo* 
 status_t DrmPassthruPlugIn::onSetOnInfoListener(
             int uniqueId, const IDrmEngine::OnInfoListener* infoListener) {
     ALOGV("DrmPassthruPlugIn::onSetOnInfoListener : %d", uniqueId);
+    mInfoListener = infoListener;
     return DRM_NO_ERROR;
 }
 
+status_t DrmPassthruPlugIn::onSetOnErrorListener(
+            int uniqueId, const IDrmEngine::OnErrorListener* errorListener) {
+    ALOGV("DrmPassthruPlugIn::onSetOnErrorListener : %d", uniqueId);
+    mErrorListener = errorListener;
+    return DRM_NO_ERROR;
+}
+
+
 status_t DrmPassthruPlugIn::onInitialize(int uniqueId) {
     ALOGV("DrmPassthruPlugIn::onInitialize : %d", uniqueId);
+    mInfoListener = NULL;
+    mErrorListener = NULL;
     return DRM_NO_ERROR;
 }
 
 status_t DrmPassthruPlugIn::onTerminate(int uniqueId) {
     ALOGV("DrmPassthruPlugIn::onTerminate : %d", uniqueId);
+    mInfoListener = NULL;
+    mErrorListener = NULL;
     return DRM_NO_ERROR;
 }
 

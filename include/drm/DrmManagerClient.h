@@ -26,6 +26,7 @@ namespace android {
 class DrmInfo;
 class DrmRights;
 class DrmMetadata;
+class DrmErrorEvent;
 class DrmInfoEvent;
 class DrmInfoStatus;
 class DrmInfoRequest;
@@ -53,6 +54,15 @@ public:
 
     public:
         virtual void onInfo(const DrmInfoEvent& event) = 0;
+    };
+
+    class OnErrorListener: virtual public RefBase {
+
+    public:
+        virtual ~OnErrorListener() {}
+
+    public:
+        virtual void onError(const DrmErrorEvent& event) = 0;
     };
 
 /**
@@ -208,6 +218,16 @@ public:
      *     Returns DRM_NO_ERROR for success, DRM_ERROR_UNKNOWN for failure
      */
     status_t setOnInfoListener(const sp<DrmManagerClient::OnInfoListener>& infoListener);
+
+    /**
+     * Register a callback to be invoked when the caller required to
+     * receive necessary information
+     *
+     * @param[in] errorListener Listener
+     * @return status_t
+     *     Returns DRM_NO_ERROR for success, DRM_ERROR_UNKNOWN for failure
+     */
+    status_t setOnErrorListener(const sp<DrmManagerClient::OnErrorListener>& errorListener);
 
     /**
      * Get constraint information associated with input content
