@@ -506,6 +506,18 @@ private:
             commonInitialization();
         }
 
+        // Used for caching/no_caching memory allocation
+        CameraHeapMemory(size_t buf_size, uint_t num_buffers = 1, bool cached = true) :
+                         mBufSize(buf_size),
+                         mNumBufs(num_buffers)
+        {
+            if(cached)
+                mHeap = new MemoryHeapBase(buf_size * num_buffers);
+            else
+                mHeap = new MemoryHeapBase(buf_size * num_buffers, MemoryHeapBase::NO_CACHING);
+            commonInitialization();
+        }
+
         void commonInitialization()
         {
             handle.data = mHeap->base();
@@ -538,10 +550,22 @@ private:
                                          void *user __attribute__((unused)))
     {
         CameraHeapMemory *mem;
-        if (fd < 0)
-            mem = new CameraHeapMemory(buf_size, num_bufs);
-        else
+        if (fd < 0) {
+            /*
+             * Because using uncached memory saves more power for video encoder
+             * during video recording, so extend the framework's API to support
+             * to allocate uncached memory, the parameter "fd" in the function
+             * will be used for that.
+             * "-2" means "uncached memory"
+             * other minus int means "cached memory", Camera HAL use "-1" to request
+             */
+            if (fd == -2)
+                mem = new CameraHeapMemory(buf_size, num_bufs, false);
+            else
+                mem = new CameraHeapMemory(buf_size, num_bufs, true);
+        } else {
             mem = new CameraHeapMemory(fd, buf_size, num_bufs);
+        }
         mem->incStrong(mem);
         return &mem->handle;
     }
