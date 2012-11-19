@@ -557,7 +557,11 @@ status_t OMXCodec::configureCodec(const sp<MetaData> &meta) {
 
     int32_t maxInputSize;
     if (meta->findInt32(kKeyMaxInputSize, &maxInputSize)) {
-        setMinBufferSize(kPortIndexInput, (OMX_U32)maxInputSize);
+        status_t err = setMinBufferSize(kPortIndexInput, (OMX_U32)maxInputSize);
+        if (err != OK) {
+            CODEC_LOGE("setMinBufferSize() failed (err = 0x%08x)", err);
+            return err;
+        }
     }
 
     initOutputFormat(meta);
@@ -604,14 +608,16 @@ status_t OMXCodec::configureCodec(const sp<MetaData> &meta) {
     return OK;
 }
 
-void OMXCodec::setMinBufferSize(OMX_U32 portIndex, OMX_U32 size) {
+status_t OMXCodec::setMinBufferSize(OMX_U32 portIndex, OMX_U32 size) {
     OMX_PARAM_PORTDEFINITIONTYPE def;
     InitOMXParams(&def);
     def.nPortIndex = portIndex;
 
     status_t err = mOMX->getParameter(
             mNode, OMX_IndexParamPortDefinition, &def, sizeof(def));
-    CHECK_EQ(err, (status_t)OK);
+    if (err != OK) {
+        return err;
+    }
 
     if ((portIndex == kPortIndexInput && (mQuirks & kInputBufferSizesAreBogus))
         || (def.nBufferSize < size)) {
@@ -620,11 +626,15 @@ void OMXCodec::setMinBufferSize(OMX_U32 portIndex, OMX_U32 size) {
 
     err = mOMX->setParameter(
             mNode, OMX_IndexParamPortDefinition, &def, sizeof(def));
-    CHECK_EQ(err, (status_t)OK);
+    if (err != OK) {
+        return err;
+    }
 
     err = mOMX->getParameter(
             mNode, OMX_IndexParamPortDefinition, &def, sizeof(def));
-    CHECK_EQ(err, (status_t)OK);
+    if (err != OK) {
+        return err;
+    }
 
     // Make sure the setting actually stuck.
     if (portIndex == kPortIndexInput
@@ -633,6 +643,7 @@ void OMXCodec::setMinBufferSize(OMX_U32 portIndex, OMX_U32 size) {
     } else {
         CHECK(def.nBufferSize >= size);
     }
+    return OK;
 }
 
 status_t OMXCodec::setVideoPortFormatType(
