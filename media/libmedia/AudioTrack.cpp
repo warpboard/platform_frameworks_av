@@ -277,6 +277,7 @@ status_t AudioTrack::set(
     mAuxEffectId = 0;
     mFlags = flags;
     mCbf = cbf;
+    mOutput = output;
 
     if (cbf != NULL) {
         mAudioTrackThread = new AudioTrackThread(*this, threadCanCallJava);
@@ -713,6 +714,13 @@ status_t AudioTrack::reload()
     mCblk->stepUser(mCblk->frameCount);
 
     return NO_ERROR;
+}
+
+audio_io_handle_t AudioTrack::getCurrentOutput()
+{
+    AutoMutex lock(mLock);
+    ALOGV("AudioTrack::getCurrentOutput %d",mOutput);
+    return mOutput;
 }
 
 audio_io_handle_t AudioTrack::getOutput()

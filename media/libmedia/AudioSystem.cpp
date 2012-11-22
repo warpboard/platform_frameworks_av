@@ -295,6 +295,25 @@ status_t AudioSystem::getFrameCount(audio_io_handle_t output,
     return NO_ERROR;
 }
 
+status_t AudioSystem::getFlags(audio_io_handle_t output,
+                                    audio_stream_type_t streamType,
+                                    int* flags)
+{
+    OutputDescriptor *outputDesc;
+    *flags = 0;
+
+    gLock.lock();
+    outputDesc = AudioSystem::gOutputs.valueFor(output);
+    if (outputDesc != NULL) {
+        *flags = outputDesc->flags;
+        gLock.unlock();
+    }
+
+    ALOGV("getFlags() streamType %d, output %d, flags %d", streamType, output, *flags);
+
+    return NO_ERROR;
+}
+
 status_t AudioSystem::getOutputLatency(uint32_t* latency, audio_stream_type_t streamType)
 {
     audio_io_handle_t output;

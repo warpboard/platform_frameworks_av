@@ -1408,6 +1408,32 @@ status_t MediaPlayerService::AudioOutput::open(
         }
     }
 
+    /*When the track use the direct output, it can not be used for recycle. After finishing
+      playback , the direct output must be released, and in beginning of playback it will be
+      recreated.
+      In cycle playback, if the next track also need to create direct output, but previous one is
+      not released, it will cause issue.
+      So here we checking the output flag, if it is direct output, then release it.
+    */
+    if (mRecycledTrack) {
+        int flags;
+        AudioSystem::getFlags(mRecycledTrack->getCurrentOutput(), mStreamType, &flags);
+        ALOGV("RecycledTrack getFlags %d",flags);
+        if (flags & AUDIO_OUTPUT_FLAG_DIRECT) {
+            // if we're not going to reuse the track, unblock and flush it
+            if (mCallbackData != NULL) {
+                mCallbackData->setOutput(NULL);
+                mCallbackData->endTrackSwitch();
+            }
+            mRecycledTrack->flush();
+            delete mRecycledTrack;
+            mRecycledTrack = NULL;
+            delete mCallbackData;
+            mCallbackData = NULL;
+            close();
+        }
+    }
+
     AudioTrack *t;
     CallbackData *newcbd = NULL;
     if (mCallback != NULL) {

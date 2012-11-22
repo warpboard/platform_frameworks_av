@@ -383,6 +383,7 @@ public:
      *  handle on audio hardware output
      */
             audio_io_handle_t    getOutput();
+            audio_io_handle_t    getCurrentOutput();
 
     /* Returns the unique session ID associated with this track.
      *
@@ -536,6 +537,7 @@ protected:
     bool                    mIsTimed;
     int                     mPreviousPriority;          // before start()
     SchedPolicy             mPreviousSchedulingGroup;
+    audio_io_handle_t       mOutput;
 };
 
 class TimedAudioTrack : public AudioTrack
