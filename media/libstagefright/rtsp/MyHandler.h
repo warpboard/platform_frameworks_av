@@ -50,6 +50,10 @@ static int64_t kAccessUnitTimeoutUs = 10000000ll;
 // stream, assume none ever will and signal EOS or switch transports.
 static int64_t kStartupTimeoutUs = 10000000ll;
 
+// If tear down can not finish in 3 secs , client will give up the conection
+// actively
+static int64_t kTearDownTimeoutUs = 3000000ll;
+
 static int64_t kDefaultKeepAliveTimeoutUs = 60000000ll;
 
 namespace android {
@@ -175,6 +179,8 @@ struct MyHandler : public AHandler {
 
     void disconnect() {
         (new AMessage('abor', id()))->post();
+        sp<AMessage> timeout = new AMessage('tdto', id());
+        timeout->post(kTearDownTimeoutUs);
     }
 
     void seek(int64_t timeUs) {
@@ -753,6 +759,14 @@ struct MyHandler : public AHandler {
                 request.append("\r\n");
 
                 mConn->sendRequest(request.c_str(), reply);
+                break;
+            }
+
+            case 'tdto':
+            {
+                ALOGW("wait for tear down response time out");
+                sp<AMessage> reply = new AMessage('disc', id());
+                mConn->disconnect(reply);
                 break;
             }
 
