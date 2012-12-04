@@ -140,7 +140,16 @@ void MtpStringBuffer::readFromPacket(MtpDataPacket* packet) {
 }
 
 void MtpStringBuffer::writeToPacket(MtpDataPacket* packet) const {
-    int count = mCharCount;
+    // In MTP specification, strings are limited to 255 characters
+    // Including the terminating null character
+    // If mCharCount > 255 - 1 , we will just put 254 characters into packet
+    // And put into '0' as the terminate character
+    int count = 0;
+    if (mCharCount > MTP_STRING_MAX_CHARACTER_NUMBER - 1) {
+        count = MTP_STRING_MAX_CHARACTER_NUMBER - 1;
+    } else {
+        count = mCharCount;
+    }
     const uint8_t* src = mBuffer;
     packet->putUInt8(count > 0 ? count + 1 : 0);
 
