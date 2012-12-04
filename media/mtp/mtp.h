@@ -489,4 +489,7 @@
 #define MTP_ASSOCIATION_TYPE_UNDEFINED              0x0000
 #define MTP_ASSOCIATION_TYPE_GENERIC_FOLDER         0x0001
 
+// Max Character number of a MTP String
+#define MTP_STRING_MAX_CHARACTER_NUMBER             255
+
 #endif // _MTP_H
