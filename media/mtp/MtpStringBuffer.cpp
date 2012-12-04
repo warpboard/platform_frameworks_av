@@ -57,6 +57,12 @@ MtpStringBuffer::~MtpStringBuffer() {
 
 void MtpStringBuffer::set(const char* src) {
     int length = strlen(src);
+
+    // In MTP specification, strings are limited to 255 characters
+    // including the terminating null character
+    if (length >= MTP_STRING_MAX_CHARACTER_NUMBER)
+        length = MTP_STRING_MAX_CHARACTER_NUMBER - 1;
+
     if (length >= sizeof(mBuffer))
         length = sizeof(mBuffer) - 1;
     memcpy(mBuffer, src, length);
@@ -100,7 +106,7 @@ void MtpStringBuffer::set(const uint16_t* src) {
     uint16_t ch;
     uint8_t* dest = mBuffer;
 
-    while ((ch = *src++) != 0 && count < 255) {
+    while ((ch = *src++) != 0 && count < MTP_STRING_MAX_CHARACTER_NUMBER) {
         if (ch >= 0x0800) {
             *dest++ = (uint8_t)(0xE0 | (ch >> 12));
             *dest++ = (uint8_t)(0x80 | ((ch >> 6) & 0x3F));
