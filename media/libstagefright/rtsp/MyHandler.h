@@ -622,7 +622,12 @@ struct MyHandler : public AHandler {
                 TrackInfo *track = NULL;
                 size_t trackIndex;
                 if (msg->findSize("track-index", &trackIndex)) {
-                    track = &mTracks.editItemAt(trackIndex);
+                    if (mTracks.size() > 0) {
+                        track = &mTracks.editItemAt(trackIndex);
+                    } else {
+                        ALOGW("Track not found. Abort SETUP(%d)", index);
+                        return;
+                    }
                 }
 
                 int32_t result;
