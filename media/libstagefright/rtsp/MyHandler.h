@@ -133,7 +133,7 @@ struct MyHandler : public AHandler {
           mTryFakeRTCP(false),
           mReceivedFirstRTCPPacket(false),
           mReceivedFirstRTPPacket(false),
-          mSeekable(false),
+          mSeekable(true),
           mKeepAliveTimeoutUs(kDefaultKeepAliveTimeoutUs),
           mKeepAliveGeneration(0) {
         mNetLooper->setName("rtsp net");
@@ -348,6 +348,39 @@ struct MyHandler : public AHandler {
         return true;
     }
 
+    static bool isLiveStream(sp<ASessionDescription> desc) {
+        AString attrLiveStream;
+        if (desc->findAttribute(0, "a=LiveStream", &attrLiveStream)) {
+            ssize_t semicolonPos = attrLiveStream.find(";", 2);
+
+            const char* liveStreamValue;
+            if (semicolonPos < 0) {
+                liveStreamValue = attrLiveStream.c_str();
+            } else {
+                AString valString;
+                valString.setTo(attrLiveStream,
+                        semicolonPos + 1,
+                        attrLiveStream.size() - semicolonPos - 1);
+                liveStreamValue = valString.c_str();
+            }
+
+            uint32_t value = strtoul(liveStreamValue, NULL, 10);
+            if (value == 1) {
+                ALOGV("found live stream");
+                return true;
+            }
+        } else {
+            // It is a live stream if no duration is returned
+            int64_t durationUs;
+            if (!desc->getDurationUs(&durationUs)) {
+                ALOGV("No duration found, assume live stream");
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     virtual void onMessageReceived(const sp<AMessage> &msg) {
         switch (msg->what()) {
             case 'conn':
@@ -444,6 +477,8 @@ struct MyHandler : public AHandler {
                                     mBaseURL = mSessionURL;
                                 }
                             }
+
+                            mSeekable = !isLiveStream(mSessionDesc);
 
                             if (!mBaseURL.startsWith("rtsp://")) {
                                 // Some misbehaving servers specify a relative
@@ -730,7 +765,7 @@ struct MyHandler : public AHandler {
                 mNumAccessUnitsReceived = 0;
                 mReceivedFirstRTCPPacket = false;
                 mReceivedFirstRTPPacket = false;
-                mSeekable = false;
+                mSeekable = true;
 
                 sp<AMessage> reply = new AMessage('tear', id());
 
@@ -1090,7 +1125,6 @@ struct MyHandler : public AHandler {
     }
 
     void parsePlayResponse(const sp<ARTSPResponse> &response) {
-        mSeekable = false;
         if (mTracks.size() == 0) {
             ALOGV("parsePlayResponse: late packets ignored.");
             return;
@@ -1165,8 +1199,6 @@ struct MyHandler : public AHandler {
 
             ++n;
         }
-
-        mSeekable = true;
     }
 
     sp<MetaData> getTrackFormat(size_t index, int32_t *timeScale) {
