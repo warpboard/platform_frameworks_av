@@ -29,6 +29,14 @@ struct MetaData;
 struct NuPlayerDriver;
 
 struct NuPlayer : public AHandler {
+    enum Flags {
+        CAN_SEEK_BACKWARD  = 1,  // the "seek 10secs back button"
+        CAN_SEEK_FORWARD   = 2,  // the "seek 10secs forward button"
+        CAN_PAUSE          = 4,
+        CAN_SEEK           = 8,  // the "seek bar"
+        UNSUPPORTED        = 16,
+    };
+
     NuPlayer();
 
     void setUID(uid_t uid);
@@ -54,6 +62,8 @@ struct NuPlayer : public AHandler {
 
     // Will notify the driver through "notifySeekComplete" once finished.
     void seekToAsync(int64_t seekTimeUs);
+
+    uint32_t getFlags() const;
 
     status_t setVideoScalingMode(int32_t mode);
 
@@ -84,6 +94,7 @@ private:
         kWhatVideoNotify                = 'vidN',
         kWhatAudioNotify                = 'audN',
         kWhatRendererNotify             = 'renN',
+        kWhatSourceNotify               = 'souN',
         kWhatReset                      = 'rset',
         kWhatSeek                       = 'seek',
         kWhatPause                      = 'paus',

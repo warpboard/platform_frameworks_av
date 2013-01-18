@@ -61,6 +61,7 @@ struct NuPlayerDriver : public MediaPlayerInterface {
 
     virtual status_t dump(int fd, const Vector<String16> &args) const;
 
+    void notifyConnectComplete();
     void notifyResetComplete();
     void notifyDuration(int64_t durationUs);
     void notifyPosition(int64_t positionUs);
@@ -77,6 +78,8 @@ private:
 
     // The following are protected through "mLock"
     // >>>
+    bool mPrepareInProgress;
+    bool mIsPrepared;
     bool mResetInProgress;
     int64_t mDurationUs;
     int64_t mPositionUs;

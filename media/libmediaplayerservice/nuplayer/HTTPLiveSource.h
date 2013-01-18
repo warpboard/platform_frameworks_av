@@ -20,6 +20,7 @@
 
 #include "NuPlayer.h"
 #include "NuPlayerSource.h"
+#include <media/stagefright/foundation/AHandlerReflector.h>
 
 namespace android {
 
@@ -33,7 +34,7 @@ struct NuPlayer::HTTPLiveSource : public NuPlayer::Source {
             bool uidValid = false,
             uid_t uid = 0);
 
-    virtual void start();
+    virtual void connect();
 
     virtual status_t feedMoreTSData();
 
@@ -42,6 +43,13 @@ struct NuPlayer::HTTPLiveSource : public NuPlayer::Source {
     virtual status_t getDuration(int64_t *durationUs);
     virtual status_t seekTo(int64_t seekTimeUs);
     virtual bool isSeekable();
+    virtual uint32_t getFlags();
+
+    void onMessageReceived(const sp<AMessage> &msg);
+
+    enum {
+        kWhatSessionNotify = 'sesN',
+    };
 
 protected:
     virtual ~HTTPLiveSource();
@@ -62,6 +70,7 @@ private:
     status_t mFinalResult;
     off64_t mOffset;
     sp<ALooper> mLiveLooper;
+    sp<AHandlerReflector<HTTPLiveSource> > mReflector;
     sp<LiveSession> mLiveSession;
     sp<ATSParser> mTSParser;
 

@@ -41,7 +41,8 @@
 namespace android {
 
 LiveSession::LiveSession(uint32_t flags, bool uidValid, uid_t uid)
-    : mFlags(flags),
+    : mNotify(NULL),
+      mFlags(flags),
       mUIDValid(uidValid),
       mUID(uid),
       mDataSource(new LiveDataSource),
@@ -66,6 +67,10 @@ LiveSession::LiveSession(uint32_t flags, bool uidValid, uid_t uid)
 }
 
 LiveSession::~LiveSession() {
+}
+
+void LiveSession::setNotify(const sp<AMessage> &notify) {
+    mNotify = notify;
 }
 
 sp<DataSource> LiveSession::getDataSource() {
@@ -178,6 +183,13 @@ void LiveSession::onConnect(const sp<AMessage> &msg) {
         ALOGE("unable to fetch master playlist '%s'.", url.c_str());
 
         mDataSource->queueEOS(ERROR_IO);
+
+        if (mNotify != NULL) {
+            sp<AMessage> msg = mNotify->dup();
+            msg->setInt32("what", kWhatError);
+            msg->setInt32("err", ERROR_IO);
+            msg->post();
+        }
         return;
     }
 
@@ -529,6 +541,13 @@ rinse_repeat:
             } else {
                 ALOGE("failed to load playlist at url '%s'", url.c_str());
                 mDataSource->queueEOS(ERROR_IO);
+
+                if (firstTime && mNotify != NULL) {
+                    sp<AMessage> msg = mNotify->dup();
+                    msg->setInt32("what", kWhatError);
+                    msg->setInt32("err", ERROR_IO);
+                    msg->post();
+                }
                 return;
             }
         } else {
@@ -552,6 +571,12 @@ rinse_repeat:
 
                     mDurationUs += itemDurationUs;
                 }
+            }
+
+            if (mNotify != NULL) {
+                sp<AMessage> msg = mNotify->dup();
+                msg->setInt32("what", kWhatConnectCompleted);
+                msg->post();
             }
         }
 
