@@ -64,14 +64,21 @@ NuPlayer::HTTPLiveSource::~HTTPLiveSource() {
     }
 }
 
-void NuPlayer::HTTPLiveSource::start() {
+void NuPlayer::HTTPLiveSource::connect() {
     mLiveLooper = new ALooper;
     mLiveLooper->setName("http live");
     mLiveLooper->start();
 
+    mReflector = new AHandlerReflector<HTTPLiveSource>(this);
+    mLiveLooper->registerHandler(mReflector);
+
+    sp<AMessage> notify = new AMessage(kWhatSessionNotify, mReflector->id());
+
     mLiveSession = new LiveSession(
             (mFlags & kFlagIncognito) ? LiveSession::kFlagIncognito : 0,
             mUIDValid, mUID);
+
+    mLiveSession->setNotify(notify);
 
     mLiveLooper->registerHandler(mLiveSession);
 
@@ -183,6 +190,40 @@ status_t NuPlayer::HTTPLiveSource::seekTo(int64_t seekTimeUs) {
 
 bool NuPlayer::HTTPLiveSource::isSeekable() {
     return mLiveSession->isSeekable();
+}
+
+uint32_t NuPlayer::HTTPLiveSource::getFlags() {
+    if (!isSeekable()) {
+        return 0;
+    }
+
+    return CAN_PAUSE | CAN_SEEK;
+}
+
+void NuPlayer::HTTPLiveSource::onMessageReceived(const sp<AMessage> &msg) {
+    switch (msg->what()) {
+        case kWhatSessionNotify:
+            int32_t what;
+            CHECK(msg->findInt32("what", &what));
+
+            if (what == LiveSession::kWhatConnectCompleted) {
+                sp<AMessage> msg = mNotify->dup();
+                msg->setInt32("what", kWhatConnectCompleted);
+                msg->post();
+            } else if (what == LiveSession::kWhatError) {
+                status_t err;
+                CHECK(msg->findInt32("err", &err));
+
+                sp<AMessage> msg = mNotify->dup();
+                msg->setInt32("what", kWhatError);
+                msg->setInt32("err", err);
+                msg->post();
+            }
+            break;
+
+        default:
+            TRESPASS();
+    }
 }
 
 }  // namespace android

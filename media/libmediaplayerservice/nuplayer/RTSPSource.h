@@ -39,7 +39,7 @@ struct NuPlayer::RTSPSource : public NuPlayer::Source {
             uid_t uid = 0,
             bool isSDP = false);
 
-    virtual void start();
+    virtual void connect();
     virtual void stop();
 
     virtual status_t feedMoreTSData();
@@ -49,6 +49,7 @@ struct NuPlayer::RTSPSource : public NuPlayer::Source {
     virtual status_t getDuration(int64_t *durationUs);
     virtual status_t seekTo(int64_t seekTimeUs);
     virtual bool isSeekable();
+    virtual uint32_t getFlags();
 
     void onMessageReceived(const sp<AMessage> &msg);
 

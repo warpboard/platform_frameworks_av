@@ -180,6 +180,14 @@ void NuPlayer::seekToAsync(int64_t seekTimeUs) {
     msg->post();
 }
 
+uint32_t NuPlayer::getFlags() const {
+    if (mSource != NULL) {
+        return mSource->getFlags();
+    }
+
+    return UNSUPPORTED;
+}
+
 // static
 bool NuPlayer::IsFlushingState(FlushStatus state, bool *needShutdown) {
     switch (state) {
@@ -212,6 +220,11 @@ void NuPlayer::onMessageReceived(const sp<AMessage> &msg) {
             CHECK(msg->findObject("source", &obj));
 
             mSource = static_cast<Source *>(obj.get());
+
+            sp<AMessage> notify = new AMessage(kWhatSourceNotify, id());
+            mSource->setNotify(notify);
+            mSource->connect();
+
             break;
         }
 
@@ -612,6 +625,30 @@ void NuPlayer::onMessageReceived(const sp<AMessage> &msg) {
         {
             CHECK(mRenderer != NULL);
             mRenderer->resume();
+            break;
+        }
+
+        case kWhatSourceNotify:
+        {
+            int32_t what;
+            CHECK(msg->findInt32("what", &what));
+            if (what == Source::kWhatConnectCompleted) {
+                if (mDriver != NULL) {
+                    sp<NuPlayerDriver> driver = mDriver.promote();
+                    if (driver != NULL) {
+                        int64_t durationUs;
+                        if (mSource->getDuration(&durationUs) == OK) {
+                            driver->notifyDuration(durationUs);
+                        }
+
+                        driver->notifyConnectComplete();
+                    }
+                }
+            } else if (what == Source::kWhatError) {
+                int32_t err;
+                CHECK(msg->findInt32("err", &err));
+                notifyListener(MEDIA_ERROR, MEDIA_ERROR_UNKNOWN, err);
+            }
             break;
         }
 

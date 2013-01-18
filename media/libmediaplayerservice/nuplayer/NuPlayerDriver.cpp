@@ -29,6 +29,8 @@ namespace android {
 
 NuPlayerDriver::NuPlayerDriver()
     : mResetInProgress(false),
+      mPrepareInProgress(false),
+      mIsPrepared(false),
       mDurationUs(-1),
       mPositionUs(-1),
       mNumFramesTotal(0),
@@ -104,15 +106,28 @@ status_t NuPlayerDriver::setVideoSurfaceTexture(
 
 status_t NuPlayerDriver::prepare() {
     sendEvent(MEDIA_SET_VIDEO_SIZE, 0, 0);
+    Mutex::Autolock autoLock(mLock);
+
+    while (!mIsPrepared) {
+        mCondition.wait(mLock);
+    }
+
+    notifyListener(MEDIA_PREPARED);
+
     return OK;
 }
 
 status_t NuPlayerDriver::prepareAsync() {
-    status_t err = prepare();
+    sendEvent(MEDIA_SET_VIDEO_SIZE, 0, 0);
+    Mutex::Autolock autoLock(mLock);
 
-    notifyListener(MEDIA_PREPARED);
+    if (mIsPrepared) {
+        notifyListener(MEDIA_PREPARED);
+    } else {
+        mPrepareInProgress = true;
+    }
 
-    return err;
+    return OK;
 }
 
 status_t NuPlayerDriver::start() {
@@ -298,7 +313,44 @@ status_t NuPlayerDriver::getParameter(int key, Parcel *reply) {
 
 status_t NuPlayerDriver::getMetadata(
         const media::Metadata::Filter& ids, Parcel *records) {
-    return INVALID_OPERATION;
+    using media::Metadata;
+
+    uint32_t flags = mPlayer->getFlags();
+
+    if (flags == NuPlayer::UNSUPPORTED) {
+        return INVALID_OPERATION;
+    }
+
+    Metadata metadata(records);
+
+    metadata.appendBool(
+            Metadata::kPauseAvailable,
+            flags & NuPlayer::CAN_PAUSE);
+
+    metadata.appendBool(
+            Metadata::kSeekBackwardAvailable,
+            flags & NuPlayer::CAN_SEEK_BACKWARD);
+
+    metadata.appendBool(
+            Metadata::kSeekForwardAvailable,
+            flags & NuPlayer::CAN_SEEK_FORWARD);
+
+    metadata.appendBool(
+            Metadata::kSeekAvailable,
+            flags & NuPlayer::CAN_SEEK);
+
+    return OK;
+}
+
+void NuPlayerDriver::notifyConnectComplete() {
+    Mutex::Autolock autoLock(mLock);
+    if (mPrepareInProgress) {
+        notifyListener(MEDIA_PREPARED);
+    }
+
+    mPrepareInProgress = false;
+    mIsPrepared = true;
+    mCondition.broadcast();
 }
 
 void NuPlayerDriver::notifyResetComplete() {

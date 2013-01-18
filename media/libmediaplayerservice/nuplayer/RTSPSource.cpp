@@ -65,7 +65,7 @@ NuPlayer::RTSPSource::~RTSPSource() {
     }
 }
 
-void NuPlayer::RTSPSource::start() {
+void NuPlayer::RTSPSource::connect() {
     if (mLooper == NULL) {
         mLooper = new ALooper;
         mLooper->setName("rtsp");
@@ -223,7 +223,21 @@ void NuPlayer::RTSPSource::performSeek(int64_t seekTimeUs) {
 }
 
 bool NuPlayer::RTSPSource::isSeekable() {
-    return true;
+    if (mHandler != NULL) {
+        return mHandler->isSeekable();
+    }
+
+    return false;
+}
+
+uint32_t NuPlayer::RTSPSource::getFlags() {
+    if (!isSeekable()) {
+        return 0;
+    }
+    // Seeking 10secs forward or backward is a very expensive operation
+    // for rtsp, so let's not enable that.
+    // The user can always use the seek bar.
+    return CAN_PAUSE | CAN_SEEK;
 }
 
 void NuPlayer::RTSPSource::onMessageReceived(const sp<AMessage> &msg) {
@@ -474,6 +488,10 @@ void NuPlayer::RTSPSource::onConnected() {
     }
 
     mState = CONNECTED;
+
+    sp<AMessage> msg = mNotify->dup();
+    msg->setInt32("what", kWhatConnectCompleted);
+    msg->post();
 }
 
 void NuPlayer::RTSPSource::onSDPLoaded(const sp<AMessage> &msg) {
@@ -512,6 +530,11 @@ void NuPlayer::RTSPSource::onSDPLoaded(const sp<AMessage> &msg) {
 
         if (mDisconnectReplyID != 0) {
             finishDisconnectIfPossible();
+        } else {
+            sp<AMessage> notifyError = mNotify->dup();
+            notifyError->setInt32("what", kWhatError);
+            notifyError->setInt32("err", err);
+            notifyError->post();
         }
     }
 }
@@ -529,6 +552,11 @@ void NuPlayer::RTSPSource::onDisconnected(const sp<AMessage> &msg) {
 
     if (mDisconnectReplyID != 0) {
         finishDisconnectIfPossible();
+    } else {
+        sp<AMessage> notifyError = mNotify->dup();
+        notifyError->setInt32("what", kWhatError);
+        notifyError->setInt32("err", err);
+        notifyError->post();
     }
 }
 

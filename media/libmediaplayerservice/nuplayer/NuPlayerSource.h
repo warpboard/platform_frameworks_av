@@ -19,6 +19,7 @@
 #define NUPLAYER_SOURCE_H_
 
 #include "NuPlayer.h"
+#include <media/stagefright/foundation/AMessage.h>
 
 namespace android {
 
@@ -27,7 +28,13 @@ struct ABuffer;
 struct NuPlayer::Source : public RefBase {
     Source() {}
 
-    virtual void start() = 0;
+    virtual void setNotify(const sp<AMessage> &notify) { mNotify = notify; }
+    virtual void connect() {
+       sp<AMessage> msg = mNotify->dup();
+       msg->setInt32("what", kWhatConnectCompleted);
+       msg->post();
+    }
+    virtual void start() {};
     virtual void stop() {}
 
     // Returns OK iff more data was available,
@@ -51,10 +58,21 @@ struct NuPlayer::Source : public RefBase {
         return false;
     }
 
+    virtual uint32_t getFlags() {
+        return UNSUPPORTED;
+    }
+
+    enum {
+        kWhatConnectCompleted = 'cmpl',
+        kWhatError            = 'erro',
+    };
+
 protected:
     virtual ~Source() {}
 
     virtual sp<MetaData> getFormatMeta(bool audio) { return NULL; }
+
+    sp<AMessage> mNotify;
 
 private:
     DISALLOW_EVIL_CONSTRUCTORS(Source);

@@ -37,6 +37,8 @@ struct LiveSession : public AHandler {
     };
     LiveSession(uint32_t flags = 0, bool uidValid = false, uid_t uid = 0);
 
+    void setNotify(const sp<AMessage> &notify);
+
     sp<DataSource> getDataSource();
 
     void connect(
@@ -50,6 +52,11 @@ struct LiveSession : public AHandler {
 
     status_t getDuration(int64_t *durationUs);
     bool isSeekable();
+
+    enum {
+        kWhatConnectCompleted = 'cmpl',
+        kWhatError            = 'erro',
+    };
 
 protected:
     virtual ~LiveSession();
@@ -74,6 +81,7 @@ private:
         unsigned long mBandwidth;
     };
 
+    sp<AMessage> mNotify;
     uint32_t mFlags;
     bool mUIDValid;
     uid_t mUID;
