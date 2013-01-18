@@ -697,7 +697,7 @@ bool AudioPolicyService::AudioCommandThread::threadLoop()
                                                                     data->mIO);
                     if (command->mWaitStatus) {
                         command->mCond.signal();
-                        mWaitWorkCV.wait(mLock);
+                        command->mCond.wait(mLock);
                     }
                     delete data;
                     }break;
@@ -708,7 +708,7 @@ bool AudioPolicyService::AudioCommandThread::threadLoop()
                     command->mStatus = AudioSystem::setParameters(data->mIO, data->mKeyValuePairs);
                     if (command->mWaitStatus) {
                         command->mCond.signal();
-                        mWaitWorkCV.wait(mLock);
+                        command->mCond.wait(mLock);
                     }
                     delete data;
                     }break;
@@ -719,7 +719,7 @@ bool AudioPolicyService::AudioCommandThread::threadLoop()
                     command->mStatus = AudioSystem::setVoiceVolume(data->mVolume);
                     if (command->mWaitStatus) {
                         command->mCond.signal();
-                        mWaitWorkCV.wait(mLock);
+                        command->mCond.wait(mLock);
                     }
                     delete data;
                     }break;
@@ -827,7 +827,7 @@ status_t AudioPolicyService::AudioCommandThread::volumeCommand(audio_stream_type
     if (command->mWaitStatus) {
         command->mCond.wait(mLock);
         status =  command->mStatus;
-        mWaitWorkCV.signal();
+        command->mCond.signal();
     }
     return status;
 }
@@ -852,7 +852,7 @@ status_t AudioPolicyService::AudioCommandThread::parametersCommand(audio_io_hand
     if (command->mWaitStatus) {
         command->mCond.wait(mLock);
         status =  command->mStatus;
-        mWaitWorkCV.signal();
+        command->mCond.signal();
     }
     return status;
 }
@@ -873,7 +873,7 @@ status_t AudioPolicyService::AudioCommandThread::voiceVolumeCommand(float volume
     if (command->mWaitStatus) {
         command->mCond.wait(mLock);
         status =  command->mStatus;
-        mWaitWorkCV.signal();
+        command->mCond.signal();
     }
     return status;
 }
