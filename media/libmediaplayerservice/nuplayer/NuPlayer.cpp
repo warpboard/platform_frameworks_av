@@ -648,6 +648,10 @@ void NuPlayer::onMessageReceived(const sp<AMessage> &msg) {
                 int32_t err;
                 CHECK(msg->findInt32("err", &err));
                 notifyListener(MEDIA_ERROR, MEDIA_ERROR_UNKNOWN, err);
+            } else if (what == Source::kWhatBufferingStart) {
+                notifyListener(MEDIA_INFO, MEDIA_INFO_BUFFERING_START, 0);
+            } else if (what == Source::kWhatBufferingEnd) {
+                notifyListener(MEDIA_INFO, MEDIA_INFO_BUFFERING_END, 0);
             }
             break;
         }

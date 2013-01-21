@@ -58,6 +58,8 @@ struct AnotherPacketSource : public MediaSource {
 
     status_t dequeueAccessUnit(sp<ABuffer> *buffer);
 
+    bool finished(int64_t duration);
+
 protected:
     virtual ~AnotherPacketSource();
 
@@ -67,6 +69,7 @@ private:
 
     bool mIsAudio;
     sp<MetaData> mFormat;
+    int64_t mLastQueuedTimeUs;
     List<sp<ABuffer> > mBuffers;
     status_t mEOSResult;
 

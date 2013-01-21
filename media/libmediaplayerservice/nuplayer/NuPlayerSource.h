@@ -65,6 +65,8 @@ struct NuPlayer::Source : public RefBase {
     enum {
         kWhatConnectCompleted = 'cmpl',
         kWhatError            = 'erro',
+        kWhatBufferingStart   = 'bufs',
+        kWhatBufferingEnd     = 'bufe',
     };
 
 protected:
