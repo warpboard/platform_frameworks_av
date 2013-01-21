@@ -41,6 +41,8 @@ struct NuPlayer::RTSPSource : public NuPlayer::Source {
 
     virtual void connect();
     virtual void stop();
+    virtual void pause();
+    virtual void resume();
 
     virtual status_t feedMoreTSData();
 
