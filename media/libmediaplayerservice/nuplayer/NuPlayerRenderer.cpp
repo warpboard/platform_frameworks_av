@@ -41,6 +41,7 @@ NuPlayer::Renderer::Renderer(
       mVideoQueueGeneration(0),
       mAnchorTimeMediaUs(-1),
       mAnchorTimeRealUs(-1),
+      mSeekTimeUs(0),
       mFlushingAudio(false),
       mFlushingVideo(false),
       mHasAudio(false),
@@ -97,6 +98,7 @@ void NuPlayer::Renderer::signalTimeDiscontinuity() {
     CHECK(mVideoQueue.empty());
     mAnchorTimeMediaUs = -1;
     mAnchorTimeRealUs = -1;
+    mSeekTimeUs = 0;
     mSyncQueues = mHasAudio && mHasVideo;
 }
 
@@ -106,6 +108,18 @@ void NuPlayer::Renderer::pause() {
 
 void NuPlayer::Renderer::resume() {
     (new AMessage(kWhatResume, id()))->post();
+}
+
+void NuPlayer::Renderer::setSeekTime(int64_t seekTime) {
+    mSeekTimeUs = seekTime;
+    int64_t nowUs = ALooper::GetNowUs();
+    mLastPositionUpdateUs = nowUs;
+
+    sp<AMessage> notify = mNotify->dup();
+    notify->setInt32("what", kWhatPosition);
+    notify->setInt64("positionUs", seekTime);
+    notify->setInt64("videoLateByUs", mVideoLateByUs);
+    notify->post();
 }
 
 void NuPlayer::Renderer::onMessageReceived(const sp<AMessage> &msg) {
@@ -628,7 +642,12 @@ void NuPlayer::Renderer::notifyPosition() {
     }
     mLastPositionUpdateUs = nowUs;
 
-    int64_t positionUs = (nowUs - mAnchorTimeRealUs) + mAnchorTimeMediaUs;
+    int64_t positionUs;
+    if (mSeekTimeUs != 0) {
+        positionUs = mSeekTimeUs;
+    } else {
+        positionUs = (nowUs - mAnchorTimeRealUs) + mAnchorTimeMediaUs;
+    }
 
     sp<AMessage> notify = mNotify->dup();
     notify->setInt32("what", kWhatPosition);

@@ -43,6 +43,7 @@ struct NuPlayer::Renderer : public AHandler {
 
     void pause();
     void resume();
+    void setSeekTime(int64_t seekTime);
 
     enum {
         kWhatEOS                 = 'eos ',
@@ -90,6 +91,7 @@ private:
 
     int64_t mAnchorTimeMediaUs;
     int64_t mAnchorTimeRealUs;
+    int64_t mSeekTimeUs;
 
     Mutex mFlushLock;  // protects the following 2 member vars.
     bool mFlushingAudio;
