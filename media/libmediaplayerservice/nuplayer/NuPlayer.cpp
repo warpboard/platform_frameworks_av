@@ -603,6 +603,7 @@ void NuPlayer::onMessageReceived(const sp<AMessage> &msg) {
                  seekTimeUs, seekTimeUs / 1E6);
 
             mSource->seekTo(seekTimeUs);
+            mRenderer->setSeekTime(seekTimeUs);
 
             if (mDriver != NULL) {
                 sp<NuPlayerDriver> driver = mDriver.promote();
