@@ -63,6 +63,7 @@ NuPlayer::NuPlayer()
       mTimeDiscontinuityPending(false),
       mFlushingAudio(NONE),
       mFlushingVideo(NONE),
+      mVideoSkipToIFrame(false),
       mResetInProgress(false),
       mResetPostponed(false),
       mSkipRenderingAudioUntilMediaTimeUs(-1ll),
@@ -744,6 +745,7 @@ status_t NuPlayer::instantiateDecoder(bool audio, sp<Decoder> *decoder) {
         AString mime;
         CHECK(format->findString("mime", &mime));
         mVideoIsAVC = !strcasecmp(MEDIA_MIMETYPE_VIDEO_AVC, mime.c_str());
+        mVideoSkipToIFrame = mVideoIsAVC;
     }
 
     sp<AMessage> notify =
@@ -866,6 +868,13 @@ status_t NuPlayer::feedDecoderInputData(bool audio, const sp<AMessage> &msg) {
             dropAccessUnit = true;
             ++mNumFramesDropped;
         }
+        if (!audio
+                && mVideoSkipToIFrame
+                && !IsIDR(accessUnit)
+                && !IsSPS(accessUnit)) {
+            ALOGV("Dropping non I-frame or SPS access unit after seek");
+            dropAccessUnit = true;
+        }
     } while (dropAccessUnit);
 
     // ALOGV("returned a valid buffer of %s data", audio ? "audio" : "video");
@@ -878,6 +887,9 @@ status_t NuPlayer::feedDecoderInputData(bool audio, const sp<AMessage> &msg) {
          mediaTimeUs / 1E6);
 #endif
 
+    if (!audio && mVideoSkipToIFrame) {
+        mVideoSkipToIFrame = false;
+    }
     reply->setBuffer("buffer", accessUnit);
     reply->post();
 
@@ -976,6 +988,7 @@ void NuPlayer::flushDecoder(bool audio, bool needShutdown) {
                 || mFlushingVideo == AWAITING_DISCONTINUITY);
 
         mFlushingVideo = newStatus;
+        mVideoSkipToIFrame = mVideoIsAVC;
 
         if (mFlushingAudio == NONE) {
             mFlushingAudio = (mAudioDecoder != NULL)

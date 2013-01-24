@@ -126,6 +126,7 @@ private:
 
     FlushStatus mFlushingAudio;
     FlushStatus mFlushingVideo;
+    bool mVideoSkipToIFrame;
     bool mResetInProgress;
     bool mResetPostponed;
 
