@@ -80,9 +80,28 @@ DrmInfoStatus* DrmPassthruPlugIn::onProcessDrmInfo(int uniqueId, const DrmInfo* 
     if (NULL != drmInfo) {
         switch (drmInfo->getInfoType()) {
         case DrmInfoRequest::TYPE_REGISTRATION_INFO: {
-            const DrmBuffer* emptyBuffer = new DrmBuffer();
-            drmInfoStatus = new DrmInfoStatus(DrmInfoStatus::STATUS_OK,
-                    DrmInfoRequest::TYPE_REGISTRATION_INFO, emptyBuffer, drmInfo->getMimeType());
+            String8 errorInfo = drmInfo->get(String8("Error"));
+            if (0 < errorInfo.length()) {
+                if (mErrorListener != NULL) {
+                    DrmErrorEvent* tempError = new DrmErrorEvent(uniqueId,
+                            DrmErrorEvent::TYPE_PROCESS_DRM_INFO_FAILED, errorInfo);
+                    if (tempError != NULL) {
+                        IDrmEngine::OnErrorListener &temp =
+                                 const_cast<IDrmEngine::OnErrorListener&> (*mErrorListener);
+                        temp.onError(*tempError);
+                        delete tempError;
+                    }
+                }
+                const DrmBuffer* emptyBuffer = new DrmBuffer();
+                drmInfoStatus = new DrmInfoStatus(DrmInfoStatus::STATUS_ERROR,
+                        DrmErrorEvent::TYPE_PROCESS_DRM_INFO_FAILED, emptyBuffer,
+                        drmInfo->getMimeType());
+            } else {
+                const DrmBuffer* emptyBuffer = new DrmBuffer();
+                drmInfoStatus = new DrmInfoStatus(DrmInfoStatus::STATUS_OK,
+                        DrmInfoRequest::TYPE_REGISTRATION_INFO, emptyBuffer,
+                        drmInfo->getMimeType());
+            }
             break;
         }
         case DrmInfoRequest::TYPE_UNREGISTRATION_INFO: {
@@ -182,6 +201,8 @@ DrmInfo* DrmPassthruPlugIn::onAcquireDrmInfo(int uniqueId, const DrmInfoRequest*
         memcpy(data, dataString.string(), length);
         drmInfo = new DrmInfo(drmInfoRequest->getInfoType(),
             DrmBuffer(data, length), drmInfoRequest->getMimeType());
+        String8 errorInfo = drmInfoRequest->get(String8("Error"));
+        drmInfo->put(String8("Error"), errorInfo);
     }
     return drmInfo;
 }
