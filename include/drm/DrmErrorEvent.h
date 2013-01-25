@@ -51,6 +51,8 @@ public:
     static const int TYPE_REMOVE_ALL_RIGHTS_FAILED = 2007;
     //! TYPE_ACQUIRE_DRM_INFO_FAILED, when failed to acquire DrmInfo.
     static const int TYPE_ACQUIRE_DRM_INFO_FAILED = 2008;
+    //! TYPE_VENDOR_SPECIFIC_ERROR when failed do vendor specific call.
+    static const int TYPE_VENDOR_SPECIFIC_ERROR = 2009;
 
 public:
     /**
