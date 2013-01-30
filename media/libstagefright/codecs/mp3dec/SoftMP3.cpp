@@ -121,6 +121,26 @@ void SoftMP3::initDecoder() {
 OMX_ERRORTYPE SoftMP3::internalGetParameter(
         OMX_INDEXTYPE index, OMX_PTR params) {
     switch (index) {
+        case OMX_IndexParamAudioMp3:
+        {
+            OMX_AUDIO_PARAM_MP3TYPE *mp3Params =
+                (OMX_AUDIO_PARAM_MP3TYPE *)params;
+
+            if (mp3Params->nPortIndex != 0) {
+                return OMX_ErrorUndefined;
+            }
+
+            mp3Params->nBitRate = 0;
+            mp3Params->nAudioBandWidth = 0;
+
+            mp3Params->eChannelMode = OMX_AUDIO_ChannelModeStereo;
+
+            mp3Params->nChannels = mNumChannels;
+            mp3Params->nSampleRate = mSamplingRate;
+
+            return OMX_ErrorNone;
+        }
+
         case OMX_IndexParamAudioPcm:
         {
             OMX_AUDIO_PARAM_PCMMODETYPE *pcmParams =
@@ -160,6 +180,18 @@ OMX_ERRORTYPE SoftMP3::internalSetParameter(
             if (strncmp((const char *)roleParams->cRole,
                         "audio_decoder.mp3",
                         OMX_MAX_STRINGNAME_SIZE - 1)) {
+                return OMX_ErrorUndefined;
+            }
+
+            return OMX_ErrorNone;
+        }
+
+        case OMX_IndexParamAudioMp3:
+        {
+            const OMX_AUDIO_PARAM_MP3TYPE *mp3Params =
+                (const OMX_AUDIO_PARAM_MP3TYPE *)params;
+
+            if (mp3Params->nPortIndex != 0) {
                 return OMX_ErrorUndefined;
             }
 
