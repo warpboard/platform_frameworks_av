@@ -161,8 +161,12 @@ public:
         if (ret != NO_ERROR) {
             return NULL;
         }
-        return reply.readCString();
+        mMetadata = reply.readCString();
+        return mMetadata.string();
     }
+
+private:
+    String8 mMetadata;
 };
 
 IMPLEMENT_META_INTERFACE(MediaMetadataRetriever, "android.media.IMediaMetadataRetriever");
