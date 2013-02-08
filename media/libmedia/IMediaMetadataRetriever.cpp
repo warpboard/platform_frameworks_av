@@ -20,6 +20,7 @@
 #include <binder/Parcel.h>
 #include <media/IMediaMetadataRetriever.h>
 #include <utils/String8.h>
+#include <utils/KeyedVector.h>
 
 // The binder is supposed to propagate the scheduler group across
 // the binder interface so that remote calls are executed with
@@ -161,8 +162,12 @@ public:
         if (ret != NO_ERROR) {
             return NULL;
         }
-        return reply.readCString();
+        mMetadata.add(keyCode, String8(reply.readCString()));
+        return mMetadata.valueFor(keyCode).string();
     }
+
+private:
+    KeyedVector<int, String8> mMetadata;
 };
 
 IMPLEMENT_META_INTERFACE(MediaMetadataRetriever, "android.media.IMediaMetadataRetriever");
