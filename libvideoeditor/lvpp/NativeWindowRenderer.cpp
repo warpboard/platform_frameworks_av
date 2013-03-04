@@ -570,10 +570,11 @@ RenderInput::RenderInput(NativeWindowRenderer* renderer, GLuint textureId)
     , mTextureId(textureId) {
     mST = new SurfaceTexture(mTextureId);
     mSTC = new SurfaceTextureClient(mST);
-    native_window_connect(mSTC.get(), NATIVE_WINDOW_API_MEDIA);
+    native_window_api_connect(mSTC.get(), NATIVE_WINDOW_API_MEDIA);
 }
 
 RenderInput::~RenderInput() {
+    native_window_api_disconnect(mSTC.get(), NATIVE_WINDOW_API_MEDIA);
 }
 
 ANativeWindow* RenderInput::getTargetWindow() {
