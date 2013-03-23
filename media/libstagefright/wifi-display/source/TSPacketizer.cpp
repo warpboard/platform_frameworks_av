@@ -413,7 +413,8 @@ status_t TSPacketizer::packetize(
         sp<ABuffer> *packets,
         uint32_t flags,
         const uint8_t *PES_private_data, size_t PES_private_data_len,
-        size_t numStuffingBytes) {
+        size_t numStuffingBytes,
+        bool needPaddingForAlignment) {
     sp<ABuffer> accessUnit = _accessUnit;
 
     int64_t timeUs;
@@ -471,16 +472,34 @@ status_t TSPacketizer::packetize(
     // reserved = b1
     // the first fragment of "buffer" follows
 
-    size_t PES_packet_length = accessUnit->size() + 8 + numStuffingBytes;
+    // from packet_start_code_prefix through stuffing_byte
+    size_t PES_header_length = 8 + numStuffingBytes;
     if (PES_private_data_len > 0) {
-        PES_packet_length += PES_private_data_len + 1;
+        PES_header_length += PES_private_data_len + 1;
     }
 
-    size_t numTSPackets;
-    if (PES_packet_length <= 178) {
-        numTSPackets = 1;
+    size_t PES_packet_length = PES_header_length + accessUnit->size();
+
+    size_t numTSPackets, firstPayloadSize;
+    if (needPaddingForAlignment) {
+        // payload size must be aligned to 16
+        size_t firstPayloadMaxSize = ((178 - PES_header_length) / 16) * 16;
+        if (accessUnit->size() <= firstPayloadMaxSize) {
+            numTSPackets = 1;
+            firstPayloadSize = accessUnit->size();
+        } else {
+            // for second and subsequent packets, maximum payload size is 176 bytes (multiple of 16)
+            numTSPackets = 1 + ((accessUnit->size() - firstPayloadMaxSize) + 175) / 176;
+            firstPayloadSize = firstPayloadMaxSize;
+        }
     } else {
-        numTSPackets = 1 + ((PES_packet_length - 178) + 183) / 184;
+        if (PES_packet_length <= 178) {
+            numTSPackets = 1;
+            firstPayloadSize = accessUnit->size();
+        } else {
+            numTSPackets = 1 + ((PES_packet_length - 178) + 183) / 184;
+            firstPayloadSize = 178 - PES_header_length;
+        }
     }
 
     if (flags & EMIT_PAT_AND_PMT) {
@@ -710,7 +729,8 @@ status_t TSPacketizer::packetize(
 
     uint64_t PTS = (timeUs * 9ll) / 100ll;
 
-    bool padding = (PES_packet_length < (188 - 10));
+    CHECK(188 - 10 - PES_header_length >= firstPayloadSize);
+    bool padding = (188 - 10 - PES_header_length - firstPayloadSize) > 0;
 
     if (PES_packet_length >= 65536) {
         // This really should only happen for video.
@@ -727,7 +747,7 @@ status_t TSPacketizer::packetize(
     *ptr++ = (padding ? 0x30 : 0x10) | track->incrementContinuityCounter();
 
     if (padding) {
-        size_t paddingSize = 188 - 10 - PES_packet_length;
+        size_t paddingSize = 188 - 10 - PES_header_length - firstPayloadSize;
         *ptr++ = paddingSize - 1;
         if (paddingSize >= 2) {
             *ptr++ = 0x00;
@@ -768,8 +788,6 @@ status_t TSPacketizer::packetize(
         *ptr++ = 0xff;
     }
 
-    // 18 bytes of TS/PES header leave 188 - 18 = 170 bytes for the payload
-
     size_t sizeLeft = packetDataStart + 188 - ptr;
     size_t copy = accessUnit->size();
     if (copy > sizeLeft) {
@@ -785,7 +803,14 @@ status_t TSPacketizer::packetize(
 
     size_t offset = copy;
     while (offset < accessUnit->size()) {
-        bool padding = (accessUnit->size() - offset) < (188 - 4);
+        bool padding;
+        if (needPaddingForAlignment) {
+            // Since maximum payload size is 176, we always need
+            // 184 - 176 = 8 bytes (or more) padding.
+            padding = true;
+        } else {
+            padding = (accessUnit->size() - offset) < (188 - 4);
+        }
 
         // for subsequent fragments of "buffer":
         // 0x47
@@ -806,7 +831,14 @@ status_t TSPacketizer::packetize(
         *ptr++ = (padding ? 0x30 : 0x10) | track->incrementContinuityCounter();
 
         if (padding) {
-            size_t paddingSize = 188 - 4 - (accessUnit->size() - offset);
+            size_t payloadSize;
+            if (needPaddingForAlignment) {
+                payloadSize = accessUnit->size() - offset > 176 ? 176 : accessUnit->size() - offset;
+            } else {
+                payloadSize = accessUnit->size() - offset;
+            }
+
+            size_t paddingSize = 188 - 4 - payloadSize;
             *ptr++ = paddingSize - 1;
             if (paddingSize >= 2) {
                 *ptr++ = 0x00;
@@ -814,8 +846,6 @@ status_t TSPacketizer::packetize(
                 ptr += paddingSize - 2;
             }
         }
-
-        // 4 bytes of TS header leave 188 - 4 = 184 bytes for the payload
 
         size_t sizeLeft = packetDataStart + 188 - ptr;
         size_t copy = accessUnit->size() - offset;

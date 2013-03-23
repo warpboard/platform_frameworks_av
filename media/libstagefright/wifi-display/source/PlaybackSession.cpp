@@ -949,7 +949,8 @@ status_t WifiDisplaySource::PlaybackSession::packetizeAccessUnit(
             track->packetizerTrackIndex(), accessUnit, packets, flags,
             !isHDCPEncrypted ? NULL : HDCP_private_data,
             !isHDCPEncrypted ? 0 : sizeof(HDCP_private_data),
-            track->isAudio() ? 2 : 0 /* numStuffingBytes */);
+            track->isAudio() ? 2 : 0, /* numStuffingBytes */
+            isHDCPEncrypted /* needPaddingForAlignment */);
 
     return OK;
 }

@@ -48,7 +48,8 @@ struct TSPacketizer : public RefBase {
             sp<ABuffer> *packets,
             uint32_t flags,
             const uint8_t *PES_private_data, size_t PES_private_data_len,
-            size_t numStuffingBytes = 0);
+            size_t numStuffingBytes = 0,
+            bool needPaddingForAlignment = false);
 
     // XXX to be removed once encoder config option takes care of this for
     // encrypted mode.
