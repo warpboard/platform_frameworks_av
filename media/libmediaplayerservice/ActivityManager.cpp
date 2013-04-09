@@ -37,6 +37,8 @@ int openContentProviderFile(const String16& uri)
     if (am != NULL) {
         Parcel data, reply;
         data.writeInterfaceToken(String16("android.app.IActivityManager"));
+        // Write a StringUri instance into parcel
+        data.writeInt32(1);
         data.writeString16(uri);
         status_t ret = am->transact(OPEN_CONTENT_URI_TRANSACTION, data, &reply);
         if (ret == NO_ERROR) {
