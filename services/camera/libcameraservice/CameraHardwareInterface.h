@@ -537,7 +537,13 @@ private:
     static camera_memory_t* __get_memory(int fd, size_t buf_size, uint_t num_bufs,
                                          void *user __attribute__((unused)))
     {
-        CameraHeapMemory *mem;
+        static CameraHeapMemory *mem = NULL;
+        if ( NULL != mem )
+        {
+            delete mem;
+            mem = NULL;
+        }
+
         if (fd < 0)
             mem = new CameraHeapMemory(buf_size, num_bufs);
         else
