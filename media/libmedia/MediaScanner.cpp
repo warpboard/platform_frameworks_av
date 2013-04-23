@@ -211,8 +211,8 @@ MediaScanResult MediaScanner::doProcessDirectoryEntry(
 
         // report the directory to the client
         if (stat(path, &statbuf) == 0) {
-            status_t status = client.scanFile(path, statbuf.st_mtime, 0,
-                    true /*isDirectory*/, childNoMedia);
+            status_t status = client.scanFile(path, statbuf.st_mtime,
+                    statbuf.st_size, true /*isDirectory*/, childNoMedia);
             if (status) {
                 return MEDIA_SCAN_RESULT_ERROR;
             }
