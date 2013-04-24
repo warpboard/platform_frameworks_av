@@ -961,9 +961,21 @@ status_t MediaPlayerService::Client::reset()
 status_t MediaPlayerService::Client::setAudioStreamType(audio_stream_type_t type)
 {
     ALOGV("[%d] setAudioStreamType(%d)", mConnId, type);
-    // TODO: for hardware output, call player instead
-    Mutex::Autolock l(mLock);
-    if (mAudioOutput != 0) mAudioOutput->setAudioStreamType(type);
+
+    // for hardware output, call player instead
+    sp<MediaPlayerBase> p = getPlayer();
+    {
+      Mutex::Autolock l(mLock);
+      if (p != 0 && p->hardwareOutput()) {
+          MediaPlayerHWInterface* hwp =
+                  reinterpret_cast<MediaPlayerHWInterface*>(p.get());
+          return hwp->setAudioStreamType(type);
+      } else {
+          if (mAudioOutput != 0) mAudioOutput->setAudioStreamType(type);
+          return NO_ERROR;
+      }
+    }
+
     return NO_ERROR;
 }
 
