@@ -406,8 +406,9 @@ void BlockIterator::seek(
 
         if (eos()) break;
 
-        if (isAudio || block()->IsKey()) {
-            // Accept the first key frame
+        if((!isAudio && block()->IsKey()) ||
+            // audio track is allowed to be 10ms earlier than video track
+            (isAudio && blockTimeUs() + 10000LL >= seekTimeUs)) {
             *actualFrameTimeUs = (block()->GetTime(mCluster) + 500LL) / 1000LL;
             ALOGV("Requested seek point: %lld actual: %lld",
                   seekTimeUs, actualFrameTimeUs);
