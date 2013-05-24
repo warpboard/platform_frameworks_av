@@ -220,7 +220,7 @@ public:
      * @note
      *     In case of error, return NULL
      */
-    DrmConstraints* getConstraints(const String8* path, const int action);
+    DrmConstraints* getConstraints(const String8* path, const int action, int fd);
 
     /**
      * Get metadata information associated with input content
@@ -241,7 +241,7 @@ public:
      * @return
      *     True if DrmManager can handle given path or mime type.
      */
-    bool canHandle(const String8& path, const String8& mimeType);
+    bool canHandle(const String8& path, const String8& mimeType, int fd);
 
     /**
      * Executes given drm information based on its type
@@ -305,7 +305,7 @@ public:
      * @return the status of the rights for the protected content,
      *     such as RightsStatus::RIGHTS_VALID, RightsStatus::RIGHTS_EXPIRED, etc.
      */
-    int checkRightsStatus(const String8& path, int action);
+    int checkRightsStatus(const String8& path, int action, int fd);
 
     /**
      * Removes the rights associated with the given protected content
@@ -314,7 +314,7 @@ public:
      * @return status_t
      *     Returns DRM_NO_ERROR for success, DRM_ERROR_UNKNOWN for failure
      */
-    status_t removeRights(const String8& path);
+    status_t removeRights(const String8& path, int fd);
 
     /**
      * Removes all the rights information of each plug-in associated with

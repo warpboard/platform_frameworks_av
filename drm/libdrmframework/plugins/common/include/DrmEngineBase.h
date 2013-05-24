@@ -34,7 +34,7 @@ public:
     virtual ~DrmEngineBase();
 
 public:
-    DrmConstraints* getConstraints(int uniqueId, const String8* path, int action);
+    DrmConstraints* getConstraints(int uniqueId, const String8* path, int action, int fd);
 
     DrmMetadata* getMetadata(int uniqueId, const String8* path);
 
@@ -44,7 +44,7 @@ public:
 
     status_t terminate(int uniqueId);
 
-    bool canHandle(int uniqueId, const String8& path);
+    bool canHandle(int uniqueId, const String8& path, int fd);
 
     DrmInfoStatus* processDrmInfo(int uniqueId, const DrmInfo* drmInfo);
 
@@ -57,7 +57,7 @@ public:
 
     int getDrmObjectType(int uniqueId, const String8& path, const String8& mimeType);
 
-    int checkRightsStatus(int uniqueId, const String8& path, int action);
+    int checkRightsStatus(int uniqueId, const String8& path, int action, int fd);
 
     status_t consumeRights(int uniqueId, DecryptHandle* decryptHandle, int action, bool reserve);
 
@@ -67,7 +67,7 @@ public:
     bool validateAction(
             int uniqueId, const String8& path, int action, const ActionDescription& description);
 
-    status_t removeRights(int uniqueId, const String8& path);
+    status_t removeRights(int uniqueId, const String8& path, int fd);
 
     status_t removeAllRights(int uniqueId);
 
@@ -519,6 +519,57 @@ protected:
      */
     virtual ssize_t onPread(int uniqueId, DecryptHandle* decryptHandle,
             void* buffer, ssize_t numBytes, off64_t offset) = 0;
+
+    /**
+     * Get whether the given content can be handled by this plugin or not
+     *
+     * @param[in] uniqueId Unique identifier for a session
+     * @param[in] path Path the protected object
+	 * @param[in] fd descriptor of the protected content as a file source
+     * @return bool
+     *     Returns true if this plugin can handle , false in case of not able to handle
+     */
+    virtual bool onCanHandle(int uniqueId, const String8& path, int fd) { return false;}
+
+    /**
+     * Get constraint information associated with input content
+     *
+     * @param[in] uniqueId Unique identifier for a session
+     * @param[in] path Path of the protected content
+     * @param[in] action Actions defined such as,
+     *     Action::DEFAULT, Action::PLAY, etc
+	 * @param[in] fd descriptor of the protected content as a file source
+     * @return DrmConstraints
+     *     key-value pairs of constraint are embedded in it
+     * @note
+     *     In case of error, return NULL
+     */
+    virtual DrmConstraints* onGetConstraints(
+            int uniqueId, const String8* path, int action, int fd) { return NULL; }
+
+
+    /**
+     * Check whether the given content has valid rights or not
+     *
+     * @param[in] uniqueId Unique identifier for a session
+     * @param[in] path Path of the protected content
+     * @param[in] action Action to perform (Action::DEFAULT, Action::PLAY, etc)
+	 * @param[in] fd descriptor of the protected content as a file source
+     * @return the status of the rights for the protected content,
+     *     such as RightsStatus::RIGHTS_VALID, RightsStatus::RIGHTS_EXPIRED, etc.
+     */
+    virtual int onCheckRightsStatus(int uniqueId, const String8& path, int action, int fd) { return RightsStatus::RIGHTS_INVALID;}
+
+    /**
+     * Removes the rights associated with the given protected content
+     *
+     * @param[in] uniqueId Unique identifier for a session
+     * @param[in] path Path of the protected content
+	 * @param[in] fd descriptor of the protected content as a file source
+     * @return status_t
+     *     Returns DRM_NO_ERROR for success, DRM_ERROR_UNKNOWN for failure
+     */
+    virtual status_t onRemoveRights(int uniqueId, const String8& path, int fd) { return DRM_ERROR_UNKNOWN;}
 };
 
 };

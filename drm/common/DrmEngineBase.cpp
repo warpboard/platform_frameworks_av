@@ -27,8 +27,11 @@ DrmEngineBase::~DrmEngineBase() {
 }
 
 DrmConstraints* DrmEngineBase::getConstraints(
-    int uniqueId, const String8* path, int action) {
-    return onGetConstraints(uniqueId, path, action);
+    int uniqueId, const String8* path, int action, int fd) {
+    if(fd < 0)
+        return onGetConstraints(uniqueId, path, action);
+    else 
+        return onGetConstraints(uniqueId, path, action, fd);
 }
 
 DrmMetadata* DrmEngineBase::getMetadata(int uniqueId, const String8* path) {
@@ -48,8 +51,11 @@ status_t DrmEngineBase::terminate(int uniqueId) {
     return onTerminate(uniqueId);
 }
 
-bool DrmEngineBase::canHandle(int uniqueId, const String8& path) {
-    return onCanHandle(uniqueId, path);
+bool DrmEngineBase::canHandle(int uniqueId, const String8& path, int fd) {
+    if(fd < 0)
+        return onCanHandle(uniqueId, path);
+    else
+        return onCanHandle(uniqueId, path, fd);
 }
 
 DrmInfoStatus* DrmEngineBase::processDrmInfo(int uniqueId, const DrmInfo* drmInfo) {
@@ -74,8 +80,11 @@ int DrmEngineBase::getDrmObjectType(int uniqueId, const String8& path, const Str
     return onGetDrmObjectType(uniqueId, path, mimeType);
 }
 
-int DrmEngineBase::checkRightsStatus(int uniqueId, const String8& path, int action) {
-    return onCheckRightsStatus(uniqueId, path, action);
+int DrmEngineBase::checkRightsStatus(int uniqueId, const String8& path, int action, int fd) {
+    if(fd < 0)
+        return onCheckRightsStatus(uniqueId, path, action);
+    else
+        return onCheckRightsStatus(uniqueId, path, action, fd);
 }
 
 status_t DrmEngineBase::consumeRights(
@@ -94,8 +103,11 @@ bool DrmEngineBase::validateAction(
     return onValidateAction(uniqueId, path, action, description);
 }
 
-status_t DrmEngineBase::removeRights(int uniqueId, const String8& path) {
-    return onRemoveRights(uniqueId, path);
+status_t DrmEngineBase::removeRights(int uniqueId, const String8& path, int fd) {
+    if(fd < 0)
+        return onRemoveRights(uniqueId, path);
+    else
+        return onRemoveRights(uniqueId, path, fd);
 }
 
 status_t DrmEngineBase::removeAllRights(int uniqueId) {

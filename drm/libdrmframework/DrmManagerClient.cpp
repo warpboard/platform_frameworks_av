@@ -39,16 +39,16 @@ status_t DrmManagerClient::setOnInfoListener(
     return mDrmManagerClientImpl->setOnInfoListener(mUniqueId, infoListener);
 }
 
-DrmConstraints* DrmManagerClient::getConstraints(const String8* path, const int action) {
-    return mDrmManagerClientImpl->getConstraints(mUniqueId, path, action);
+DrmConstraints* DrmManagerClient::getConstraints(const String8* path, const int action, int fd) {
+    return mDrmManagerClientImpl->getConstraints(mUniqueId, path, action, fd);
 }
 
 DrmMetadata* DrmManagerClient::getMetadata(const String8* path) {
     return mDrmManagerClientImpl->getMetadata(mUniqueId, path);
 }
 
-bool DrmManagerClient::canHandle(const String8& path, const String8& mimeType) {
-    return mDrmManagerClientImpl->canHandle(mUniqueId, path, mimeType);
+bool DrmManagerClient::canHandle(const String8& path, const String8& mimeType, int fd) {
+    return mDrmManagerClientImpl->canHandle(mUniqueId, path, mimeType, fd);
 }
 
 DrmInfoStatus* DrmManagerClient::processDrmInfo(const DrmInfo* drmInfo) {
@@ -72,8 +72,8 @@ int DrmManagerClient::getDrmObjectType(const String8& path, const String8& mimeT
     return mDrmManagerClientImpl->getDrmObjectType( mUniqueId, path, mimeType);
 }
 
-int DrmManagerClient::checkRightsStatus(const String8& path, int action) {
-    return mDrmManagerClientImpl->checkRightsStatus(mUniqueId, path, action);
+int DrmManagerClient::checkRightsStatus(const String8& path, int action, int fd) {
+    return mDrmManagerClientImpl->checkRightsStatus(mUniqueId, path, action, fd);
 }
 
 status_t DrmManagerClient::consumeRights(
@@ -92,8 +92,8 @@ bool DrmManagerClient::validateAction(
     return mDrmManagerClientImpl->validateAction(mUniqueId, path, action, description);
 }
 
-status_t DrmManagerClient::removeRights(const String8& path) {
-    return mDrmManagerClientImpl->removeRights(mUniqueId, path);
+status_t DrmManagerClient::removeRights(const String8& path, int fd) {
+    return mDrmManagerClientImpl->removeRights(mUniqueId, path, fd);
 }
 
 status_t DrmManagerClient::removeAllRights() {
