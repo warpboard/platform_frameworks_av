@@ -96,13 +96,14 @@ public:
      * @param[in] path Path of the protected content
      * @param[in] action Actions defined such as,
      *     Action::DEFAULT, Action::PLAY, etc
+     * @param[in] fd File descriptor of the protected content
      * @return DrmConstraints
      *     key-value pairs of constraint are embedded in it
      * @note
      *     In case of error, return NULL
      */
     virtual DrmConstraints* getConstraints(
-            int uniqueId, const String8* path, int action) = 0;
+            int uniqueId, const String8* path, int action, int fd) = 0;
 
     /**
      * Get metadata information associated with input content
@@ -121,10 +122,11 @@ public:
      *
      * @param[in] uniqueId Unique identifier for a session
      * @param[in] path Path the protected object
+     * @param[in] fd File descriptor of the protected content
      * @return bool
      *     true if this plugin can handle , false in case of not able to handle
      */
-    virtual bool canHandle(int uniqueId, const String8& path) = 0;
+    virtual bool canHandle(int uniqueId, const String8& path, int fd) = 0;
 
     /**
      * Executes given drm information based on its type
@@ -192,10 +194,11 @@ public:
      * @param[in] uniqueId Unique identifier for a session
      * @param[in] path Path of the protected content
      * @param[in] action Action to perform (Action::DEFAULT, Action::PLAY, etc)
+     * @param[in] fd File descriptor of the protected content
      * @return the status of the rights for the protected content,
      *     such as RightsStatus::RIGHTS_VALID, RightsStatus::RIGHTS_EXPIRED, etc.
      */
-    virtual int checkRightsStatus(int uniqueId, const String8& path, int action) = 0;
+    virtual int checkRightsStatus(int uniqueId, const String8& path, int action, int fd) = 0;
 
     /**
      * Consumes the rights for a content.
@@ -243,10 +246,11 @@ public:
      *
      * @param[in] uniqueId Unique identifier for a session
      * @param[in] path Path of the protected content
+     * @param[in] fd File descriptor of the protected content
      * @return status_t
      *     Returns DRM_NO_ERROR for success, DRM_ERROR_UNKNOWN for failure
      */
-    virtual status_t removeRights(int uniqueId, const String8& path) = 0;
+    virtual status_t removeRights(int uniqueId, const String8& path, int fd) = 0;
 
     /**
      * Removes all the rights information of each plug-in associated with

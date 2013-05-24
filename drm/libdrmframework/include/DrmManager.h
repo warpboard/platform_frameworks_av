@@ -72,11 +72,11 @@ public:
 
     status_t installDrmEngine(int uniqueId, const String8& drmEngineFile);
 
-    DrmConstraints* getConstraints(int uniqueId, const String8* path, const int action);
+    DrmConstraints* getConstraints(int uniqueId, const String8* path, const int action, int fd);
 
     DrmMetadata* getMetadata(int uniqueId, const String8* path);
 
-    bool canHandle(int uniqueId, const String8& path, const String8& mimeType);
+    bool canHandle(int uniqueId, const String8& path, const String8& mimeType, int fd);
 
     DrmInfoStatus* processDrmInfo(int uniqueId, const DrmInfo* drmInfo);
 
@@ -89,7 +89,7 @@ public:
 
     int getDrmObjectType(int uniqueId, const String8& path, const String8& mimeType);
 
-    int checkRightsStatus(int uniqueId, const String8& path, int action);
+    int checkRightsStatus(int uniqueId, const String8& path, int action, int fd);
 
     status_t consumeRights(int uniqueId, DecryptHandle* decryptHandle, int action, bool reserve);
 
@@ -99,7 +99,7 @@ public:
     bool validateAction(
             int uniqueId, const String8& path, int action, const ActionDescription& description);
 
-    status_t removeRights(int uniqueId, const String8& path);
+    status_t removeRights(int uniqueId, const String8& path, int fd);
 
     status_t removeAllRights(int uniqueId);
 
@@ -139,9 +139,9 @@ private:
 
     String8 getSupportedPlugInId(const String8& mimeType);
 
-    String8 getSupportedPlugInIdFromPath(int uniqueId, const String8& path);
+    String8 getSupportedPlugInIdFromPath(int uniqueId, const String8& path, int fd = -1);
 
-    bool canHandle(int uniqueId, const String8& path);
+    bool canHandle(int uniqueId, const String8& path, int fd = -1);
 
 private:
     Vector<int> mUniqueIdVector;

@@ -96,11 +96,11 @@ status_t DrmManagerClientImpl::installDrmEngine(
 }
 
 DrmConstraints* DrmManagerClientImpl::getConstraints(
-        int uniqueId, const String8* path, const int action) {
+        int uniqueId, const String8* path, const int action, int fd) {
     DrmConstraints *drmConstraints = NULL;
     if ((NULL != path) && (EMPTY_STRING != *path)) {
         drmConstraints =
-            getDrmManagerService()->getConstraints(uniqueId, path, action);
+            getDrmManagerService()->getConstraints(uniqueId, path, action, fd);
     }
     return drmConstraints;
 }
@@ -114,10 +114,10 @@ DrmMetadata* DrmManagerClientImpl::getMetadata(int uniqueId, const String8* path
 }
 
 bool DrmManagerClientImpl::canHandle(
-        int uniqueId, const String8& path, const String8& mimeType) {
+        int uniqueId, const String8& path, const String8& mimeType, int fd) {
     bool retCode = false;
     if ((EMPTY_STRING != path) || (EMPTY_STRING != mimeType)) {
-        retCode = getDrmManagerService()->canHandle(uniqueId, path, mimeType);
+        retCode = getDrmManagerService()->canHandle(uniqueId, path, mimeType, fd);
     }
     return retCode;
 }
@@ -166,11 +166,11 @@ int DrmManagerClientImpl::getDrmObjectType(
 }
 
 int DrmManagerClientImpl::checkRightsStatus(
-            int uniqueId, const String8& path, int action) {
+            int uniqueId, const String8& path, int action, int fd) {
     int rightsStatus = RightsStatus::RIGHTS_INVALID;
     if (EMPTY_STRING != path) {
         rightsStatus =
-            getDrmManagerService()->checkRightsStatus(uniqueId, path, action);
+            getDrmManagerService()->checkRightsStatus(uniqueId, path, action, fd);
     }
     return rightsStatus;
 }
@@ -208,10 +208,10 @@ bool DrmManagerClientImpl::validateAction(
     return retCode;
 }
 
-status_t DrmManagerClientImpl::removeRights(int uniqueId, const String8& path) {
+status_t DrmManagerClientImpl::removeRights(int uniqueId, const String8& path, int fd) {
     status_t status = DRM_ERROR_UNKNOWN;
     if (EMPTY_STRING != path) {
-        status = getDrmManagerService()->removeRights(uniqueId, path);
+        status = getDrmManagerService()->removeRights(uniqueId, path, fd);
     }
     return status;
 }
