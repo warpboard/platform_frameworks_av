@@ -96,11 +96,11 @@ public:
     virtual status_t installDrmEngine(int uniqueId, const String8& drmEngineFile) = 0;
 
     virtual DrmConstraints* getConstraints(
-            int uniqueId, const String8* path, const int action) = 0;
+            int uniqueId, const String8* path, const int action, int fd) = 0;
 
-    virtual DrmMetadata* getMetadata(int uniqueId, const String8* path) = 0;
+    virtual DrmMetadata* getMetadata(int uniqueId, const String8* path, int fd) = 0;
 
-    virtual bool canHandle(int uniqueId, const String8& path, const String8& mimeType) = 0;
+    virtual bool canHandle(int uniqueId, const String8& path, const String8& mimeType, int fd) = 0;
 
     virtual DrmInfoStatus* processDrmInfo(int uniqueId, const DrmInfo* drmInfo) = 0;
 
@@ -112,9 +112,9 @@ public:
     virtual String8 getOriginalMimeType(int uniqueId, const String8& path, int fd) = 0;
 
     virtual int getDrmObjectType(
-            int uniqueId, const String8& path, const String8& mimeType) = 0;
+            int uniqueId, const String8& path, const String8& mimeType, int fd) = 0;
 
-    virtual int checkRightsStatus(int uniqueId, const String8& path, int action) = 0;
+    virtual int checkRightsStatus(int uniqueId, const String8& path, int action, int fd) = 0;
 
     virtual status_t consumeRights(
             int uniqueId, DecryptHandle* decryptHandle, int action, bool reserve) = 0;
@@ -126,7 +126,7 @@ public:
             int uniqueId, const String8& path,
             int action, const ActionDescription& description) = 0;
 
-    virtual status_t removeRights(int uniqueId, const String8& path) = 0;
+    virtual status_t removeRights(int uniqueId, const String8& path, int fd) = 0;
 
     virtual status_t removeAllRights(int uniqueId) = 0;
 
@@ -187,11 +187,12 @@ public:
 
     virtual status_t installDrmEngine(int uniqueId, const String8& drmEngineFile);
 
-    virtual DrmConstraints* getConstraints(int uniqueId, const String8* path, const int action);
+    virtual DrmConstraints* getConstraints(int uniqueId, const String8* path, 
+            const int action, int fd);
 
-    virtual DrmMetadata* getMetadata(int uniqueId, const String8* path);
+    virtual DrmMetadata* getMetadata(int uniqueId, const String8* path, int fd);
 
-    virtual bool canHandle(int uniqueId, const String8& path, const String8& mimeType);
+    virtual bool canHandle(int uniqueId, const String8& path, const String8& mimeType, int fd);
 
     virtual DrmInfoStatus* processDrmInfo(int uniqueId, const DrmInfo* drmInfo);
 
@@ -202,9 +203,10 @@ public:
 
     virtual String8 getOriginalMimeType(int uniqueId, const String8& path, int fd);
 
-    virtual int getDrmObjectType(int uniqueId, const String8& path, const String8& mimeType);
+    virtual int getDrmObjectType(
+            int uniqueId, const String8& path, const String8& mimeType, int fd);
 
-    virtual int checkRightsStatus(int uniqueId, const String8& path, int action);
+    virtual int checkRightsStatus(int uniqueId, const String8& path, int action, int fd);
 
     virtual status_t consumeRights(
             int uniqueId, DecryptHandle* decryptHandle, int action, bool reserve);
@@ -215,7 +217,7 @@ public:
     virtual bool validateAction(
             int uniqueId, const String8& path, int action, const ActionDescription& description);
 
-    virtual status_t removeRights(int uniqueId, const String8& path);
+    virtual status_t removeRights(int uniqueId, const String8& path, int fd);
 
     virtual status_t removeAllRights(int uniqueId);
 

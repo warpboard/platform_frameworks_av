@@ -215,33 +215,36 @@ public:
      * @param[in] path Path of the protected content
      * @param[in] action Actions defined such as,
      *             Action::DEFAULT, Action::PLAY, etc
+     * @param[in] fd the file descriptor of the protected content
      * @return DrmConstraints
      *     key-value pairs of constraint are embedded in it
      * @note
      *     In case of error, return NULL
      */
-    DrmConstraints* getConstraints(const String8* path, const int action);
+    DrmConstraints* getConstraints(const String8* path, const int action, int fd);
 
     /**
      * Get metadata information associated with input content
      *
      * @param[in] path Path of the protected content
+     * @param[in] fd the file descriptor of the protected content
      * @return DrmMetadata
      *         key-value pairs of metadata
      * @note
      *     In case of error, return NULL
      */
-    DrmMetadata* getMetadata(const String8* path);
+    DrmMetadata* getMetadata(const String8* path, int fd);
 
     /**
      * Check whether the given mimetype or path can be handled
      *
      * @param[in] path Path of the content needs to be handled
      * @param[in] mimetype Mimetype of the content needs to be handled
+     * @param[in] fd the file descriptor of the protected content
      * @return
      *     True if DrmManager can handle given path or mime type.
      */
-    bool canHandle(const String8& path, const String8& mimeType);
+    bool canHandle(const String8& path, const String8& mimeType, int fd);
 
     /**
      * Executes given drm information based on its type
@@ -292,29 +295,32 @@ public:
      *
      * @param[in] path Path of the content or null.
      * @param[in] mimeType Mime type of the content or null.
+     * @param[in] fd the file descriptor of the protected content
      * @return type of the DRM content,
      *     such as DrmObjectType::CONTENT, DrmObjectType::RIGHTS_OBJECT
      */
-    int getDrmObjectType(const String8& path, const String8& mimeType);
+    int getDrmObjectType(const String8& path, const String8& mimeType, int fd);
 
     /**
      * Check whether the given content has valid rights or not
      *
      * @param[in] path Path of the protected content
      * @param[in] action Action to perform
+     * @param[in] fd the file descriptor of the protected content
      * @return the status of the rights for the protected content,
      *     such as RightsStatus::RIGHTS_VALID, RightsStatus::RIGHTS_EXPIRED, etc.
      */
-    int checkRightsStatus(const String8& path, int action);
+    int checkRightsStatus(const String8& path, int action, int fd);
 
     /**
      * Removes the rights associated with the given protected content
      *
      * @param[in] path Path of the protected content
+     * @param[in] fd the file descriptor of the protected content
      * @return status_t
      *     Returns DRM_NO_ERROR for success, DRM_ERROR_UNKNOWN for failure
      */
-    status_t removeRights(const String8& path);
+    status_t removeRights(const String8& path, int fd);
 
     /**
      * Removes all the rights information of each plug-in associated with

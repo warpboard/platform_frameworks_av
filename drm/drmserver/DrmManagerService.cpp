@@ -93,19 +93,21 @@ status_t DrmManagerService::installDrmEngine(int uniqueId, const String8& drmEng
 }
 
 DrmConstraints* DrmManagerService::getConstraints(
-            int uniqueId, const String8* path, const int action) {
+            int uniqueId, const String8* path, const int action, int fd) {
     ALOGV("Entering getConstraints from content");
-    return mDrmManager->getConstraints(uniqueId, path, action);
+    return mDrmManager->getConstraints(uniqueId, path, action, fd);
 }
 
-DrmMetadata* DrmManagerService::getMetadata(int uniqueId, const String8* path) {
+DrmMetadata* DrmManagerService::getMetadata(int uniqueId, const String8* path, int fd) {
     ALOGV("Entering getMetadata from content");
-    return mDrmManager->getMetadata(uniqueId, path);
+    return mDrmManager->getMetadata(uniqueId, path, fd);
 }
 
-bool DrmManagerService::canHandle(int uniqueId, const String8& path, const String8& mimeType) {
+bool DrmManagerService::canHandle(
+           int uniqueId, const String8& path, 
+           const String8& mimeType, int fd) {
     ALOGV("Entering canHandle");
-    return mDrmManager->canHandle(uniqueId, path, mimeType);
+    return mDrmManager->canHandle(uniqueId, path, mimeType, fd);
 }
 
 DrmInfoStatus* DrmManagerService::processDrmInfo(int uniqueId, const DrmInfo* drmInfo) {
@@ -131,15 +133,16 @@ String8 DrmManagerService::getOriginalMimeType(int uniqueId, const String8& path
 }
 
 int DrmManagerService::getDrmObjectType(
-           int uniqueId, const String8& path, const String8& mimeType) {
+           int uniqueId, const String8& path, 
+           const String8& mimeType, int fd) {
     ALOGV("Entering getDrmObjectType");
-    return mDrmManager->getDrmObjectType(uniqueId, path, mimeType);
+    return mDrmManager->getDrmObjectType(uniqueId, path, mimeType, fd);
 }
 
 int DrmManagerService::checkRightsStatus(
-            int uniqueId, const String8& path, int action) {
+            int uniqueId, const String8& path, int action, int fd) {
     ALOGV("Entering checkRightsStatus");
-    return mDrmManager->checkRightsStatus(uniqueId, path, action);
+    return mDrmManager->checkRightsStatus(uniqueId, path, action, fd);
 }
 
 status_t DrmManagerService::consumeRights(
@@ -167,9 +170,9 @@ bool DrmManagerService::validateAction(
     return mDrmManager->validateAction(uniqueId, path, action, description);
 }
 
-status_t DrmManagerService::removeRights(int uniqueId, const String8& path) {
+status_t DrmManagerService::removeRights(int uniqueId, const String8& path, int fd) {
     ALOGV("Entering removeRights");
-    return mDrmManager->removeRights(uniqueId, path);
+    return mDrmManager->removeRights(uniqueId, path, fd);
 }
 
 status_t DrmManagerService::removeAllRights(int uniqueId) {

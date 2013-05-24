@@ -155,22 +155,24 @@ void DrmManager::removeClient(int uniqueId) {
     }
 }
 
-DrmConstraints* DrmManager::getConstraints(int uniqueId, const String8* path, const int action) {
+DrmConstraints* DrmManager::getConstraints(
+            int uniqueId, const String8* path, 
+            const int action, int fd) {
     Mutex::Autolock _l(mLock);
-    const String8 plugInId = getSupportedPlugInIdFromPath(uniqueId, *path);
+    const String8 plugInId = getSupportedPlugInIdFromPath(uniqueId, *path, fd);
     if (EMPTY_STRING != plugInId) {
         IDrmEngine& rDrmEngine = mPlugInManager.getPlugIn(plugInId);
-        return rDrmEngine.getConstraints(uniqueId, path, action);
+        return rDrmEngine.getConstraints(uniqueId, path, action, fd);
     }
     return NULL;
 }
 
-DrmMetadata* DrmManager::getMetadata(int uniqueId, const String8* path) {
+DrmMetadata* DrmManager::getMetadata(int uniqueId, const String8* path, int fd) {
     Mutex::Autolock _l(mLock);
-    const String8 plugInId = getSupportedPlugInIdFromPath(uniqueId, *path);
+    const String8 plugInId = getSupportedPlugInIdFromPath(uniqueId, *path, fd);
     if (EMPTY_STRING != plugInId) {
         IDrmEngine& rDrmEngine = mPlugInManager.getPlugIn(plugInId);
-        return rDrmEngine.getMetadata(uniqueId, path);
+        return rDrmEngine.getMetadata(uniqueId, path, fd);
     }
     return NULL;
 }
@@ -190,7 +192,7 @@ status_t DrmManager::installDrmEngine(int uniqueId, const String8& absolutePath)
     return DRM_NO_ERROR;
 }
 
-bool DrmManager::canHandle(int uniqueId, const String8& path, const String8& mimeType) {
+bool DrmManager::canHandle(int uniqueId, const String8& path, const String8& mimeType, int fd) {
     Mutex::Autolock _l(mLock);
     const String8 plugInId = getSupportedPlugInId(mimeType);
     bool result = (EMPTY_STRING != plugInId) ? true : false;
@@ -198,11 +200,11 @@ bool DrmManager::canHandle(int uniqueId, const String8& path, const String8& mim
     if (0 < path.length()) {
         if (result) {
             IDrmEngine& rDrmEngine = mPlugInManager.getPlugIn(plugInId);
-            result = rDrmEngine.canHandle(uniqueId, path);
+            result = rDrmEngine.canHandle(uniqueId, path, fd);
         } else {
             String8 extension = path.getPathExtension();
             if (String8("") != extension) {
-                result = canHandle(uniqueId, path);
+                result = canHandle(uniqueId, path, fd);
             }
         }
     }
@@ -219,13 +221,13 @@ DrmInfoStatus* DrmManager::processDrmInfo(int uniqueId, const DrmInfo* drmInfo) 
     return NULL;
 }
 
-bool DrmManager::canHandle(int uniqueId, const String8& path) {
+bool DrmManager::canHandle(int uniqueId, const String8& path, int fd) {
     bool result = false;
     Vector<String8> plugInPathList = mPlugInManager.getPlugInIdList();
 
     for (unsigned int i = 0; i < plugInPathList.size(); ++i) {
         IDrmEngine& rDrmEngine = mPlugInManager.getPlugIn(plugInPathList[i]);
-        result = rDrmEngine.canHandle(uniqueId, path);
+        result = rDrmEngine.canHandle(uniqueId, path, fd);
 
         if (result) {
             break;
@@ -258,7 +260,7 @@ status_t DrmManager::saveRights(int uniqueId, const DrmRights& drmRights,
 
 String8 DrmManager::getOriginalMimeType(int uniqueId, const String8& path, int fd) {
     Mutex::Autolock _l(mLock);
-    const String8 plugInId = getSupportedPlugInIdFromPath(uniqueId, path);
+    const String8 plugInId = getSupportedPlugInIdFromPath(uniqueId, path, fd);
     if (EMPTY_STRING != plugInId) {
         IDrmEngine& rDrmEngine = mPlugInManager.getPlugIn(plugInId);
         return rDrmEngine.getOriginalMimeType(uniqueId, path, fd);
@@ -266,22 +268,24 @@ String8 DrmManager::getOriginalMimeType(int uniqueId, const String8& path, int f
     return EMPTY_STRING;
 }
 
-int DrmManager::getDrmObjectType(int uniqueId, const String8& path, const String8& mimeType) {
+int DrmManager::getDrmObjectType(
+            int uniqueId, const String8& path, 
+            const String8& mimeType, int fd) {
     Mutex::Autolock _l(mLock);
     const String8 plugInId = getSupportedPlugInId(uniqueId, path, mimeType);
     if (EMPTY_STRING != plugInId) {
         IDrmEngine& rDrmEngine = mPlugInManager.getPlugIn(plugInId);
-        return rDrmEngine.getDrmObjectType(uniqueId, path, mimeType);
+        return rDrmEngine.getDrmObjectType(uniqueId, path, mimeType, fd);
     }
     return DrmObjectType::UNKNOWN;
 }
 
-int DrmManager::checkRightsStatus(int uniqueId, const String8& path, int action) {
+int DrmManager::checkRightsStatus(int uniqueId, const String8& path, int action, int fd) {
     Mutex::Autolock _l(mLock);
-    const String8 plugInId = getSupportedPlugInIdFromPath(uniqueId, path);
+    const String8 plugInId = getSupportedPlugInIdFromPath(uniqueId, path, fd);
     if (EMPTY_STRING != plugInId) {
         IDrmEngine& rDrmEngine = mPlugInManager.getPlugIn(plugInId);
-        return rDrmEngine.checkRightsStatus(uniqueId, path, action);
+        return rDrmEngine.checkRightsStatus(uniqueId, path, action, fd);
     }
     return RightsStatus::RIGHTS_INVALID;
 }
@@ -319,13 +323,13 @@ bool DrmManager::validateAction(
     return false;
 }
 
-status_t DrmManager::removeRights(int uniqueId, const String8& path) {
+status_t DrmManager::removeRights(int uniqueId, const String8& path, int fd) {
     Mutex::Autolock _l(mLock);
-    const String8 plugInId = getSupportedPlugInIdFromPath(uniqueId, path);
+    const String8 plugInId = getSupportedPlugInIdFromPath(uniqueId, path, fd);
     status_t result = DRM_ERROR_UNKNOWN;
     if (EMPTY_STRING != plugInId) {
         IDrmEngine& rDrmEngine = mPlugInManager.getPlugIn(plugInId);
-        result = rDrmEngine.removeRights(uniqueId, path);
+        result = rDrmEngine.removeRights(uniqueId, path, fd);
     }
     return result;
 }
@@ -592,7 +596,7 @@ String8 DrmManager::getSupportedPlugInId(const String8& mimeType) {
     return plugInId;
 }
 
-String8 DrmManager::getSupportedPlugInIdFromPath(int uniqueId, const String8& path) {
+String8 DrmManager::getSupportedPlugInIdFromPath(int uniqueId, const String8& path, int fd) {
     String8 plugInId("");
     const String8 fileSuffix = path.getPathExtension();
 
@@ -603,7 +607,7 @@ String8 DrmManager::getSupportedPlugInIdFromPath(int uniqueId, const String8& pa
             String8 key = mSupportInfoToPlugInIdMap.valueFor(drmSupportInfo);
             IDrmEngine& drmEngine = mPlugInManager.getPlugIn(key);
 
-            if (drmEngine.canHandle(uniqueId, path)) {
+            if (drmEngine.canHandle(uniqueId, path, fd)) {
                 plugInId = key;
                 break;
             }
