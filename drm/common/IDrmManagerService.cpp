@@ -166,7 +166,7 @@ status_t BpDrmManagerService::installDrmEngine(int uniqueId, const String8& drmE
 }
 
 DrmConstraints* BpDrmManagerService::getConstraints(
-            int uniqueId, const String8* path, const int action) {
+            int uniqueId, const String8* path, const int action, int fd) {
     ALOGV("Get Constraints");
     Parcel data, reply;
 
@@ -175,6 +175,11 @@ DrmConstraints* BpDrmManagerService::getConstraints(
     data.writeString8(*path);
     data.writeInt32(action);
 
+    int32_t isFdValid = (fd >= 0);
+    data.writeInt32(isFdValid);
+    if (isFdValid) {
+        data.writeFileDescriptor(fd);
+    }
     remote()->transact(GET_CONSTRAINTS_FROM_CONTENT, data, &reply);
 
     DrmConstraints* drmConstraints = NULL;
@@ -226,7 +231,7 @@ DrmMetadata* BpDrmManagerService::getMetadata(int uniqueId, const String8* path)
     return drmMetadata;
 }
 
-bool BpDrmManagerService::canHandle(int uniqueId, const String8& path, const String8& mimeType) {
+bool BpDrmManagerService::canHandle(int uniqueId, const String8& path, const String8& mimeType, int fd) {
     ALOGV("Can Handle");
     Parcel data, reply;
 
@@ -235,6 +240,11 @@ bool BpDrmManagerService::canHandle(int uniqueId, const String8& path, const Str
 
     data.writeString8(path);
     data.writeString8(mimeType);
+    int32_t isFdValid = (fd >= 0);
+    data.writeInt32(isFdValid);
+    if (isFdValid) {
+        data.writeFileDescriptor(fd);
+    }
 
     remote()->transact(CAN_HANDLE, data, &reply);
 
@@ -406,7 +416,7 @@ int BpDrmManagerService::getDrmObjectType(
     return reply.readInt32();
 }
 
-int BpDrmManagerService::checkRightsStatus(int uniqueId, const String8& path, int action) {
+int BpDrmManagerService::checkRightsStatus(int uniqueId, const String8& path, int action, int fd) {
     ALOGV("checkRightsStatus");
     Parcel data, reply;
 
@@ -414,6 +424,11 @@ int BpDrmManagerService::checkRightsStatus(int uniqueId, const String8& path, in
     data.writeInt32(uniqueId);
     data.writeString8(path);
     data.writeInt32(action);
+    int32_t isFdValid = (fd >= 0);
+    data.writeInt32(isFdValid);
+    if (isFdValid) {
+        data.writeFileDescriptor(fd);
+    }
 
     remote()->transact(CHECK_RIGHTS_STATUS, data, &reply);
 
@@ -472,13 +487,18 @@ bool BpDrmManagerService::validateAction(
     return static_cast<bool>(reply.readInt32());
 }
 
-status_t BpDrmManagerService::removeRights(int uniqueId, const String8& path) {
+status_t BpDrmManagerService::removeRights(int uniqueId, const String8& path, int fd) {
     ALOGV("removeRights");
     Parcel data, reply;
 
     data.writeInterfaceToken(IDrmManagerService::getInterfaceDescriptor());
     data.writeInt32(uniqueId);
     data.writeString8(path);
+    int32_t isFdValid = (fd >= 0);
+    data.writeInt32(isFdValid);
+    if (isFdValid) {
+        data.writeFileDescriptor(fd);
+    }
 
     remote()->transact(REMOVE_RIGHTS, data, &reply);
     return reply.readInt32();
@@ -873,9 +893,15 @@ status_t BnDrmManagerService::onTransact(
 
         const int uniqueId = data.readInt32();
         const String8 path = data.readString8();
+        const int action = data.readInt32();
+        const int32_t isFdValid = data.readInt32();
+        int fd = -1;
+        if (isFdValid) {
+            fd = data.readFileDescriptor();
+        }
 
         DrmConstraints* drmConstraints
-            = getConstraints(uniqueId, &path, data.readInt32());
+            = getConstraints(uniqueId, &path, action, fd);
 
         if (NULL != drmConstraints) {
             //Filling DRM Constraints contents
@@ -938,8 +964,13 @@ status_t BnDrmManagerService::onTransact(
         const int uniqueId = data.readInt32();
         const String8 path = data.readString8();
         const String8 mimeType = data.readString8();
+        const int32_t isFdValid = data.readInt32();
+        int fd = -1;
+        if (isFdValid) {
+            fd = data.readFileDescriptor();
+        }
 
-        bool result = canHandle(uniqueId, path, mimeType);
+        bool result = canHandle(uniqueId, path, mimeType, fd);
 
         reply->writeInt32(result);
         return DRM_NO_ERROR;
@@ -1118,7 +1149,12 @@ status_t BnDrmManagerService::onTransact(
         const int uniqueId = data.readInt32();
         const String8 path = data.readString8();
         const int action = data.readInt32();
-        const int result = checkRightsStatus(uniqueId, path, action);
+        const int32_t isFdValid = data.readInt32();
+        int fd = -1;
+        if (isFdValid) {
+            fd = data.readFileDescriptor();
+        }
+        const int result = checkRightsStatus(uniqueId, path, action, fd);
 
         reply->writeInt32(result);
         return DRM_NO_ERROR;
@@ -1188,7 +1224,12 @@ status_t BnDrmManagerService::onTransact(
 
         int uniqueId = data.readInt32();
         String8 path = data.readString8();
-        const status_t status = removeRights(uniqueId, path);
+        const int32_t isFdValid = data.readInt32();
+        int fd = -1;
+        if (isFdValid) {
+            fd = data.readFileDescriptor();
+        }
+        const status_t status = removeRights(uniqueId, path, fd);
         reply->writeInt32(status);
 
         return DRM_NO_ERROR;
