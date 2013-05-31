@@ -89,7 +89,27 @@ void cor_h_vec_012_asm(
 		Word16 cor_2[]                        /* (o) result of correlation (NB_POS elements) */
 		);
 
+void cor_h_vec_012_mips(
+		Word16 h[],                           /* (i) scaled impulse response                 */
+		Word16 vec[],                         /* (i) scaled vector (/8) to correlate with h[] */
+		Word16 track,                         /* (i) track to use                            */
+		Word16 sign[],                        /* (i) sign vector                             */
+		Word16 rrixix[][NB_POS],              /* (i) correlation of h[x] with h[x]      */
+		Word16 cor_1[],                       /* (o) result of correlation (NB_POS elements) */
+		Word16 cor_2[]                        /* (o) result of correlation (NB_POS elements) */
+		);
+
 void cor_h_vec_30(
+		Word16 h[],                           /* (i) scaled impulse response                 */
+		Word16 vec[],                         /* (i) scaled vector (/8) to correlate with h[] */
+		Word16 track,                         /* (i) track to use                            */
+		Word16 sign[],                        /* (i) sign vector                             */
+		Word16 rrixix[][NB_POS],              /* (i) correlation of h[x] with h[x]      */
+		Word16 cor_1[],                       /* (o) result of correlation (NB_POS elements) */
+		Word16 cor_2[]                        /* (o) result of correlation (NB_POS elements) */
+		);
+
+void cor_h_vec_30_mips(
 		Word16 h[],                           /* (i) scaled impulse response                 */
 		Word16 vec[],                         /* (i) scaled vector (/8) to correlate with h[] */
 		Word16 track,                         /* (i) track to use                            */
@@ -114,6 +134,20 @@ void search_ixiy(
 		Word16 rrixiy[][MSIZE]                /* (i) corr. of pulse 1 with pulse 2   */
 		);
 
+void search_ixiy_mips(
+		Word16 nb_pos_ix,                     /* (i) nb of pos for pulse 1 (1..8)       */
+		Word16 track_x,                       /* (i) track of pulse 1                   */
+		Word16 track_y,                       /* (i) track of pulse 2                   */
+		Word16 * ps,                          /* (i/o) correlation of all fixed pulses  */
+		Word16 * alp,                         /* (i/o) energy of all fixed pulses       */
+		Word16 * ix,                          /* (o) position of pulse 1                */
+		Word16 * iy,                          /* (o) position of pulse 2                */
+		Word16 dn[],                          /* (i) corr. between target and h[]       */
+		Word16 dn2[],                         /* (i) vector of selected positions       */
+		Word16 cor_x[],                       /* (i) corr. of pulse 1 with fixed pulses */
+		Word16 cor_y[],                       /* (i) corr. of pulse 2 with fixed pulses */
+		Word16 rrixiy[][MSIZE]                /* (i) corr. of pulse 1 with pulse 2   */
+		);
 
 void ACELP_4t64_fx(
 		Word16 dn[],                          /* (i) <12b : correlation between target x[] and H[]      */
@@ -652,12 +686,18 @@ void ACELP_4t64_fx(
 			 *--------------------------------------------------*/
 			if(ipos[j] == 3)
 			{
+#ifdef MIPS32_LE
+				cor_h_vec_30_mips(h, vec, ipos[j], sign, rrixix, cor_x, cor_y);
+#else
 				cor_h_vec_30(h, vec, ipos[j], sign, rrixix, cor_x, cor_y);
+#endif
 			}
 			else
 			{
 #ifdef ASM_OPT                 /* asm optimization branch */
 				cor_h_vec_012_asm(h, vec, ipos[j], sign, rrixix, cor_x, cor_y);
+#elif defined(MIPS32_LE)
+				cor_h_vec_012_mips(h, vec, ipos[j], sign, rrixix, cor_x, cor_y);
 #else
 				cor_h_vec_012(h, vec, ipos[j], sign, rrixix, cor_x, cor_y);
 #endif
@@ -665,8 +705,13 @@ void ACELP_4t64_fx(
 			/*--------------------------------------------------*
 			 * Find best positions of 2 pulses.                 *
 			 *--------------------------------------------------*/
+#ifdef MIPS32_LE
+			search_ixiy_mips(nbpos[st], ipos[j], ipos[j + 1], &ps, &alp,
+					&ix, &iy, dn, dn2, cor_x, cor_y, rrixiy);
+#else
 			search_ixiy(nbpos[st], ipos[j], ipos[j + 1], &ps, &alp,
 					&ix, &iy, dn, dn2, cor_x, cor_y, rrixiy);
+#endif
 
 			ind[j] = ix;
 			ind[j + 1] = iy;

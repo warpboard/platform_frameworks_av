@@ -35,6 +35,16 @@
 #define ONE_ALPHA (32768-ALPHA)            /* (1.0 - ALPHA) in Q15 */
 
 /* private functions */
+#if MIPS32_LE
+void VQ_stage1_mips(
+		Word16 * x,                           /* input : ISF residual vector           */
+		Word16 * dico,                        /* input : quantization codebook         */
+		Word16 dim,                           /* input : dimention of vector           */
+		Word16 dico_size,                     /* input : size of quantization codebook */
+		Word16 * index,                       /* output: indices of survivors          */
+		Word16 surv                           /* input : number of survivor            */
+		);
+#else
 static void VQ_stage1(
 		Word16 * x,                           /* input : ISF residual vector           */
 		Word16 * dico,                        /* input : quantization codebook         */
@@ -43,6 +53,7 @@ static void VQ_stage1(
 		Word16 * index,                       /* output: indices of survivors          */
 		Word16 surv                           /* input : number of survivor            */
 		);
+#endif
 
 /**************************************************************************
 * Function:   Qpisf_2s_46B()                                              *
@@ -73,7 +84,11 @@ void Qpisf_2s_46b(
 		isf[i] = vo_sub(isf[i], vo_mult(MU, past_isfq[i]));
 	}
 
+#if MIPS32_LE
+	VQ_stage1_mips(&isf[0], dico1_isf, 9, SIZE_BK1, surv1, nb_surv);
+#else
 	VQ_stage1(&isf[0], dico1_isf, 9, SIZE_BK1, surv1, nb_surv);
+#endif
 
 	distance = MAX_32;
 
@@ -83,12 +98,21 @@ void Qpisf_2s_46b(
 		{
 			isf_stage2[i] = vo_sub(isf[i], dico1_isf[i + surv1[k] * 9]);
 		}
+#if MIPS32_LE
+		tmp_ind[0] = Sub_VQ_mips(&isf_stage2[0], dico21_isf, 3, SIZE_BK21, &min_err);
+		temp = min_err;
+		tmp_ind[1] = Sub_VQ_mips(&isf_stage2[3], dico22_isf, 3, SIZE_BK22, &min_err);
+		temp = vo_L_add(temp, min_err);
+		tmp_ind[2] = Sub_VQ_mips(&isf_stage2[6], dico23_isf, 3, SIZE_BK23, &min_err);
+		temp = vo_L_add(temp, min_err);
+#else
 		tmp_ind[0] = Sub_VQ(&isf_stage2[0], dico21_isf, 3, SIZE_BK21, &min_err);
 		temp = min_err;
 		tmp_ind[1] = Sub_VQ(&isf_stage2[3], dico22_isf, 3, SIZE_BK22, &min_err);
 		temp = vo_L_add(temp, min_err);
 		tmp_ind[2] = Sub_VQ(&isf_stage2[6], dico23_isf, 3, SIZE_BK23, &min_err);
 		temp = vo_L_add(temp, min_err);
+#endif
 
 		if(temp < distance)
 		{
@@ -101,8 +125,11 @@ void Qpisf_2s_46b(
 		}
 	}
 
-
+#if MIPS32_LE
+	VQ_stage1_mips(&isf[9], dico2_isf, 7, SIZE_BK2, surv1, nb_surv);
+#else
 	VQ_stage1(&isf[9], dico2_isf, 7, SIZE_BK2, surv1, nb_surv);
+#endif
 
 	distance = MAX_32;
 
@@ -113,10 +140,17 @@ void Qpisf_2s_46b(
 			isf_stage2[i] = vo_sub(isf[9 + i], dico2_isf[i + surv1[k] * 7]);
 		}
 
+#if MIPS32_LE
+		tmp_ind[0] = Sub_VQ_mips(&isf_stage2[0], dico24_isf, 3, SIZE_BK24, &min_err);
+		temp = min_err;
+		tmp_ind[1] = Sub_VQ_mips(&isf_stage2[3], dico25_isf, 4, SIZE_BK25, &min_err);
+		temp = vo_L_add(temp, min_err);
+#else
 		tmp_ind[0] = Sub_VQ(&isf_stage2[0], dico24_isf, 3, SIZE_BK24, &min_err);
 		temp = min_err;
 		tmp_ind[1] = Sub_VQ(&isf_stage2[3], dico25_isf, 4, SIZE_BK25, &min_err);
 		temp = vo_L_add(temp, min_err);
+#endif
 
 		if(temp < distance)
 		{
@@ -163,7 +197,11 @@ void Qpisf_2s_36b(
 		isf[i] = vo_sub(isf[i], vo_mult(MU, past_isfq[i]));
 	}
 
+#if MIPS32_LE
+	VQ_stage1_mips(&isf[0], dico1_isf, 9, SIZE_BK1, surv1, nb_surv);
+#else
 	VQ_stage1(&isf[0], dico1_isf, 9, SIZE_BK1, surv1, nb_surv);
+#endif
 
 	distance = MAX_32;
 
@@ -174,10 +212,17 @@ void Qpisf_2s_36b(
 			isf_stage2[i] = vo_sub(isf[i], dico1_isf[i + surv1[k] * 9]);
 		}
 
+#if MIPS32_LE
+		tmp_ind[0] = Sub_VQ_mips(&isf_stage2[0], dico21_isf_36b, 5, SIZE_BK21_36b, &min_err);
+		temp = min_err;
+		tmp_ind[1] = Sub_VQ_mips(&isf_stage2[5], dico22_isf_36b, 4, SIZE_BK22_36b, &min_err);
+		temp = vo_L_add(temp, min_err);
+#else
 		tmp_ind[0] = Sub_VQ(&isf_stage2[0], dico21_isf_36b, 5, SIZE_BK21_36b, &min_err);
 		temp = min_err;
 		tmp_ind[1] = Sub_VQ(&isf_stage2[5], dico22_isf_36b, 4, SIZE_BK22_36b, &min_err);
 		temp = vo_L_add(temp, min_err);
+#endif
 
 		if(temp < distance)
 		{
@@ -190,7 +235,11 @@ void Qpisf_2s_36b(
 		}
 	}
 
+#if MIPS32_LE
+	VQ_stage1_mips(&isf[9], dico2_isf, 7, SIZE_BK2, surv1, nb_surv);
+#else
 	VQ_stage1(&isf[9], dico2_isf, 7, SIZE_BK2, surv1, nb_surv);
+#endif
 	distance = MAX_32;
 
 	for (k = 0; k < nb_surv; k++)
@@ -200,7 +249,11 @@ void Qpisf_2s_36b(
 			isf_stage2[i] = vo_sub(isf[9 + i], dico2_isf[i + surv1[k] * 7]);
 		}
 
+#if MIPS32_LE
+		tmp_ind[0] = Sub_VQ_mips(&isf_stage2[0], dico23_isf_36b, 7, SIZE_BK23_36b, &min_err);
+#else
 		tmp_ind[0] = Sub_VQ(&isf_stage2[0], dico23_isf_36b, 7, SIZE_BK23_36b, &min_err);
+#endif
 		temp = min_err;
 
 		if(temp < distance)
@@ -485,7 +538,7 @@ Word16 Sub_VQ(                             /* output: return quantization index 
 	return index;
 }
 
-
+#ifndef MIPS32_LE
 static void VQ_stage1(
 		Word16 * x,                           /* input : ISF residual vector           */
 		Word16 * dico,                        /* input : quantization codebook         */
@@ -536,7 +589,7 @@ static void VQ_stage1(
 	}
 	return;
 }
-
+#endif
 
 
 

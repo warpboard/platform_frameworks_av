@@ -251,12 +251,20 @@ void coder(
 	 * are used (and windowed) only in autocorrelations.             *
 	 *---------------------------------------------------------------*/
 
+#if MIPS32_LE
+	Decim_12k8_mips(speech16k, L_FRAME16k, new_speech, st->mem_decim);
+#else
 	Decim_12k8(speech16k, L_FRAME16k, new_speech, st->mem_decim);
+#endif
 
 	/* last L_FILT samples for autocorrelation window */
 	Copy(st->mem_decim, code, 2 * L_FILT16k);
 	Set_zero(error, L_FILT16k);            /* set next sample to zero */
+#if MIPS32_LE
+	Decim_12k8_mips(error, L_FILT16k, new_speech + L_FRAME, code);
+#else
 	Decim_12k8(error, L_FILT16k, new_speech + L_FRAME, code);
+#endif
 
 	/*---------------------------------------------------------------*
 	 * Perform 50Hz HP filtering of input signal.                    *
@@ -344,12 +352,21 @@ void coder(
 
 	/* scale previous samples and memory */
 
+#if MIPS32_LE
+	Scale_sig_mips(old_speech, L_TOTAL - L_FRAME - L_FILT, exp);
+	Scale_sig_mips(old_exc, PIT_MAX + L_INTERPOL, exp);
+	Scale_sig_mips(st->mem_syn, M, exp);
+	Scale_sig_mips(st->mem_decim2, 3, exp);
+	Scale_sig_mips(&(st->mem_wsp), 1, exp);
+	Scale_sig_mips(&(st->mem_w0), 1, exp);
+#else
 	Scale_sig(old_speech, L_TOTAL - L_FRAME - L_FILT, exp);
 	Scale_sig(old_exc, PIT_MAX + L_INTERPOL, exp);
 	Scale_sig(st->mem_syn, M, exp);
 	Scale_sig(st->mem_decim2, 3, exp);
 	Scale_sig(&(st->mem_wsp), 1, exp);
 	Scale_sig(&(st->mem_w0), 1, exp);
+#endif
 
 	/*------------------------------------------------------------------------*
 	 *  Call VAD                                                              *
@@ -360,6 +377,8 @@ void coder(
 
 #ifdef ASM_OPT        /* asm optimization branch */
 	Scale_sig_opt(buf, L_FRAME, 1 - Q_new);
+#elif defined(MIPS32_LE)
+	Scale_sig_mips(buf, L_FRAME, 1 - Q_new);
 #else
 	Scale_sig(buf, L_FRAME, 1 - Q_new);
 #endif
@@ -398,10 +417,18 @@ void coder(
 	 *------------------------------------------------------------------------*/
 
 	/* LP analysis centered at 4nd subframe */
+#if MIPS32_LE
+	Autocorr_mips(p_window, M, r_h, r_l);                   /* Autocorrelations */
+#else
 	Autocorr(p_window, M, r_h, r_l);                        /* Autocorrelations */
+#endif
 	Lag_window(r_h, r_l);                                   /* Lag windowing    */
 	Levinson(r_h, r_l, A, rc, st->mem_levinson);            /* Levinson Durbin  */
+#if MIPS32_LE
+	Az_isp_mips(A, ispnew, st->ispold);                     /* From A(z) to ISP */
+#else
 	Az_isp(A, ispnew, st->ispold);                          /* From A(z) to ISP */
+#endif
 
 	/* Find the interpolated ISPs and convert to a[] for all subframes */
 	Int_isp(st->ispold, ispnew, interpol_frac, A);
@@ -431,6 +458,8 @@ void coder(
 
 #ifdef ASM_OPT                    /* asm optimization branch */
 		Residu_opt(Ap, &speech[i_subfr], &wsp[i_subfr], L_SUBFR);
+#elif defined(MIPS_DSP_R1_LE)
+		Residu_mips(Ap, &speech[i_subfr], &wsp[i_subfr], L_SUBFR);
 #else
 		Residu(Ap, &speech[i_subfr], &wsp[i_subfr], L_SUBFR);
 #endif
@@ -468,6 +497,8 @@ void coder(
 	/* scale wsp[] in 12 bits to avoid overflow */
 #ifdef  ASM_OPT                  /* asm optimization branch */
 	Scale_sig_opt(wsp, L_FRAME / OPL_DECIM, shift);
+#elif defined(MIPS32_LE)
+	Scale_sig_mips(wsp, L_FRAME / OPL_DECIM, shift);
 #else
 	Scale_sig(wsp, L_FRAME / OPL_DECIM, shift);
 #endif
@@ -475,8 +506,13 @@ void coder(
 	exp = exp + (shift - st->old_wsp_shift);
 	st->old_wsp_shift = shift;
 
+#if MIPS32_LE
+	Scale_sig_mips(old_wsp, PIT_MAX / OPL_DECIM, exp);
+	Scale_sig_mips(st->old_hp_wsp, PIT_MAX / OPL_DECIM, exp);
+#else
 	Scale_sig(old_wsp, PIT_MAX / OPL_DECIM, exp);
 	Scale_sig(st->old_hp_wsp, PIT_MAX / OPL_DECIM, exp);
+#endif
 
 	scale_mem_Hp_wsp(st->hp_wsp_mem, exp);
 
@@ -485,11 +521,19 @@ void coder(
 	if(*ser_size == NBBITS_7k)
 	{
 		/* Find open loop pitch lag for whole speech frame */
+#ifdef MIPS32_LE
+		T_op = Pitch_med_ol_mips(wsp, st, L_FRAME / OPL_DECIM);
+#else
 		T_op = Pitch_med_ol(wsp, st, L_FRAME / OPL_DECIM);
+#endif
 	} else
 	{
 		/* Find open loop pitch lag for first 1/2 frame */
+#ifdef MIPS32_LE
+		T_op = Pitch_med_ol_mips(wsp, st, (L_FRAME/2) / OPL_DECIM);
+#else
 		T_op = Pitch_med_ol(wsp, st, (L_FRAME/2) / OPL_DECIM);
+#endif
 	}
 
 	if(st->ol_gain > 19661)       /* 0.6 in Q15 */
@@ -512,7 +556,11 @@ void coder(
 	if(*ser_size != NBBITS_7k)
 	{
 		/* Find open loop pitch lag for second 1/2 frame */
+#ifdef MIPS32_LE
+		T_op2 = Pitch_med_ol_mips(wsp + ((L_FRAME / 2) / OPL_DECIM), st, (L_FRAME/2) / OPL_DECIM);
+#else
 		T_op2 = Pitch_med_ol(wsp + ((L_FRAME / 2) / OPL_DECIM), st, (L_FRAME/2) / OPL_DECIM);
+#endif
 
 		if(st->ol_gain > 19661)   /* 0.6 in Q15 */
 		{
@@ -544,6 +592,8 @@ void coder(
 		/* Buffer isf's and energy */
 #ifdef ASM_OPT                   /* asm optimization branch */
 		Residu_opt(&A[3 * (M + 1)], speech, exc, L_FRAME);
+#elif defined(MIPS_DSP_R1_LE)
+		Residu_mips(&A[3 * (M + 1)], speech, exc, L_FRAME);
 #else
 		Residu(&A[3 * (M + 1)], speech, exc, L_FRAME);
 #endif
@@ -657,6 +707,8 @@ void coder(
 	{
 #ifdef ASM_OPT               /* asm optimization branch */
 		Residu_opt(p_Aq, &speech[i_subfr], &exc[i_subfr], L_SUBFR);
+#elif defined(MIPS_DSP_R1_LE)
+		Residu_mips(p_Aq, &speech[i_subfr], &exc[i_subfr], L_SUBFR);
 #else
 		Residu(p_Aq, &speech[i_subfr], &exc[i_subfr], L_SUBFR);
 #endif
@@ -757,14 +809,22 @@ void coder(
 
 #ifdef ASM_OPT              /* asm optimization branch */
 		Residu_opt(p_Aq, &speech[i_subfr], &exc[i_subfr], L_SUBFR);
+#elif defined(MIPS_DSP_R1_LE)
+		Residu_mips(p_Aq, &speech[i_subfr], &exc[i_subfr], L_SUBFR);
 #else
 		Residu(p_Aq, &speech[i_subfr], &exc[i_subfr], L_SUBFR);
 #endif
+#ifdef MIPS32_LE
+		Syn_filt_mips(p_Aq, &exc[i_subfr], error + M, L_SUBFR, error, 0);
+#else
 		Syn_filt(p_Aq, &exc[i_subfr], error + M, L_SUBFR, error, 0);
+#endif
 		Weight_a(p_A, Ap, GAMMA1, M);
 
 #ifdef ASM_OPT             /* asm optimization branch */
 		Residu_opt(Ap, error + M, xn, L_SUBFR);
+#elif defined(MIPS_DSP_R1_LE)
+		Residu_mips(Ap, error + M, xn, L_SUBFR);
 #else
 		Residu(Ap, error + M, xn, L_SUBFR);
 #endif
@@ -779,10 +839,16 @@ void coder(
 		tmp = 0;
 		Preemph2(code + M, TILT_FAC, L_SUBFR / 2, &tmp);
 		Weight_a(p_A, Ap, GAMMA1, M);
+#ifdef MIPS32_LE
+		Syn_filt_mips(Ap,code + M, code + M, L_SUBFR / 2, code, 0);
+#else
 		Syn_filt(Ap,code + M, code + M, L_SUBFR / 2, code, 0);
+#endif
 
 #ifdef ASM_OPT                /* asm optimization branch */
 		Residu_opt(p_Aq,code + M, cn, L_SUBFR / 2);
+#elif defined(MIPS_DSP_R1_LE)
+		Residu_mips(p_Aq,code + M, cn, L_SUBFR / 2);
 #else
 		Residu(p_Aq,code + M, cn, L_SUBFR / 2);
 #endif
@@ -827,6 +893,10 @@ void coder(
 		Scale_sig_opt(h2, L_SUBFR, -2);
 		Scale_sig_opt(xn, L_SUBFR, shift);     /* scaling of xn[] to limit dynamic at 12 bits */
 		Scale_sig_opt(h1, L_SUBFR, 1 + shift);  /* set h1[] in Q15 with scaling for convolution */
+#elif defined(MIPS32_LE)
+		Scale_sig_mips(h2, L_SUBFR, -2);
+		Scale_sig_mips(xn, L_SUBFR, shift);     /* scaling of xn[] to limit dynamic at 12 bits */
+		Scale_sig_mips(h1, L_SUBFR, 1 + shift);  /* set h1[] in Q15 with scaling for convolution */
 #else
 		Scale_sig(h2, L_SUBFR, -2);
 		Scale_sig(xn, L_SUBFR, shift);     /* scaling of xn[] to limit dynamic at 12 bits */
@@ -838,8 +908,13 @@ void coder(
 		/* find closed loop fractional pitch  lag */
 		if(*ser_size <= NBBITS_9k)
 		{
+#if MIPS32_LE
+			T0 = Pitch_fr4_mips(&exc[i_subfr], xn, h1, T0_min, T0_max, &T0_frac,
+					pit_flag, PIT_MIN, PIT_FR1_8b, L_SUBFR);
+#else
 			T0 = Pitch_fr4(&exc[i_subfr], xn, h1, T0_min, T0_max, &T0_frac,
 					pit_flag, PIT_MIN, PIT_FR1_8b, L_SUBFR);
+#endif
 
 			/* encode pitch lag */
 			if (pit_flag == 0)             /* if 1st/3rd subframe */
@@ -885,8 +960,13 @@ void coder(
 			}
 		} else
 		{
+#if MIPS32_LE
+			T0 = Pitch_fr4_mips(&exc[i_subfr], xn, h1, T0_min, T0_max, &T0_frac,
+					pit_flag, PIT_FR2, PIT_FR1_9b, L_SUBFR);
+#else
 			T0 = Pitch_fr4(&exc[i_subfr], xn, h1, T0_min, T0_max, &T0_frac,
 					pit_flag, PIT_FR2, PIT_FR1_9b, L_SUBFR);
+#endif
 
 			/* encode pitch lag */
 			if (pit_flag == 0)             /* if 1st/3rd subframe */
@@ -955,6 +1035,8 @@ void coder(
 		/* find pitch exitation */
 #ifdef ASM_OPT                  /* asm optimization branch */
 		pred_lt4_asm(&exc[i_subfr], T0, T0_frac, L_SUBFR + 1);
+#elif defined(MIPS32_LE)
+		Pred_lt4_mips(&exc[i_subfr], T0, T0_frac, L_SUBFR + 1);
 #else
 		Pred_lt4(&exc[i_subfr], T0, T0_frac, L_SUBFR + 1);
 #endif
@@ -962,6 +1044,8 @@ void coder(
 		{
 #ifdef ASM_OPT                   /* asm optimization branch */
 			Convolve_asm(&exc[i_subfr], h1, y1, L_SUBFR);
+#elif defined(MIPS32_LE)
+			Convolve_mips(&exc[i_subfr], h1, y1, L_SUBFR);
 #else
 			Convolve(&exc[i_subfr], h1, y1, L_SUBFR);
 #endif
@@ -1000,6 +1084,8 @@ void coder(
 
 #ifdef ASM_OPT                 /* asm optimization branch */
 		Convolve_asm(code, h1, y2, L_SUBFR);
+#elif defined(MIPS32_LE)
+		Convolve_mips(code, h1, y2, L_SUBFR);
 #else
 		Convolve(code, h1, y2, L_SUBFR);
 #endif
@@ -1060,6 +1146,8 @@ void coder(
 
 #ifdef  ASM_OPT                           /* asm optimization branch */
 		Scale_sig_opt(cn, L_SUBFR, shift);     /* scaling of cn[] to limit dynamic at 12 bits */
+#elif defined(MIPS32_LE)
+		Scale_sig_mips(cn, L_SUBFR, shift);     /* scaling of cn[] to limit dynamic at 12 bits */
 #else
 		Scale_sig(cn, L_SUBFR, shift);     /* scaling of cn[] to limit dynamic at 12 bits */
 #endif
@@ -1076,15 +1164,27 @@ void coder(
 		 * - Correlation between target xn2[] and impulse response h1[]    *
 		 * - Innovative codebook search                                    *
 		 *-----------------------------------------------------------------*/
+#ifdef MIPS32_LE
+		cor_h_x_mips(h2, xn2, dn);
+#else
 		cor_h_x(h2, xn2, dn);
+#endif
 		if (*ser_size <= NBBITS_7k)
 		{
+#ifdef MIPS_DSP_R1_LE
+			ACELP_2t64_fx_mips(dn, cn, h2, code, y2, indice);
+#else
 			ACELP_2t64_fx(dn, cn, h2, code, y2, indice);
+#endif
 
 			Parm_serial(indice[0], 12, &prms);
 		} else if(*ser_size <= NBBITS_9k)
 		{
+#if MIPS_DSP_R1_LE
+			ACELP_4t64_fx_mips(dn, cn, h2, code, y2, 20, *ser_size, indice);
+#else
 			ACELP_4t64_fx(dn, cn, h2, code, y2, 20, *ser_size, indice);
+#endif
 
 			Parm_serial(indice[0], 5, &prms);
 			Parm_serial(indice[1], 5, &prms);
@@ -1092,7 +1192,11 @@ void coder(
 			Parm_serial(indice[3], 5, &prms);
 		} else if(*ser_size <= NBBITS_12k)
 		{
+#if MIPS_DSP_R1_LE
+			ACELP_4t64_fx_mips(dn, cn, h2, code, y2, 36, *ser_size, indice);
+#else
 			ACELP_4t64_fx(dn, cn, h2, code, y2, 36, *ser_size, indice);
+#endif
 
 			Parm_serial(indice[0], 9, &prms);
 			Parm_serial(indice[1], 9, &prms);
@@ -1100,7 +1204,11 @@ void coder(
 			Parm_serial(indice[3], 9, &prms);
 		} else if(*ser_size <= NBBITS_14k)
 		{
+#if MIPS_DSP_R1_LE
+			ACELP_4t64_fx_mips(dn, cn, h2, code, y2, 44, *ser_size, indice);
+#else
 			ACELP_4t64_fx(dn, cn, h2, code, y2, 44, *ser_size, indice);
+#endif
 
 			Parm_serial(indice[0], 13, &prms);
 			Parm_serial(indice[1], 13, &prms);
@@ -1108,7 +1216,11 @@ void coder(
 			Parm_serial(indice[3], 9, &prms);
 		} else if(*ser_size <= NBBITS_16k)
 		{
+#if MIPS_DSP_R1_LE
+			ACELP_4t64_fx_mips(dn, cn, h2, code, y2, 52, *ser_size, indice);
+#else
 			ACELP_4t64_fx(dn, cn, h2, code, y2, 52, *ser_size, indice);
+#endif
 
 			Parm_serial(indice[0], 13, &prms);
 			Parm_serial(indice[1], 13, &prms);
@@ -1116,7 +1228,11 @@ void coder(
 			Parm_serial(indice[3], 13, &prms);
 		} else if(*ser_size <= NBBITS_18k)
 		{
+#if MIPS_DSP_R1_LE
+			ACELP_4t64_fx_mips(dn, cn, h2, code, y2, 64, *ser_size, indice);
+#else
 			ACELP_4t64_fx(dn, cn, h2, code, y2, 64, *ser_size, indice);
+#endif
 
 			Parm_serial(indice[0], 2, &prms);
 			Parm_serial(indice[1], 2, &prms);
@@ -1128,7 +1244,11 @@ void coder(
 			Parm_serial(indice[7], 14, &prms);
 		} else if(*ser_size <= NBBITS_20k)
 		{
+#if MIPS_DSP_R1_LE
+			ACELP_4t64_fx_mips(dn, cn, h2, code, y2, 72, *ser_size, indice);
+#else
 			ACELP_4t64_fx(dn, cn, h2, code, y2, 72, *ser_size, indice);
+#endif
 
 			Parm_serial(indice[0], 10, &prms);
 			Parm_serial(indice[1], 10, &prms);
@@ -1140,7 +1260,11 @@ void coder(
 			Parm_serial(indice[7], 14, &prms);
 		} else
 		{
+#if MIPS_DSP_R1_LE
+			ACELP_4t64_fx_mips(dn, cn, h2, code, y2, 88, *ser_size, indice);
+#else
 			ACELP_4t64_fx(dn, cn, h2, code, y2, 88, *ser_size, indice);
+#endif
 
 			Parm_serial(indice[0], 11, &prms);
 			Parm_serial(indice[1], 11, &prms);
@@ -1187,6 +1311,8 @@ void coder(
 
 #ifdef ASM_OPT                           /* asm optimization branch */
 		Scale_sig_opt(exc2, L_SUBFR, shift);
+#elif defined(MIPS32_LE)
+		Scale_sig_mips(exc2, L_SUBFR, shift);
 #else
 		Scale_sig(exc2, L_SUBFR, shift);
 #endif
@@ -1222,7 +1348,11 @@ void coder(
 			exc[i + i_subfr] = extract_h(L_add(L_tmp, 0x8000));
 		}
 
+#ifdef MIPS32_LE
+		Syn_filt_mips(p_Aq,&exc[i_subfr], synth, L_SUBFR, st->mem_syn, 1);
+#else
 		Syn_filt(p_Aq,&exc[i_subfr], synth, L_SUBFR, st->mem_syn, 1);
+#endif
 
 		if(*ser_size >= NBBITS_24k)
 		{
@@ -1363,6 +1493,8 @@ static Word16 synthesis(
 
 #ifdef ASM_OPT                 /* asm optimization branch */
 	Syn_filt_32_asm(Aq, M, exc, Q_new, synth_hi + M, synth_lo + M, L_SUBFR);
+#elif defined(MIPS32_LE)
+	Syn_filt_32_mips(Aq, M, exc, Q_new, synth_hi + M, synth_lo + M, L_SUBFR);
 #else
 	Syn_filt_32(Aq, M, exc, Q_new, synth_hi + M, synth_lo + M, L_SUBFR);
 #endif
@@ -1403,6 +1535,10 @@ static Word16 synthesis(
 	Scale_sig_opt(exc, L_SUBFR, -3);
 	Q_new = Q_new - 3;
 	ener = extract_h(Dot_product12_asm(exc, exc, L_SUBFR, &exp_ener));
+#elif defined(MIPS32_LE)
+	Scale_sig_mips(exc, L_SUBFR, -3);
+	Q_new = Q_new - 3;
+	ener = extract_h(Dot_product12(exc, exc, L_SUBFR, &exp_ener));
 #else
 	Scale_sig(exc, L_SUBFR, -3);
 	Q_new = Q_new - 3;
@@ -1499,6 +1635,17 @@ static Word16 synthesis(
 	ener = extract_h(Dot_product12_asm(HF_SP, HF_SP, L_SUBFR16k, &exp_ener));
 	/* set energy of white noise to energy of excitation */
 	tmp = extract_h(Dot_product12_asm(HF, HF, L_SUBFR16k, &exp));
+#elif defined(MIPS_DSP_R1_LE)
+	Syn_filt_mips(Ap, HF, HF, L_SUBFR16k, st->mem_syn_hf, 1);
+	/* noise High Pass filtering (1ms of delay) */
+	Filt_6k_7k_mips(HF, L_SUBFR16k, st->mem_hf);
+	/* filtering of the original signal */
+	Filt_6k_7k_mips(HF_SP, L_SUBFR16k, st->mem_hf2);
+	/* check the gain difference */
+	Scale_sig_mips(HF_SP, L_SUBFR16k, -1);
+	ener = extract_h(Dot_product12(HF_SP, HF_SP, L_SUBFR16k, &exp_ener));
+	/* set energy of white noise to energy of excitation */
+	tmp = extract_h(Dot_product12(HF, HF, L_SUBFR16k, &exp));
 #else
 	Syn_filt(Ap, HF, HF, L_SUBFR16k, st->mem_syn_hf, 1);
 	/* noise High Pass filtering (1ms of delay) */

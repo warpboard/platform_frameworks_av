@@ -110,7 +110,7 @@ Word32 L_Comp (Word16 hi, Word16 lo)
  *                                                                           *
  *****************************************************************************
 */
-
+#ifndef MIPS_DSP_R1_LE
 __inline Word32  Mpy_32 (Word16 hi1, Word16 lo1, Word16 hi2, Word16 lo2)
 {
 	Word32 L_32;
@@ -121,7 +121,7 @@ __inline Word32  Mpy_32 (Word16 hi1, Word16 lo1, Word16 hi2, Word16 lo2)
 
 	return (L_32);
 }
-
+#endif
 /*****************************************************************************
  * Function Mpy_32_16()                                                      *
  *                                                                           *
@@ -139,7 +139,7 @@ __inline Word32  Mpy_32 (Word16 hi1, Word16 lo1, Word16 hi2, Word16 lo2)
  *                                                                           *
  *****************************************************************************
 */
-
+#ifndef MIPS_DSP_R1_LE
 __inline Word32 Mpy_32_16 (Word16 hi, Word16 lo, Word16 n)
 {
 	Word32 L_32;
@@ -149,7 +149,7 @@ __inline Word32 Mpy_32_16 (Word16 hi, Word16 lo, Word16 n)
 
 	return (L_32);
 }
-
+#endif
 /*****************************************************************************
  *                                                                           *
  *   Function Name : Div_32                                                  *

@@ -46,11 +46,19 @@ void Qisf_ns(
 		isf_q[i] = sub(isf1[i], mean_isf_noise[i]);
 	}
 
+#if MIPS32_LE
+	indice[0] = Sub_VQ_mips(&isf_q[0], dico1_isf_noise, 2, SIZE_BK_NOISE1, &tmp);
+	indice[1] = Sub_VQ_mips(&isf_q[2], dico2_isf_noise, 3, SIZE_BK_NOISE2, &tmp);
+	indice[2] = Sub_VQ_mips(&isf_q[5], dico3_isf_noise, 3, SIZE_BK_NOISE3, &tmp);
+	indice[3] = Sub_VQ_mips(&isf_q[8], dico4_isf_noise, 4, SIZE_BK_NOISE4, &tmp);
+	indice[4] = Sub_VQ_mips(&isf_q[12], dico5_isf_noise, 4, SIZE_BK_NOISE5, &tmp);
+#else
 	indice[0] = Sub_VQ(&isf_q[0], dico1_isf_noise, 2, SIZE_BK_NOISE1, &tmp);
 	indice[1] = Sub_VQ(&isf_q[2], dico2_isf_noise, 3, SIZE_BK_NOISE2, &tmp);
 	indice[2] = Sub_VQ(&isf_q[5], dico3_isf_noise, 3, SIZE_BK_NOISE3, &tmp);
 	indice[3] = Sub_VQ(&isf_q[8], dico4_isf_noise, 4, SIZE_BK_NOISE4, &tmp);
 	indice[4] = Sub_VQ(&isf_q[12], dico5_isf_noise, 4, SIZE_BK_NOISE5, &tmp);
+#endif
 
 	/* decoding the ISFs */
 

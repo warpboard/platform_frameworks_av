@@ -39,6 +39,13 @@ void Autocorr(
 		Word16 r_l[]                          /* (o)    : Autocorrelations  (lsb)           */
 	     );
 
+void Autocorr_mips(
+		Word16 x[],                           /* (i)    : Input signal                      */
+		Word16 m,                             /* (i)    : LPC order                         */
+		Word16 r_h[],                         /* (o)    : Autocorrelations  (msb)           */
+		Word16 r_l[]                          /* (o)    : Autocorrelations  (lsb)           */
+	     );
+
 void Lag_window(
 		Word16 r_h[],                         /* (i/o)   : Autocorrelations  (msb)          */
 		Word16 r_l[]                          /* (i/o)   : Autocorrelations  (lsb)          */
@@ -57,6 +64,12 @@ void Levinson(
 	     );
 
 void Az_isp(
+		Word16 a[],                           /* (i) Q12 : predictor coefficients                 */
+		Word16 isp[],                         /* (o) Q15 : Immittance spectral pairs              */
+		Word16 old_isp[]                      /* (i)     : old isp[] (in case not found M roots)  */
+	   );
+
+void Az_isp_mips(
 		Word16 a[],                           /* (i) Q12 : predictor coefficients                 */
 		Word16 isp[],                         /* (o) Q15 : Immittance spectral pairs              */
 		Word16 old_isp[]                      /* (i)     : old isp[] (in case not found M roots)  */
@@ -156,6 +169,14 @@ Word16 Sub_VQ(                             /* output: return quantization index 
 		Word32 * distance                     /* output: error of quantization         */
 	     );
 
+Word16 Sub_VQ_mips(                         /* output: return quantization index     */
+		Word16 * x,                           /* input : ISF residual vector           */
+		Word16 * dico,                        /* input : quantization codebook         */
+		Word16 dim,                           /* input : dimention of vector           */
+		Word16 dico_size,                     /* input : size of quantization codebook */
+		Word32 * distance                     /* output: error of quantization         */
+	     );
+
 void Reorder_isf(
 		Word16 * isf,                         /* (i/o) Q15: ISF in the frequency domain (0..0.5) */
 		Word16 min_dist,                      /* (i) Q15  : minimum distance to keep             */
@@ -170,6 +191,12 @@ void Init_Decim_12k8(
 		Word16 mem[]                          /* output: memory (2*NB_COEF_DOWN) set to zeros */
 		);
 void Decim_12k8(
+		Word16 sig16k[],                      /* input:  signal to downsampling  */
+		Word16 lg,                            /* input:  length of input         */
+		Word16 sig12k8[],                     /* output: decimated signal        */
+		Word16 mem[]                          /* in/out: memory (2*NB_COEF_DOWN) */
+	       );
+void Decim_12k8_mips(
 		Word16 sig16k[],                      /* input:  signal to downsampling  */
 		Word16 lg,                            /* input:  length of input         */
 		Word16 sig12k8[],                     /* output: decimated signal        */
@@ -196,6 +223,11 @@ void Filt_6k_7k(
 		Word16 mem[]                          /* in/out: memory (size=30)        */
 	       );
 void Filt_6k_7k_asm(
+		Word16 signal[],                      /* input:  signal                  */
+		Word16 lg,                            /* input:  length of input         */
+		Word16 mem[]                          /* in/out: memory (size=30)        */
+	       );
+void Filt_6k_7k_mips(
 		Word16 signal[],                      /* input:  signal                  */
 		Word16 lg,                            /* input:  length of input         */
 		Word16 mem[]                          /* in/out: memory (size=30)        */
@@ -261,6 +293,13 @@ void Convolve_asm(
 		Word16 L                              /* (i)     : vector size                               */
 	     );
 
+void Convolve_mips(
+		Word16 x[],                           /* (i)     : input vector                              */
+		Word16 h[],                           /* (i) Q15    : impulse response                       */
+		Word16 y[],                           /* (o) 12 bits: output vector                          */
+		Word16 L                              /* (i)     : vector size                               */
+	     );
+
 void Residu(
 		Word16 a[],                           /* (i) Q12 : prediction coefficients                     */
 		Word16 x[],                           /* (i)     : speech (values x[-m..-1] are needed         */
@@ -269,6 +308,13 @@ void Residu(
 		);
 
 void Residu_opt(
+		Word16 a[],                           /* (i) Q12 : prediction coefficients                     */
+		Word16 x[],                           /* (i)     : speech (values x[-m..-1] are needed         */
+		Word16 y[],                           /* (o)     : residual signal                             */
+		Word16 lg                             /* (i)     : size of filtering                           */
+		);
+
+void Residu_mips(
 		Word16 a[],                           /* (i) Q12 : prediction coefficients                     */
 		Word16 x[],                           /* (i)     : speech (values x[-m..-1] are needed         */
 		Word16 y[],                           /* (o)     : residual signal                             */
@@ -291,6 +337,15 @@ void Syn_filt_asm(
 	Word16 mem[]                          /* (i/o)   : memory associated with this filtering.   */
 	);
 
+void Syn_filt_mips(
+	Word16 a[],                           /* (i) Q12 : a[m+1] prediction coefficients           */
+	Word16 x[],                           /* (i)     : input signal                             */
+	Word16 y[],                           /* (o)     : output signal                            */
+	Word16 lg,                            /* (i)     : size of filtering                        */
+	Word16 mem[],                         /* (i/o)   : memory associated with this filtering.   */
+	Word16 update                         /* (i)     : 0=no update, 1=update of memory.         */
+	);
+
 void Syn_filt_32(
 	Word16 a[],                           /* (i) Q12 : a[m+1] prediction coefficients */
 	Word16 m,                             /* (i)     : order of LP filter             */
@@ -302,6 +357,16 @@ void Syn_filt_32(
 	);
 
 void Syn_filt_32_asm(
+	Word16 a[],                           /* (i) Q12 : a[m+1] prediction coefficients */
+	Word16 m,                             /* (i)     : order of LP filter             */
+	Word16 exc[],                         /* (i) Qnew: excitation (exc[i] >> Qnew)    */
+	Word16 Qnew,                          /* (i)     : exc scaling = 0(min) to 8(max) */
+	Word16 sig_hi[],                      /* (o) /16 : synthesis high                 */
+	Word16 sig_lo[],                      /* (o) /16 : synthesis low                  */
+	Word16 lg                             /* (i)     : size of filtering              */
+	);
+
+void Syn_filt_32_mips(
 	Word16 a[],                           /* (i) Q12 : a[m+1] prediction coefficients */
 	Word16 m,                             /* (i)     : order of LP filter             */
 	Word16 exc[],                         /* (i) Qnew: excitation (exc[i] >> Qnew)    */
@@ -323,6 +388,13 @@ Word16 Pitch_ol(                           /* output: open loop pitch lag       
 );
 
 Word16 Pitch_med_ol(                       /* output: open loop pitch lag                        */
+     Word16 wsp[],                         /* input : signal used to compute the open loop pitch */
+                                           /* wsp[-pit_max] to wsp[-1] should be known   */
+     Coder_State *st,                      /* i/o : global codec structure */
+     Word16 L_frame                        /* input : length of frame to compute pitch           */
+);
+
+Word16 Pitch_med_ol_mips(                  /* output: open loop pitch lag                        */
      Word16 wsp[],                         /* input : signal used to compute the open loop pitch */
                                            /* wsp[-pit_max] to wsp[-1] should be known   */
      Coder_State *st,                      /* i/o : global codec structure */
@@ -355,6 +427,18 @@ Word16 Pitch_fr4(                          /* (o)     : pitch period.           
      Word16 t0_fr1,                        /* (i)     : minimum value for resolution 1        */
      Word16 L_subfr                        /* (i)     : Length of subframe                    */
 );
+Word16 Pitch_fr4_mips(                     /* (o)     : pitch period.                         */
+     Word16 exc[],                         /* (i)     : excitation buffer                     */
+     Word16 xn[],                          /* (i)     : target vector                         */
+     Word16 h[],                           /* (i) Q15 : impulse response of synth/wgt filters */
+     Word16 t0_min,                        /* (i)     : minimum value in the searched range.  */
+     Word16 t0_max,                        /* (i)     : maximum value in the searched range.  */
+     Word16 * pit_frac,                    /* (o)     : chosen fraction (0, 1, 2 or 3).       */
+     Word16 i_subfr,                       /* (i)     : indicator for first subframe.         */
+     Word16 t0_fr2,                        /* (i)     : minimum value for resolution 1/2      */
+     Word16 t0_fr1,                        /* (i)     : minimum value for resolution 1        */
+     Word16 L_subfr                        /* (i)     : Length of subframe                    */
+);
 void Pred_lt4(
      Word16 exc[],                         /* in/out: excitation buffer */
      Word16 T0,                            /* input : integer pitch lag */
@@ -363,6 +447,13 @@ void Pred_lt4(
 );
 
 void pred_lt4_asm(
+     Word16 exc[],                         /* in/out: excitation buffer */
+     Word16 T0,                            /* input : integer pitch lag */
+     Word16 frac,                          /* input : fraction of lag   */
+     Word16 L_subfr                        /* input : subframe size     */
+);
+
+void Pred_lt4_mips(
      Word16 exc[],                         /* in/out: excitation buffer */
      Word16 T0,                            /* input : integer pitch lag */
      Word16 frac,                          /* input : fraction of lag   */
@@ -425,6 +516,11 @@ void cor_h_x(
      Word16 x[],                           /* (i) Q0  : target vector                                 */
      Word16 dn[]                           /* (o) <12bit : correlation between target and h[]         */
 );
+void cor_h_x_mips(
+     Word16 h[],                           /* (i) Q12 : impulse response of weighted synthesis filter */
+     Word16 x[],                           /* (i) Q0  : target vector                                 */
+     Word16 dn[]                           /* (o) <12bit : correlation between target and h[]         */
+);
 void ACELP_2t64_fx(
      Word16 dn[],                          /* (i) <12b : correlation between target x[] and H[]      */
      Word16 cn[],                          /* (i) <12b : residual after long term prediction         */
@@ -434,7 +530,33 @@ void ACELP_2t64_fx(
      Word16 * index                        /* (o) : index (12): 5+1+5+1 = 11 bits.                     */
 );
 
+void ACELP_2t64_fx_mips(
+     Word16 dn[],                          /* (i) <12b : correlation between target x[] and H[]      */
+     Word16 cn[],                          /* (i) <12b : residual after long term prediction         */
+     Word16 H[],                           /* (i) Q12: impulse response of weighted synthesis filter */
+     Word16 code[],                        /* (o) Q9 : algebraic (fixed) codebook excitation         */
+     Word16 y[],                           /* (o) Q9 : filtered fixed codebook excitation            */
+     Word16 * index                        /* (o) : index (12): 5+1+5+1 = 11 bits.                     */
+);
+
 void ACELP_4t64_fx(
+     Word16 dn[],                          /* (i) <12b : correlation between target x[] and H[]      */
+     Word16 cn[],                          /* (i) <12b : residual after long term prediction         */
+     Word16 H[],                           /* (i) Q12: impulse response of weighted synthesis filter */
+     Word16 code[],                        /* (o) Q9 : algebraic (fixed) codebook excitation         */
+     Word16 y[],                           /* (o) Q9 : filtered fixed codebook excitation            */
+     Word16 nbbits,                        /* (i) : 20, 36, 44, 52, 64, 72 or 88 bits                */
+     Word16 ser_size,                      /* (i) : bit rate                                         */
+     Word16 _index[]                       /* (o) : index (20): 5+5+5+5 = 20 bits.                   */
+					   /* (o) : index (36): 9+9+9+9 = 36 bits.                   */
+					   /* (o) : index (44): 13+9+13+9 = 44 bits.                 */
+					   /* (o) : index (52): 13+13+13+13 = 52 bits.               */
+					   /* (o) : index (64): 2+2+2+2+14+14+14+14 = 64 bits.       */
+					   /* (o) : index (72): 10+2+10+2+10+14+10+14 = 72 bits.     */
+					   /* (o) : index (88): 11+11+11+11+11+11+11+11 = 88 bits.   */
+);
+
+void ACELP_4t64_fx_mips(
      Word16 dn[],                          /* (i) <12b : correlation between target x[] and H[]      */
      Word16 cn[],                          /* (i) <12b : residual after long term prediction         */
      Word16 H[],                           /* (i) Q12: impulse response of weighted synthesis filter */
@@ -494,6 +616,12 @@ void Scale_sig(
 );
 
 void Scale_sig_opt(
+     Word16 x[],                           /* (i/o) : signal to scale               */
+     Word16 lg,                            /* (i)   : size of x[]                   */
+     Word16 exp                            /* (i)   : exponent: x = round(x << exp) */
+);
+
+void Scale_sig_mips(
      Word16 x[],                           /* (i/o) : signal to scale               */
      Word16 lg,                            /* (i)   : size of x[]                   */
      Word16 exp                            /* (i)   : exponent: x = round(x << exp) */

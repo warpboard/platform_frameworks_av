@@ -86,6 +86,62 @@ LOCAL_SRC_FILES += \
 
 endif
 
+ifeq ($(VOTT), mips32)
+LOCAL_SRC_FILES += \
+	src/asm/mips/autocorr_mips.c \
+	src/asm/mips/az_isp_mips.c \
+	src/asm/mips/c4t64fx_mips.c \
+	src/asm/mips/convolve_mips.c \
+	src/asm/mips/cor_h_x_mips.c \
+	src/asm/mips/decim54_mips.c \
+	src/asm/mips/p_med_ol_mips.c \
+	src/asm/mips/pitch_f4_mips.c \
+	src/asm/mips/pred_lt4_mips.c \
+	src/asm/mips/qpisf_2s_mips.c \
+	src/asm/mips/scale_mips.c \
+	src/asm/mips/syn_filt_mips.c
+endif
+
+ifeq ($(VOTT), mips_dsp_r1)
+LOCAL_SRC_FILES += \
+	src/asm/mips/autocorr_mips.c \
+	src/asm/mips/az_isp_mips.c \
+	src/asm/mips/c2t64fx_mips.c \
+	src/asm/mips/c4t64fx_mips.c \
+	src/asm/mips/convolve_mips.c \
+	src/asm/mips/cor_h_x_mips.c \
+	src/asm/mips/decim54_mips.c \
+	src/asm/mips/hp6k_mips.c \
+	src/asm/mips/oper_32b_mips.c \
+	src/asm/mips/p_med_ol_mips.c \
+	src/asm/mips/pitch_f4_mips.c \
+	src/asm/mips/pred_lt4_mips.c \
+	src/asm/mips/qpisf_2s_mips.c \
+	src/asm/mips/residu_mips.c \
+	src/asm/mips/scale_mips.c \
+	src/asm/mips/syn_filt_mips.c
+endif
+
+ifeq ($(VOTT), mips_dsp_r2)
+LOCAL_SRC_FILES += \
+	src/asm/mips/autocorr_mips.c \
+	src/asm/mips/az_isp_mips.c \
+	src/asm/mips/c2t64fx_mips.c \
+	src/asm/mips/c4t64fx_mips.c \
+	src/asm/mips/convolve_mips.c \
+	src/asm/mips/cor_h_x_mips.c \
+	src/asm/mips/decim54_mips.c \
+	src/asm/mips/hp6k_mips.c \
+	src/asm/mips/oper_32b_mips.c \
+	src/asm/mips/p_med_ol_mips.c \
+	src/asm/mips/pitch_f4_mips.c \
+	src/asm/mips/pred_lt4_mips.c \
+	src/asm/mips/qpisf_2s_mips.c \
+	src/asm/mips/residu_mips.c \
+	src/asm/mips/scale_mips.c \
+	src/asm/mips/syn_filt_mips.c
+endif
+
 LOCAL_MODULE := libstagefright_amrwbenc
 
 LOCAL_ARM_MODE := arm
@@ -110,6 +166,19 @@ ifeq ($(VOTT), v7)
 LOCAL_CFLAGS += -DARM -DARMV7 -DASM_OPT
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/asm/ARMV5E
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/asm/ARMV7
+endif
+
+ifeq ($(VOTT), mips32)
+LOCAL_CFLAGS += -DMIPS32_LE
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/src/asm/mips
+endif
+
+ifeq ($(VOTT), mips_dsp_r1)
+LOCAL_CFLAGS += -DMIPS32_LE -DMIPS32_R2_LE -DMIPS_DSP_R1_LE
+endif
+
+ifeq ($(VOTT), mips_dsp_r2)
+LOCAL_CFLAGS += -DMIPS32_LE -DMIPS32_R2_LE -DMIPS_DSP_R1_LE -DMIPS_DSP_R2_LE
 endif
 
 include $(BUILD_STATIC_LIBRARY)

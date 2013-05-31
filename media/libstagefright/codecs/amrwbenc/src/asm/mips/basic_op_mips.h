@@ -15,85 +15,12 @@
  */
 
 
-#ifndef __BASIC_OP_H__
-#define __BASIC_OP_H__
-
-#include <stdio.h>
-#include <stdlib.h>
-#include "typedef.h"
-
-#define MAX_32 (Word32)0x7fffffffL
-#define MIN_32 (Word32)0x80000000L
-
-#define MAX_16 (Word16)+32767	/* 0x7fff */
-#define MIN_16 (Word16)-32768	/* 0x8000 */
-
-
-#define  static_vo  static __inline
-
-#define saturate(L_var1) (((L_var1) > 0X00007fffL) ? (MAX_16): (((L_var1) < (Word32) 0xffff8000L) ? (MIN_16): ((L_var1) & 0xffff)))
-
-#define abs_s(x)       ((Word16)(((x) != MIN_16) ? (((x) >= 0) ? (x) : (-(x))) : MAX_16))  /* Short abs,           1   */
-#define L_deposit_h(x) (((Word32)(x)) << 16)                                               /* 16 bit var1 -> MSB,     2 */
-#define L_deposit_l(x) ((Word32)(x))                                                       /* 16 bit var1 -> LSB,     2 */
-#define L_abs(x) (((x) != MIN_32) ? (((x) >= 0) ? (x) : (-(x))) : MAX_32)                  /* Long abs,              3*/
-#define negate(var1) ((Word16)(((var1) == MIN_16) ? MAX_16 : (-(var1))))                   /* Short negate,        1*/
-#define L_negate(L_var1) (((L_var1) == (MIN_32)) ? (MAX_32) : (-(L_var1)))                 /* Long negate,     2*/
-
-
-#define extract_h(a)			((Word16)(a >> 16))
-#define extract_l(x)            	(Word16)((x))
-#define add1(a,b)			(a + b)
-#define vo_L_msu(a,b,c)			( a - (( b * c ) << 1) )
-#define vo_mult32(a, b)         ((a) * (b))
-#define vo_mult(a,b)			(( a * b ) >> 15 )
-#define	vo_L_mult(a,b)	    		(((a) * (b)) << 1)
-#define vo_shr_r(var1, var2)   		((var1+((Word16)(1L<<(var2-1))))>>var2)
-#define vo_sub(a,b)			(a - b)
-#define vo_L_deposit_h(a)		((Word32)((a) << 16))
-#define vo_round(a)			((a + 0x00008000) >> 16)
-#define vo_extract_l(a)			((Word16)(a))
-#define vo_L_add(a,b)			(a + b)
-#define vo_L_sub(a,b)			(a - b)
-#define vo_mult_r(a,b)			((( a * b ) + 0x4000 ) >> 15 )
-#define vo_negate(a)		        (-a)
-#define vo_L_shr_r(L_var1, var2)        ((L_var1+((Word32)(1L<<(var2-1))))>>var2)
-
+#ifndef __BASIC_OP_MIPS_H__
+#define __BASIC_OP_MIPS_H__
 
 /*___________________________________________________________________________
 |                                                                           |
-|   Prototypes for basic arithmetic operators                               |
-|___________________________________________________________________________|
-*/
-static_vo Word16 add (Word16 var1, Word16 var2);				/* Short add,1 */
-static_vo Word16 sub (Word16 var1, Word16 var2);				/* Short sub,1 */
-static_vo Word16 shl (Word16 var1, Word16 var2);                                /* Short shift left,    1   */
-static_vo Word16 shr (Word16 var1, Word16 var2);                                /* Short shift right,   1   */
-static_vo Word16 mult (Word16 var1, Word16 var2);                               /* Short mult,          1   */
-static_vo Word32 L_mult (Word16 var1, Word16 var2);                             /* Long mult,           1   */
-static_vo Word16 voround (Word32 L_var1);                                       /* Round,               1   */
-static_vo Word32 L_mac (Word32 L_var3, Word16 var1, Word16 var2);            	/* Mac,  1  */
-static_vo Word32 L_msu (Word32 L_var3, Word16 var1, Word16 var2);   		/* Msu,  1  */
-static_vo Word32 L_add (Word32 L_var1, Word32 L_var2);   		 	/* Long add,        2 */
-static_vo Word32 L_sub (Word32 L_var1, Word32 L_var2);   			/* Long sub,        2 */
-static_vo Word16 mult_r (Word16 var1, Word16 var2);      		 	/* Mult with round, 2 */
-static_vo Word32 L_shl2(Word32 L_var1, Word16 var2);             		/* var2 > 0*/
-static_vo Word32 L_shl (Word32 L_var1, Word16 var2);    	 	 	/* Long shift left, 2 */
-static_vo Word32 L_shr (Word32 L_var1, Word16 var2);    	 	 	/* Long shift right, 2*/
-static_vo Word32 L_shr_r (Word32 L_var1, Word16 var2); 				/* Long shift right with round,  3   */
-static_vo Word16 norm_s (Word16 var1);             				/* Short norm,           15  */
-static_vo Word16 div_s (Word16 var1, Word16 var2); 				/* Short division,       18  */
-static_vo Word16 norm_l (Word32 L_var1);           				/* Long norm,            30  */
-
-#if MIPS_DSP_R1_LE
-
-#include "../src/asm/mips/basic_op_mips.h"
-
-#else
-
-/*___________________________________________________________________________
-|                                                                           |
-|   Functions                                                               |
+|   Functions optimized for MIPS architecture                               |
 |___________________________________________________________________________|
 */
 /*___________________________________________________________________________
@@ -131,11 +58,13 @@ static_vo Word16 norm_l (Word32 L_var1);           				/* Long norm,            
 */
 static_vo Word16 add (Word16 var1, Word16 var2)
 {
-	Word16 var_out;
-	Word32 L_sum;
-	L_sum = (Word32) var1 + var2;
-	var_out = saturate (L_sum);
-	return (var_out);
+    Word16 var_out;
+    __asm__ volatile (
+        "addq_s.ph  %[var_out], %[var1], %[var2]    \n\t"
+        : [var_out] "=r" (var_out)
+        : [var1] "r" (var1), [var2] "r" (var2)
+    );
+    return (var_out);
 }
 
 /*___________________________________________________________________________
@@ -174,11 +103,13 @@ static_vo Word16 add (Word16 var1, Word16 var2)
 
 static_vo Word16 sub (Word16 var1, Word16 var2)
 {
-	Word16 var_out;
-	Word32 L_diff;
-	L_diff = (Word32) var1 - var2;
-	var_out = saturate (L_diff);
-	return (var_out);
+    Word16 var_out;
+    __asm__ volatile (
+        "subq_s.ph  %[var_out], %[var1], %[var2]    \n\t"
+        : [var_out] "=r" (var_out)
+        : [var1] "r" (var1), [var2] "r" (var2)
+    );
+    return (var_out);
 }
 
 /*___________________________________________________________________________
@@ -218,29 +149,23 @@ static_vo Word16 sub (Word16 var1, Word16 var2)
 
 static_vo Word16 shl (Word16 var1, Word16 var2)
 {
-	Word16 var_out;
-	Word32 result;
-	if (var2 < 0)
-	{
-		if (var2 < -16)
-			var2 = -16;
-		var_out = var1 >> ((Word16)-var2);
-	}
-	else
-	{
-		result = (Word32) var1 *((Word32) 1 << var2);
-		if ((var2 > 15 && var1 != 0) || (result != (Word32) ((Word16) result)))
-		{
-			var_out = (Word16)((var1 > 0) ? MAX_16 : MIN_16);
-		}
-		else
-		{
-			var_out = extract_l (result);
-		}
-	}
-	return (var_out);
+    Word16 var_out;
+    if (var2 < 0)
+    {
+        if (var2 < -16)
+            var2 = -16;
+        var_out = var1 >> ((Word16)-var2);
+    }
+    else
+    {
+        __asm__ volatile (
+            "shllv_s.ph %[var_out], %[var1], %[var2]    \n\t"
+            : [var_out] "=r" (var_out)
+            : [var1] "r" (var1), [var2] "r" (var2)
+        );
+    }
+    return (var_out);
 }
-
 /*___________________________________________________________________________
 |                                                                           |
 |   Function Name : shr                                                     |
@@ -278,32 +203,32 @@ static_vo Word16 shl (Word16 var1, Word16 var2)
 
 static_vo Word16 shr (Word16 var1, Word16 var2)
 {
-	Word16 var_out;
-	if (var2 < 0)
-	{
-		if (var2 < -16)
-			var2 = -16;
-		var_out = shl(var1, (Word16)-var2);
-	}
-	else
-	{
-		if (var2 >= 15)
-		{
-			var_out = (Word16)((var1 < 0) ? -1 : 0);
-		}
-		else
-		{
-			if (var1 < 0)
-			{
-				var_out = (Word16)(~((~var1) >> var2));
-			}
-			else
-			{
-				var_out = (Word16)(var1 >> var2);
-			}
-		}
-	}
-	return (var_out);
+    Word16 var_out;
+    if (var2 < 0)
+    {
+        if (var2 < -16)
+            var2 = -16;
+        var_out = shl(var1, (Word16)-var2);
+    }
+    else
+    {
+        if (var2 >= 15)
+        {
+            var_out = (Word16)((var1 < 0) ? -1 : 0);
+        }
+        else
+        {
+            if (var1 < 0)
+            {
+                var_out = (Word16)(~((~var1) >> var2));
+            }
+            else
+            {
+                var_out = (Word16)(var1 >> var2);
+            }
+        }
+    }
+    return (var_out);
 }
 
 /*___________________________________________________________________________
@@ -343,14 +268,15 @@ static_vo Word16 shr (Word16 var1, Word16 var2)
 
 static_vo Word16 mult (Word16 var1, Word16 var2)
 {
-	Word16 var_out;
-	Word32 L_product;
-	L_product = (Word32) var1 *(Word32) var2;
-	L_product = (L_product & (Word32) 0xffff8000L) >> 15;
-	if (L_product & (Word32) 0x00010000L)
-		L_product = L_product | (Word32) 0xffff0000L;
-	var_out = saturate (L_product);
-	return (var_out);
+    Word16 var_out;
+    __asm__ volatile (
+        "muleq_s.w.phr  %[var_out], %[var1],    %[var2] \n\t"
+        "sra            %[var_out], %[var_out], 16      \n\t"
+        : [var_out] "=&r" (var_out)
+        : [var1] "r" (var1), [var2] "r" (var2)
+        : "hi", "lo"
+    );
+    return (var_out);
 }
 
 /*___________________________________________________________________________
@@ -390,17 +316,14 @@ static_vo Word16 mult (Word16 var1, Word16 var2)
 
 static_vo Word32 L_mult (Word16 var1, Word16 var2)
 {
-	Word32 L_var_out;
-	L_var_out = (Word32) var1 *(Word32) var2;
-	if (L_var_out != (Word32) 0x40000000L)
-	{
-		L_var_out *= 2;
-	}
-	else
-	{
-		L_var_out = MAX_32;
-	}
-	return (L_var_out);
+    Word32 L_var_out;
+    __asm__ volatile (
+        "muleq_s.w.phr %[L_var_out], %[var1], %[var2]   \n\t"
+        : [L_var_out] "=r" (L_var_out)
+        : [var1] "r" (var1), [var2] "r" (var2)
+        : "hi", "lo"
+    );
+    return (L_var_out);
 }
 
 /*___________________________________________________________________________
@@ -436,11 +359,11 @@ static_vo Word32 L_mult (Word16 var1, Word16 var2)
 
 static_vo Word16 voround (Word32 L_var1)
 {
-	Word16 var_out;
-	Word32 L_rounded;
-	L_rounded = L_add (L_var1, (Word32) 0x00008000L);
-	var_out = extract_h (L_rounded);
-	return (var_out);
+    Word16 var_out;
+    Word32 L_rounded;
+    L_rounded = L_add (L_var1, (Word32) 0x00008000L);
+    var_out = extract_h (L_rounded);
+    return (var_out);
 }
 
 /*___________________________________________________________________________
@@ -482,11 +405,15 @@ static_vo Word16 voround (Word32 L_var1)
 
 static_vo Word32 L_mac (Word32 L_var3, Word16 var1, Word16 var2)
 {
-	Word32 L_var_out;
-	Word32 L_product;
-	L_product = ((var1 * var2) << 1);
-	L_var_out = L_add (L_var3, L_product);
-	return (L_var_out);
+    Word32 L_var_out;
+    __asm__ volatile (
+        "muleq_s.w.phr %[L_var_out], %[var1],      %[var2]   \n\t"
+        "addq_s.w      %[L_var_out], %[L_var_out], %[L_var3] \n\t"
+        : [L_var_out] "=&r" (L_var_out)
+        : [var1] "r" (var1), [var2] "r" (var2), [L_var3] "r" (L_var3)
+        : "hi", "lo"
+    );
+    return (L_var_out);
 }
 
 /*___________________________________________________________________________
@@ -528,11 +455,15 @@ static_vo Word32 L_mac (Word32 L_var3, Word16 var1, Word16 var2)
 
 static_vo Word32 L_msu (Word32 L_var3, Word16 var1, Word16 var2)
 {
-	Word32 L_var_out;
-	Word32 L_product;
-	L_product = (var1 * var2)<<1;
-	L_var_out = L_sub (L_var3, L_product);
-	return (L_var_out);
+    Word32 L_var_out;
+    __asm__ volatile (
+        "muleq_s.w.phr %[L_var_out], %[var1],   %[var2]      \n\t"
+        "subq_s.w      %[L_var_out], %[L_var3], %[L_var_out] \n\t"
+        : [L_var_out] "=&r" (L_var_out)
+        : [var1] "r" (var1), [var2] "r" (var2), [L_var3] "r" (L_var3)
+        : "hi", "lo"
+    );
+    return (L_var_out);
 }
 
 /*___________________________________________________________________________
@@ -569,16 +500,13 @@ static_vo Word32 L_msu (Word32 L_var3, Word16 var1, Word16 var2)
 
 static_vo Word32 L_add (Word32 L_var1, Word32 L_var2)
 {
-	Word32 L_var_out;
-	L_var_out = L_var1 + L_var2;
-	if (((L_var1 ^ L_var2) & MIN_32) == 0)
-	{
-		if ((L_var_out ^ L_var1) & MIN_32)
-		{
-			L_var_out = (L_var1 < 0) ? MIN_32 : MAX_32;
-		}
-	}
-	return (L_var_out);
+    Word32 L_var_out;
+    __asm__ volatile (
+        "addq_s.w %[L_var_out], %[L_var1], %[L_var2] \n\t"
+        : [L_var_out] "=r" (L_var_out)
+        : [L_var1] "r" (L_var1), [L_var2] "r" (L_var2)
+    );
+    return (L_var_out);
 }
 
 /*___________________________________________________________________________
@@ -615,17 +543,15 @@ static_vo Word32 L_add (Word32 L_var1, Word32 L_var2)
 
 static_vo Word32 L_sub (Word32 L_var1, Word32 L_var2)
 {
-	Word32 L_var_out;
-	L_var_out = L_var1 - L_var2;
-	if (((L_var1 ^ L_var2) & MIN_32) != 0)
-	{
-		if ((L_var_out ^ L_var1) & MIN_32)
-		{
-			L_var_out = (L_var1 < 0L) ? MIN_32 : MAX_32;
-		}
-	}
-	return (L_var_out);
+    Word32 L_var_out;
+    __asm__ volatile (
+        "subq_s.w %[L_var_out], %[L_var1], %[L_var2] \n\t"
+        : [L_var_out] "=r" (L_var_out)
+        : [L_var1] "r" (L_var1), [L_var2] "r" (L_var2)
+    );
+    return (L_var_out);
 }
+
 
 
 /*___________________________________________________________________________
@@ -664,18 +590,14 @@ static_vo Word32 L_sub (Word32 L_var1, Word32 L_var2)
 
 static_vo Word16 mult_r (Word16 var1, Word16 var2)
 {
-	Word16 var_out;
-	Word32 L_product_arr;
-	L_product_arr = (Word32) var1 *(Word32) var2;       /* product */
-	L_product_arr += (Word32) 0x00004000L;      /* round */
-	L_product_arr &= (Word32) 0xffff8000L;
-	L_product_arr >>= 15;       /* shift */
-	if (L_product_arr & (Word32) 0x00010000L)   /* sign extend when necessary */
-	{
-		L_product_arr |= (Word32) 0xffff0000L;
-	}
-	var_out = saturate (L_product_arr);
-	return (var_out);
+    Word16 var_out;
+    __asm__ volatile (
+        "mulq_rs.ph %[var_out], %[var1], %[var2] \n\t"
+        : [var_out] "=r" (var_out)
+        : [var1] "r" (var1), [var2] "r" (var2)
+        : "hi", "lo"
+    );
+    return (var_out);
 }
 
 /*___________________________________________________________________________
@@ -714,61 +636,47 @@ static_vo Word16 mult_r (Word16 var1, Word16 var2)
 
 static_vo Word32 L_shl (Word32 L_var1, Word16 var2)
 {
-	Word32 L_var_out = 0L;
-	if (var2 <= 0)
-	{
-		if (var2 < -32)
-			var2 = -32;
-		L_var_out = (L_var1 >> (Word16)-var2);
-	}
-	else
-	{
-		for (; var2 > 0; var2--)
-		{
-			if (L_var1 > (Word32) 0X3fffffffL)
-			{
-				L_var_out = MAX_32;
-				break;
-			}
-			else
-			{
-				if (L_var1 < (Word32) 0xc0000000L)
-				{
-					//Overflow = 1;
-					L_var_out = MIN_32;
-					break;
-				}
-			}
-			L_var1 *= 2;
-			L_var_out = L_var1;
-		}
-	}
-	return (L_var_out);
+    Word32 L_var_out = 0L;
+    if (var2 <= 0)
+    {
+        if (var2 < -32)
+            var2 = -32;
+        L_var_out = (L_var1 >> (Word16)-var2);
+    }
+    else
+    {
+        __asm__ volatile (
+            "shllv_s.w %[L_var_out], %[L_var1], %[var2] \n\t"
+            : [L_var_out] "=r" (L_var_out)
+            : [L_var1] "r" (L_var1), [var2] "r" (var2)
+        );
+    }
+    return (L_var_out);
 }
 
 static_vo Word32 L_shl2(Word32 L_var1, Word16 var2)
 {
-	Word32 L_var_out = 0L;
+    Word32 L_var_out = 0L;
 
-	for (; var2 > 0; var2--)
-	{
-		if (L_var1 > (Word32) 0X3fffffffL)
-		{
-			L_var_out = MAX_32;
-			break;
-		}
-		else
-		{
-			if (L_var1 < (Word32) 0xc0000000L)
-			{
-				L_var_out = MIN_32;
-				break;
-			}
-		}
-		L_var1 <<=1 ;
-		L_var_out = L_var1;
-	}
-	return (L_var_out);
+    for (; var2 > 0; var2--)
+    {
+        if (L_var1 > (Word32) 0X3fffffffL)
+        {
+            L_var_out = MAX_32;
+            break;
+        }
+        else
+        {
+            if (L_var1 < (Word32) 0xc0000000L)
+            {
+                L_var_out = MIN_32;
+                break;
+            }
+        }
+        L_var1 <<=1 ;
+        L_var_out = L_var1;
+    }
+    return (L_var_out);
 }
 
 /*___________________________________________________________________________
@@ -807,32 +715,32 @@ static_vo Word32 L_shl2(Word32 L_var1, Word16 var2)
 
 static_vo Word32 L_shr (Word32 L_var1, Word16 var2)
 {
-	Word32 L_var_out;
-	if (var2 < 0)
-	{
-		if (var2 < -32)
-			var2 = -32;
-		L_var_out = L_shl2(L_var1, (Word16)-var2);
-	}
-	else
-	{
-		if (var2 >= 31)
-		{
-			L_var_out = (L_var1 < 0L) ? -1 : 0;
-		}
-		else
-		{
-			if (L_var1 < 0)
-			{
-				L_var_out = ~((~L_var1) >> var2);
-			}
-			else
-			{
-				L_var_out = L_var1 >> var2;
-			}
-		}
-	}
-	return (L_var_out);
+    Word32 L_var_out;
+    if (var2 < 0)
+    {
+        if (var2 < -32)
+            var2 = -32;
+        L_var_out = L_shl2(L_var1, (Word16)-var2);
+    }
+    else
+    {
+        if (var2 >= 31)
+        {
+            L_var_out = (L_var1 < 0L) ? -1 : 0;
+        }
+        else
+        {
+            if (L_var1 < 0)
+            {
+                L_var_out = ~((~L_var1) >> var2);
+            }
+            else
+            {
+                L_var_out = L_var1 >> var2;
+            }
+        }
+    }
+    return (L_var_out);
 }
 
 /*___________________________________________________________________________
@@ -879,23 +787,20 @@ static_vo Word32 L_shr (Word32 L_var1, Word16 var2)
 
 static_vo Word32 L_shr_r (Word32 L_var1, Word16 var2)
 {
-	Word32 L_var_out;
-	if (var2 > 31)
-	{
-		L_var_out = 0;
-	}
-	else
-	{
-		L_var_out = L_shr (L_var1, var2);
-		if (var2 > 0)
-		{
-			if ((L_var1 & ((Word32) 1 << (var2 - 1))) != 0)
-			{
-				L_var_out++;
-			}
-		}
-	}
-	return (L_var_out);
+    Word32 L_var_out;
+    if (var2 > 31)
+    {
+        L_var_out = 0;
+    }
+    else
+    {
+        __asm__ volatile (
+            "shrav_r.w %[L_var_out], %[L_var1], %[var2] \n\t"
+            : [L_var_out] "=r" (L_var_out)
+            : [L_var1] "r" (L_var1), [var2] "r" (var2)
+        );
+    }
+    return (L_var_out);
 }
 
 /*___________________________________________________________________________
@@ -933,30 +838,30 @@ static_vo Word32 L_shr_r (Word32 L_var1, Word16 var2)
 
 static_vo Word16 norm_s (Word16 var1)
 {
-	Word16 var_out = 0;
-	if (var1 == 0)
-	{
-		var_out = 0;
-	}
-	else
-	{
-		if (var1 == -1)
-		{
-			var_out = 15;
-		}
-		else
-		{
-			if (var1 < 0)
-			{
-				var1 = (Word16)~var1;
-			}
-			for (var_out = 0; var1 < 0x4000; var_out++)
-			{
-				var1 <<= 1;
-			}
-		}
-	}
-	return (var_out);
+    Word16 var_out = 0;
+    if (var1 == 0)
+    {
+        var_out = 0;
+    }
+    else
+    {
+        if (var1 == -1)
+        {
+            var_out = 15;
+        }
+        else
+        {
+            if (var1 < 0)
+            {
+                var1 = (Word16)~var1;
+            }
+            for (var_out = 0; var1 < 0x4000; var_out++)
+            {
+                var1 <<= 1;
+            }
+        }
+    }
+    return (var_out);
 }
 
 /*___________________________________________________________________________
@@ -998,47 +903,61 @@ static_vo Word16 norm_s (Word16 var1)
 
 static_vo Word16 div_s (Word16 var1, Word16 var2)
 {
-	Word16 var_out = 0;
-	Word16 iteration;
-	Word32 L_num;
-	Word32 L_denom;
-	if ((var1 < 0) || (var2 < 0))
-	{
-		var_out = MAX_16;
-		return var_out;
-	}
-	if (var2 == 0)
-	{
-		var_out = MAX_16;
-		return var_out;
-	}
-	if (var1 == 0)
-	{
-		var_out = 0;
-	}
-	else
-	{
-		if (var1 == var2)
-		{
-			var_out = MAX_16;
-		}
-		else
-		{
-			L_num = L_deposit_l (var1);
-			L_denom = L_deposit_l(var2);
-			for (iteration = 0; iteration < 15; iteration++)
-			{
-				var_out <<= 1;
-				L_num <<= 1;
-				if (L_num >= L_denom)
-				{
-					L_num -= L_denom;
-					var_out += 1;
-				}
-			}
-		}
-	}
-	return (var_out);
+    Word16 var_out = 0;
+    Word16 iteration;
+    Word32 L_num;
+    Word32 L_denom;
+    if ((var1 < 0) || (var2 < 0))
+    {
+        var_out = MAX_16;
+        return var_out;
+    }
+    if (var2 == 0)
+    {
+        var_out = MAX_16;
+        return var_out;
+    }
+    if (var1 == 0)
+    {
+        var_out = 0;
+    }
+    else
+    {
+        if (var1 == var2)
+        {
+            var_out = MAX_16;
+        }
+        else
+        {
+            L_num = L_deposit_l (var1);
+            L_denom = L_deposit_l(var2);
+            var_out <<= 1;
+            L_num <<= 1;
+            if (L_num >= L_denom)
+            {
+                L_num -= L_denom;
+                var_out += 1;
+            }
+            for (iteration = 0; iteration < 14; iteration+=2)
+            {
+                var_out <<= 1;
+                L_num <<= 1;
+                if (L_num >= L_denom)
+                {
+                    L_num -= L_denom;
+                    var_out += 1;
+                }
+                var_out <<= 1;
+                L_num <<= 1;
+                if (L_num >= L_denom)
+                {
+                    L_num -= L_denom;
+                    var_out += 1;
+                }
+            }
+        }
+    }
+    return (var_out);
 }
 
 /*___________________________________________________________________________
@@ -1076,21 +995,17 @@ static_vo Word16 div_s (Word16 var1, Word16 var2)
 
 static_vo Word16 norm_l (Word32 L_var1)
 {
-	Word16 var_out = 0;
-	if (L_var1 != 0)
-	{
-		var_out = 31;
-		if (L_var1 != (Word32) 0xffffffffL)
-		{
-			L_var1 ^= (L_var1 >>31);
-			for (var_out = 0; L_var1 < (Word32) 0x40000000L; var_out++)
-			{
-				L_var1 <<= 1;
-			}
-		}
-	}
-	return (var_out);
+    Word16 var_out = 0;
+    __asm__ volatile (
+        "sra   %[var_out], %[L_var1],  31        \n\t"
+        "xor   %[var_out], %[var_out], %[L_var1] \n\t"
+        "clz   %[var_out], %[var_out]            \n\t"
+        "addiu %[var_out], %[var_out], -1        \n\t"
+        : [var_out] "=&r" (var_out)
+        : [L_var1] "r" (L_var1)
+    );
+    return (var_out);
 }
-#endif
-#endif //__BASIC_OP_H__
+
+#endif //__BASIC_OP_MIPS_H__
 
