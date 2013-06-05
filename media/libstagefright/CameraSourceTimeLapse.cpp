@@ -111,41 +111,43 @@ bool CameraSourceTimeLapse::trySettingVideoSize(
 
     ALOGV("trySettingVideoSize");
     int64_t token = IPCThreadState::self()->clearCallingIdentity();
-    String8 s = mCamera->getParameters();
-
-    CameraParameters params(s);
-    Vector<Size> supportedSizes;
-    params.getSupportedVideoSizes(supportedSizes);
-    bool videoOutputSupported = false;
-    if (supportedSizes.size() == 0) {
-        params.getSupportedPreviewSizes(supportedSizes);
-    } else {
-        videoOutputSupported = true;
-    }
-
-    bool videoSizeSupported = false;
-    for (uint32_t i = 0; i < supportedSizes.size(); ++i) {
-        int32_t pictureWidth = supportedSizes[i].width;
-        int32_t pictureHeight = supportedSizes[i].height;
-
-        if ((pictureWidth == width) && (pictureHeight == height)) {
-            videoSizeSupported = true;
-        }
-    }
-
     bool isSuccessful = false;
-    if (videoSizeSupported) {
-        ALOGV("Video size (%d, %d) is supported", width, height);
-        if (videoOutputSupported) {
-            params.setVideoSize(width, height);
+
+    if( OK == mInitCheck ) {
+        String8 s = mCamera->getParameters();
+        CameraParameters params(s);
+        Vector<Size> supportedSizes;
+        params.getSupportedVideoSizes(supportedSizes);
+        bool videoOutputSupported = false;
+        if (supportedSizes.size() == 0) {
+            params.getSupportedPreviewSizes(supportedSizes);
         } else {
-            params.setPreviewSize(width, height);
+            videoOutputSupported = true;
         }
-        if (mCamera->setParameters(params.flatten()) == OK) {
-            isSuccessful = true;
-        } else {
-            ALOGE("Failed to set preview size to %dx%d", width, height);
-            isSuccessful = false;
+
+        bool videoSizeSupported = false;
+        for (uint32_t i = 0; i < supportedSizes.size(); ++i) {
+            int32_t pictureWidth = supportedSizes[i].width;
+            int32_t pictureHeight = supportedSizes[i].height;
+
+            if ((pictureWidth == width) && (pictureHeight == height)) {
+                videoSizeSupported = true;
+            }
+        }
+
+        if (videoSizeSupported) {
+            ALOGV("Video size (%d, %d) is supported", width, height);
+            if (videoOutputSupported) {
+                params.setVideoSize(width, height);
+            } else {
+                params.setPreviewSize(width, height);
+            }
+            if (mCamera->setParameters(params.flatten()) == OK) {
+                isSuccessful = true;
+            } else {
+                ALOGE("Failed to set preview size to %dx%d", width, height);
+                isSuccessful = false;
+            }
         }
     }
 
