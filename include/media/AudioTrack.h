@@ -118,6 +118,8 @@ public:
                                       audio_stream_type_t streamType = AUDIO_STREAM_DEFAULT,
                                       uint32_t sampleRate = 0);
 
+     enum transfer_type { TRANSFER_DEFAULT };
+
     /* Constructs an uninitialized AudioTrack. No connection with
      * AudioFlinger takes place.
      */
