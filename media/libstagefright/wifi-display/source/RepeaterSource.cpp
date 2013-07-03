@@ -57,8 +57,19 @@ status_t RepeaterSource::start(MetaData *params) {
 
 status_t RepeaterSource::stop() {
     CHECK(mStarted);
+    status_t err;
 
     ALOGV("stopping");
+    {
+        Mutex::Autolock autoLock(mLock);
+        if (mBuffer != NULL) {
+            ALOGV("releasing mbuf %p", mBuffer);
+            mBuffer->release();
+            mBuffer = NULL;
+        }
+
+        err = mSource->stop();
+    }
 
     if (mLooper != NULL) {
         mLooper->stop();
@@ -66,15 +77,6 @@ status_t RepeaterSource::stop() {
 
         mReflector.clear();
     }
-
-    if (mBuffer != NULL) {
-        ALOGV("releasing mbuf %p", mBuffer);
-        mBuffer->release();
-        mBuffer = NULL;
-    }
-
-    status_t err = mSource->stop();
-
     ALOGV("stopped");
 
     mStarted = false;
