@@ -3,14 +3,19 @@ include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES:=                 \
         TextDescriptions.cpp      \
-        TimedTextDriver.cpp       \
         TimedText3GPPSource.cpp \
-        TimedTextSource.cpp       \
-        TimedTextSRTSource.cpp    \
+        TimedTextDriver.cpp       \
         TimedTextPlayer.cpp
+        TimedTextSRTSource.cpp    \
+        TimedTextSource.cpp       \
+        TimedTextTTMLSource.cpp   \
+        TTMLNode.cpp              \
+        TTMLParser.cpp            \
+        TTMLUtils.cpp
 
 LOCAL_CFLAGS += -Wno-multichar
 LOCAL_C_INCLUDES:= \
+        $(TOP)/external/expat/lib \
         $(TOP)/frameworks/av/include/media/stagefright/timedtext \
         $(TOP)/frameworks/av/media/libstagefright
 

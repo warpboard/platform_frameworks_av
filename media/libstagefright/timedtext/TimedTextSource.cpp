@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-//#define LOG_NDEBUG 0
 #define LOG_TAG "TimedTextSource"
 #include <utils/Log.h>
 
@@ -28,6 +27,7 @@
 
 #include "TimedText3GPPSource.h"
 #include "TimedTextSRTSource.h"
+#include "TimedTextTTMLSource.h"
 
 namespace android {
 
@@ -38,6 +38,8 @@ sp<TimedTextSource> TimedTextSource::CreateTimedTextSource(
     CHECK(mediaSource->getFormat()->findCString(kKeyMIMEType, &mime));
     if (strcasecmp(mime, MEDIA_MIMETYPE_TEXT_3GPP) == 0) {
         return new TimedText3GPPSource(mediaSource);
+    } else if (strcasecmp(mime, MEDIA_MIMETYPE_TEXT_TTML) == 0) {
+        return new TimedTextTTMLSource(mediaSource);
     }
     ALOGE("Unsupported mime type for subtitle. : %s", mime);
     return NULL;

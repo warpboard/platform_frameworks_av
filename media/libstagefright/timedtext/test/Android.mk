@@ -25,3 +25,48 @@ LOCAL_SHARED_LIBRARIES := \
     libstagefright
 
 include $(BUILD_NATIVE_TEST)
+
+# ================================================================
+# A test for TTMLUtils
+# ================================================================
+include $(CLEAR_VARS)
+
+LOCAL_MODULE := TTMLUtils_test
+
+LOCAL_MODULE_TAGS := eng tests
+
+LOCAL_SRC_FILES := TTMLUtils_test.cpp
+
+LOCAL_C_INCLUDES := \
+    frameworks/av/media/libstagefright/timedtext
+
+LOCAL_SHARED_LIBRARIES := \
+    libstagefright \
+    libstagefright_foundation
+
+include $(BUILD_NATIVE_TEST)
+
+# ================================================================
+# A test for TimedTextTTMLSource
+# ================================================================
+include $(CLEAR_VARS)
+
+LOCAL_MODULE := TimedTextTTMLSource_test
+
+LOCAL_MODULE_TAGS := eng tests
+
+LOCAL_SRC_FILES := TimedTextTTMLSource_test.cpp
+
+LOCAL_C_INCLUDES := \
+    external/expat/lib \
+    frameworks/av/media/libstagefright/timedtext
+
+LOCAL_SHARED_LIBRARIES := \
+    libbinder \
+    libexpat \
+    liblog \
+    libstagefright \
+    libstagefright_foundation \
+    libutils
+
+include $(BUILD_NATIVE_TEST)

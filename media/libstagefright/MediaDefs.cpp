@@ -54,5 +54,6 @@ const char *MEDIA_MIMETYPE_CONTAINER_WVM = "video/wvm";
 
 const char *MEDIA_MIMETYPE_TEXT_3GPP = "text/3gpp-tt";
 const char *MEDIA_MIMETYPE_TEXT_SUBRIP = "application/x-subrip";
+const char *MEDIA_MIMETYPE_TEXT_TTML = "application/ttml+xml";
 
 }  // namespace android

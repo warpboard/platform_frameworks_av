@@ -33,12 +33,6 @@ public:
         LOCAL_DESCRIPTIONS            = 0x200,
     };
 
-    static status_t getParcelOfDescriptions(
-            const uint8_t *data, ssize_t size,
-            uint32_t flags, int timeMs, Parcel *parcel);
-private:
-    TextDescriptions();
-
     enum {
         // These keys must be in sync with the keys in TimedText.java
         KEY_DISPLAY_FLAGS                 = 1, // int
@@ -57,6 +51,7 @@ private:
         KEY_STRUCT_TEXT_POS               = 14, // TextPos
         KEY_STRUCT_JUSTIFICATION          = 15, // Justification
         KEY_STRUCT_TEXT                   = 16, // Text
+        KEY_RAW_TEXT                      = 17, // Text
 
         KEY_GLOBAL_SETTING                = 101,
         KEY_LOCAL_SETTING                 = 102,
@@ -66,6 +61,12 @@ private:
         KEY_FONT_SIZE                     = 106,
         KEY_TEXT_COLOR_RGBA               = 107,
     };
+
+    static status_t getParcelOfDescriptions(
+            const uint8_t *data, ssize_t size,
+            uint32_t flags, int timeMs, Parcel *parcel);
+private:
+    TextDescriptions();
 
     static status_t extractSRTLocalDescriptions(
             const uint8_t *data, ssize_t size,
