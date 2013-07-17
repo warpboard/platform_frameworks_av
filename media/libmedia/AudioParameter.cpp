@@ -140,7 +140,6 @@ status_t AudioParameter::getInt(const String8& key, int& value)
 {
     String8 str8;
     status_t result = get(key, str8);
-    value = 0;
     if (result == NO_ERROR) {
         int val;
         if (sscanf(str8.string(), "%d", &val) == 1) {
@@ -156,7 +155,6 @@ status_t AudioParameter::getFloat(const String8& key, float& value)
 {
     String8 str8;
     status_t result = get(key, str8);
-    value = 0;
     if (result == NO_ERROR) {
         float val;
         if (sscanf(str8.string(), "%f", &val) == 1) {

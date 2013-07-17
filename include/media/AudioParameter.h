@@ -58,7 +58,9 @@ public:
     status_t remove(const String8& key);
 
     status_t get(const String8& key, String8& value);
+    // Get an integer for key. If it fails, value remains unchanged.
     status_t getInt(const String8& key, int& value);
+    // Get a float for key. If it fails, value remains unchanged.
     status_t getFloat(const String8& key, float& value);
     status_t getAt(size_t index, String8& key, String8& value);
 
