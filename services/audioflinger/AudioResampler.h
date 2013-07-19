@@ -43,7 +43,7 @@ public:
     };
 
     static AudioResampler* create(int bitDepth, int inChannelCount,
-            int32_t sampleRate, src_quality quality=DEFAULT_QUALITY);
+            int32_t sampleRate, int32_t inSampleRate = 0, src_quality quality=DEFAULT_QUALITY);
 
     virtual ~AudioResampler();
 
