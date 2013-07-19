@@ -25,6 +25,7 @@
 #include "AudioResampler.h"
 #include "AudioResamplerSinc.h"
 #include "AudioResamplerCubic.h"
+#include "AudioResamplerBeats.h"
 
 #ifdef __arm__
 #include <machine/cpu-features.h>
@@ -102,6 +103,7 @@ void AudioResampler::init_routine()
     if (property_get("af.resampler.quality", value, NULL) > 0) {
         char *endptr;
         unsigned long l = strtoul(value, &endptr, 0);
+		ALOGV("init_routine: quality value = %ld",l);
         if (*endptr == '\0') {
             defaultQuality = (src_quality) l;
             ALOGD("forcing AudioResampler quality to %d", defaultQuality);
@@ -133,7 +135,7 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static uint32_t currentMHz = 0;
 
 AudioResampler* AudioResampler::create(int bitDepth, int inChannelCount,
-        int32_t sampleRate, src_quality quality) {
+        int32_t sampleRate, int32_t inSampleRate, src_quality quality) {
 
     bool atFinalQuality;
     if (quality == DEFAULT_QUALITY) {
@@ -177,29 +179,73 @@ AudioResampler* AudioResampler::create(int bitDepth, int inChannelCount,
             break;
         }
     }
+	
+/*
+	char value[PROPERTY_VALUE_MAX];
+	if (property_get("af.resampler.quality", value, NULL) > 0) {
+		char *endptr;
+		unsigned long l = strtoul(value, &endptr, 0);
+		//fscanf(fp,"%d",&l);
+		quality = (src_quality) l;
+		ALOGV("create(): quality value = %d",l);
+	}
+*/	
     pthread_mutex_unlock(&mutex);
-
-    AudioResampler* resampler;
-
+	
+	AudioResampler* resampler;
+	
+    bool bFsin_audio,bFsout_audio; 
+	bFsin_audio =  (inSampleRate == 44100) || (inSampleRate == 48000);
+	bFsout_audio = (sampleRate == 44100) || (sampleRate == 48000);
+	
+	ALOGV("FsIn: %d, FsOut: %d",inSampleRate, sampleRate);
+	
     switch (quality) {
     default:
     case DEFAULT_QUALITY:
     case LOW_QUALITY:
-        ALOGV("Create linear Resampler");
-        resampler = new AudioResamplerOrder1(bitDepth, inChannelCount, sampleRate);
+		if (bFsin_audio && bFsout_audio){
+			ALOGV("Create LOW_COMPLEXITY Beats Resampler");
+			resampler = new AudioResamplerBeats(bitDepth, inChannelCount, sampleRate, LOW_QUALITY);
+		}
+		else{
+			ALOGV("Create linear Resampler");
+			resampler = new AudioResamplerOrder1(bitDepth, inChannelCount, sampleRate);
+		}
         break;
-    case MED_QUALITY:
-        ALOGV("Create cubic Resampler");
-        resampler = new AudioResamplerCubic(bitDepth, inChannelCount, sampleRate);
+ 
+	case MED_QUALITY:
+		if (bFsin_audio && bFsout_audio){
+			ALOGV("Create MED_QUALITY Beats Resampler");
+			resampler = new AudioResamplerBeats(bitDepth, inChannelCount, sampleRate, MED_QUALITY);
+		}
+		else{
+			ALOGV("Create cubic Resampler");
+			resampler = new AudioResamplerCubic(bitDepth, inChannelCount, sampleRate);
+		}
         break;
+       
     case HIGH_QUALITY:
-        ALOGV("Create HIGH_QUALITY sinc Resampler");
-        resampler = new AudioResamplerSinc(bitDepth, inChannelCount, sampleRate);
+		if (bFsin_audio && bFsout_audio){
+			ALOGV("Create HIGH_QUALITY Beats Resampler");
+			resampler = new AudioResamplerBeats(bitDepth, inChannelCount, sampleRate, HIGH_QUALITY);
+		}
+		else{
+			ALOGV("Create HIGH_QUALITY sinc Resampler");
+			resampler = new AudioResamplerSinc(bitDepth, inChannelCount, sampleRate);
+		}
         break;
+	
     case VERY_HIGH_QUALITY:
-        ALOGV("Create VERY_HIGH_QUALITY sinc Resampler = %d", quality);
-        resampler = new AudioResamplerSinc(bitDepth, inChannelCount, sampleRate, quality);
-        break;
+		if (bFsin_audio && bFsout_audio){
+			ALOGV("Create VERY_HIGH_QUALITY Beats Resampler");
+			resampler = new AudioResamplerBeats(bitDepth, inChannelCount, sampleRate, VERY_HIGH_QUALITY);
+		}
+		else{
+			ALOGV("Create VERY_HIGH_QUALITY sinc Resampler");
+			resampler = new AudioResamplerSinc(bitDepth, inChannelCount, sampleRate);
+		}
+        break;	
     }
 
     // initialize resampler
