@@ -555,7 +555,7 @@ bool AudioMixer::track_t::setResampler(uint32_t value, uint32_t devSampleRate)
                         format,
                         // the resampler sees the number of channels after the downmixer, if any
                         downmixerBufferProvider != NULL ? MAX_NUM_CHANNELS : channelCount,
-                        devSampleRate, quality);
+                        devSampleRate, value, quality); //value: passing input sample rate 
                 resampler->setLocalTimeFreq(localTimeFreq);
             }
             return true;
