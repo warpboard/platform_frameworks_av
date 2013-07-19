@@ -23,7 +23,8 @@ LOCAL_SRC_FILES:=               \
     AudioPolicyService.cpp      \
     ServiceUtilities.cpp        \
     AudioResamplerCubic.cpp.arm \
-    AudioResamplerSinc.cpp.arm
+    AudioResamplerSinc.cpp.arm  \
+    AudioResamplerBeats.cpp.arm
 
 LOCAL_SRC_FILES += StateQueue.cpp
 
