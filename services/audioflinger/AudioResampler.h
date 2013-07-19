@@ -40,10 +40,15 @@ public:
         MED_QUALITY=2,
         HIGH_QUALITY=3,
         VERY_HIGH_QUALITY=4,
+        BEATS_LOW_QUALITY=5,
+        BEATS_MED_QUALITY=6,
+        BEATS_HIGH_QUALITY=7,
+        BEATS_VERY_HIGH_QUALITY=8,
     };
 
     static AudioResampler* create(int bitDepth, int inChannelCount,
-            int32_t sampleRate, src_quality quality=DEFAULT_QUALITY);
+            int32_t sampleRate, int32_t inSampleRate = 0 /* not set yet */,
+            src_quality quality=DEFAULT_QUALITY);
 
     virtual ~AudioResampler();
 
