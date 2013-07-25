@@ -34,9 +34,9 @@ const int32_t* readResamplerCoefficients(bool upSample) {
 
     ALOGV("readResamplerCoefficients");
     if (upSample) {
-        return (const int32_t *) up_sampler_filter_coefficients;
+        return up_sampler_filter_coefficients;
     } else {
-        return (const int32_t *) dn_sampler_filter_coefficients;
+        return dn_sampler_filter_coefficients;
     }
 
 }

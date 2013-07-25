@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#define LOG_TAG "SchedulingPolicyService"
-//#define LOG_NDEBUG 0
-
 #include <binder/IServiceManager.h>
 #include <utils/Mutex.h>
 #include "ISchedulingPolicyService.h"
@@ -28,35 +25,28 @@ static sp<ISchedulingPolicyService> sSchedulingPolicyService;
 static const String16 _scheduling_policy("scheduling_policy");
 static Mutex sMutex;
 
-int requestPriority(pid_t pid, pid_t tid, int32_t prio, bool asynchronous)
+int requestPriority(pid_t pid, pid_t tid, int32_t prio)
 {
     // FIXME merge duplicated code related to service lookup, caching, and error recovery
-    int ret;
+    sp<ISchedulingPolicyService> sps;
     for (;;) {
         sMutex.lock();
-        sp<ISchedulingPolicyService> sps = sSchedulingPolicyService;
+        sps = sSchedulingPolicyService;
         sMutex.unlock();
-        if (sps == 0) {
-            sp<IBinder> binder = defaultServiceManager()->checkService(_scheduling_policy);
-            if (binder == 0) {
-                sleep(1);
-                continue;
-            }
+        if (sps != 0) {
+            break;
+        }
+        sp<IBinder> binder = defaultServiceManager()->checkService(_scheduling_policy);
+        if (binder != 0) {
             sps = interface_cast<ISchedulingPolicyService>(binder);
             sMutex.lock();
             sSchedulingPolicyService = sps;
             sMutex.unlock();
-        }
-        ret = sps->requestPriority(pid, tid, prio, asynchronous);
-        if (ret != DEAD_OBJECT) {
             break;
         }
-        ALOGW("SchedulingPolicyService died");
-        sMutex.lock();
-        sSchedulingPolicyService.clear();
-        sMutex.unlock();
+        sleep(1);
     }
-    return ret;
+    return sps->requestPriority(pid, tid, prio);
 }
 
 }   // namespace android
