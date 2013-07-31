@@ -148,6 +148,11 @@ status_t AudioEffect::set(const effect_uuid_t *type,
     mIEffect = iEffect;
     mCblkMemory = cblk;
     mCblk = static_cast<effect_param_cblk_t*>(cblk->pointer());
+    if (mCblk == 0) {
+        mStatus = NO_INIT;
+        ALOGE("Failed to map memory (mCblk == 0)");
+        return mStatus;
+    }
     int bufOffset = ((sizeof(effect_param_cblk_t) - 1) / sizeof(int) + 1) * sizeof(int);
     mCblk->buffer = (uint8_t *)mCblk + bufOffset;
 
