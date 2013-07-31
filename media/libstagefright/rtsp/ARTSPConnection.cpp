@@ -39,6 +39,7 @@ namespace android {
 
 // static
 const int64_t ARTSPConnection::kSelectTimeoutUs = 1000ll;
+const int64_t ARTSPConnection::kRecvTimeoutS = 3ll;
 
 // static
 const AString ARTSPConnection::sUserAgent =
@@ -52,7 +53,8 @@ ARTSPConnection::ARTSPConnection(bool uidValid, uid_t uid)
       mSocket(-1),
       mConnectionID(0),
       mNextCSeq(0),
-      mReceiveResponseEventPending(false) {
+      mReceiveResponseEventPending(false),
+      mTeardownSent(false) {
 }
 
 ARTSPConnection::~ARTSPConnection() {
@@ -67,6 +69,8 @@ ARTSPConnection::~ARTSPConnection() {
 }
 
 void ARTSPConnection::connect(const char *url, const sp<AMessage> &reply) {
+    mTeardownSent = false;
+
     sp<AMessage> msg = new AMessage(kWhatConnect, id());
     msg->setString("url", url);
     msg->setMessage("reply", reply);
@@ -409,6 +413,10 @@ void ARTSPConnection::onSendRequest(const sp<AMessage> &msg) {
         return;
     }
 
+    if (reply->what() == 'tear') {
+        mTeardownSent = true;
+    }
+
     AString request;
     CHECK(msg->findString("request", &request));
 
@@ -526,6 +534,18 @@ void ARTSPConnection::postReceiveReponseEvent() {
 
 status_t ARTSPConnection::receive(void *data, size_t size) {
     size_t offset = 0;
+
+    if (mTeardownSent) {
+        struct timeval tv;
+        tv.tv_sec = kRecvTimeoutS;
+        tv.tv_usec = 0;
+
+        if (setsockopt (mSocket, SOL_SOCKET, SO_RCVTIMEO, (char*)&tv, sizeof(tv)) < 0) {
+            ALOGE("error setting socket timeout (%s)", strerror(errno));
+            return ERROR_IO;
+        }
+    }
+
     while (offset < size) {
         ssize_t n = recv(mSocket, (uint8_t *)data + offset, size - offset, 0);
 
