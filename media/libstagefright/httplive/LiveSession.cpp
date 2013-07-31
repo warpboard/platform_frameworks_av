@@ -186,6 +186,13 @@ void LiveSession::onConnect(const sp<AMessage> &msg) {
         return;
     }
 
+    if (playlist->size() == 0) {
+        ALOGE("master playlist '%s' did not contain any streams.", url.c_str());
+
+        signalEOS(ERROR_MALFORMED);
+        return;
+    }
+
     if (playlist->isVariantPlaylist()) {
         for (size_t i = 0; i < playlist->size(); ++i) {
             BandwidthItem item;
