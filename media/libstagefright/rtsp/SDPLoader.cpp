@@ -52,6 +52,11 @@ SDPLoader::SDPLoader(const sp<AMessage> &notify, uint32_t flags, bool uidValid, 
                       PRIORITY_HIGHEST);
 }
 
+SDPLoader::~SDPLoader() {
+    mNetLooper->stop();
+    mNetLooper->unregisterHandler(id());
+}
+
 void SDPLoader::load(const char *url, const KeyedVector<String8, String8> *headers) {
     mNetLooper->registerHandler(this);
 

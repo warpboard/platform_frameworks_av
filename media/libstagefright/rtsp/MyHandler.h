@@ -155,6 +155,12 @@ struct MyHandler : public AHandler {
         mSessionHost = host;
     }
 
+    ~MyHandler() {
+        looper()->unregisterHandler(mConn->id());
+        mNetLooper->stop();
+        mNetLooper->unregisterHandler(mRTPConn->id());
+    }
+
     void connect() {
         looper()->registerHandler(mConn);
         (1 ? mNetLooper : looper())->registerHandler(mRTPConn);

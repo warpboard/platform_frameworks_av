@@ -77,6 +77,14 @@ MediaCodec::MediaCodec(const sp<ALooper> &looper)
 }
 
 MediaCodec::~MediaCodec() {
+    if (mCodecLooper != NULL) {
+        mCodecLooper->stop();
+        mCodecLooper->unregisterHandler(mCodec->id());
+    } else {
+        mLooper->unregisterHandler(mCodec->id());
+    }
+    mLooper->unregisterHandler(this->id());
+
     CHECK_EQ(mState, UNINITIALIZED);
 }
 

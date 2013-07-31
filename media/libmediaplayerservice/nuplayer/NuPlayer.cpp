@@ -132,6 +132,15 @@ NuPlayer::NuPlayer()
 }
 
 NuPlayer::~NuPlayer() {
+    if (mRenderer != NULL) {
+        looper()->unregisterHandler(mRenderer->id());
+    }
+    if (mAudioDecoder != NULL) {
+        looper()->unregisterHandler(mAudioDecoder->id());
+    }
+    if (mVideoDecoder != NULL) {
+        looper()->unregisterHandler(mVideoDecoder->id());
+    }
 }
 
 void NuPlayer::setUID(uid_t uid) {
@@ -611,11 +620,17 @@ void NuPlayer::onMessageReceived(const sp<AMessage> &msg) {
             } else if (what == ACodec::kWhatShutdownCompleted) {
                 ALOGV("%s shutdown completed", audio ? "audio" : "video");
                 if (audio) {
+                    if (mAudioDecoder != NULL) {
+                        looper()->unregisterHandler(mAudioDecoder->id());
+                    }
                     mAudioDecoder.clear();
 
                     CHECK_EQ((int)mFlushingAudio, (int)SHUTTING_DOWN_DECODER);
                     mFlushingAudio = SHUT_DOWN;
                 } else {
+                    if (mVideoDecoder != NULL) {
+                        looper()->unregisterHandler(mVideoDecoder->id());
+                    }
                     mVideoDecoder.clear();
 
                     CHECK_EQ((int)mFlushingVideo, (int)SHUTTING_DOWN_DECODER);
@@ -1202,6 +1217,9 @@ void NuPlayer::performReset() {
     ++mScanSourcesGeneration;
     mScanSourcesPending = false;
 
+    if (mRenderer != NULL) {
+        looper()->unregisterHandler(mRenderer->id());
+    }
     mRenderer.clear();
 
     if (mSource != NULL) {

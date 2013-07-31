@@ -41,7 +41,7 @@ struct SDPLoader : public AHandler {
     void cancel();
 
 protected:
-    virtual ~SDPLoader() {}
+    virtual ~SDPLoader();
 
     virtual void onMessageReceived(const sp<AMessage> &msg);
 

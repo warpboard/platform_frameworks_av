@@ -63,6 +63,7 @@ NuPlayer::HTTPLiveSource::~HTTPLiveSource() {
     if (mLiveSession != NULL) {
         mLiveSession->disconnect();
         mLiveLooper->stop();
+        mLiveLooper->unregisterHandler(mLiveSession->id());
     }
 }
 

@@ -68,6 +68,7 @@ NuPlayer::RTSPSource::RTSPSource(
 NuPlayer::RTSPSource::~RTSPSource() {
     if (mLooper != NULL) {
         mLooper->stop();
+        mLooper->unregisterHandler(mReflector->id());
     }
 }
 

@@ -55,6 +55,7 @@ TimedTextDriver::~TimedTextDriver() {
     mTextSourceVector.clear();
     mTextSourceTypeVector.clear();
     mLooper->stop();
+    mLooper->unregisterHandler(mPlayer->id());
 }
 
 status_t TimedTextDriver::selectTrack_l(size_t index) {

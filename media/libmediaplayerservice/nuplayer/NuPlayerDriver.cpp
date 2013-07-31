@@ -57,6 +57,7 @@ NuPlayerDriver::NuPlayerDriver()
 
 NuPlayerDriver::~NuPlayerDriver() {
     mLooper->stop();
+    mLooper->unregisterHandler(mPlayer->id());
 }
 
 status_t NuPlayerDriver::initCheck() {
