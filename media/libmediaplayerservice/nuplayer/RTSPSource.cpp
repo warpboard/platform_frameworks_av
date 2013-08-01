@@ -15,7 +15,6 @@
  */
 
 //#define LOG_NDEBUG 0
-#define LOG_TAG "RTSPSource"
 #include <utils/Log.h>
 
 #include "RTSPSource.h"
@@ -26,6 +25,9 @@
 
 #include <media/stagefright/MediaDefs.h>
 #include <media/stagefright/MetaData.h>
+
+/* LOG_TAG has been defined as "MyHandler" in MyHandler.h, need redefine here */
+#define LOG_TAG "RTSPSource"
 
 namespace android {
 
@@ -311,6 +313,11 @@ status_t NuPlayer::RTSPSource::seekTo(int64_t seekTimeUs) {
 }
 
 void NuPlayer::RTSPSource::performSeek(int64_t seekTimeUs) {
+    if(mHandler==NULL){
+        ALOGW("performSeek: mHandler is NULL, ignore performSeek");
+        return;
+    }
+
     if (mState != CONNECTED) {
         return;
     }
