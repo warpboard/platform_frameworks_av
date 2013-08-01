@@ -532,6 +532,28 @@ OMX_ERRORTYPE SoftAVCEncoder::internalGetParameter(
             return OMX_ErrorNone;
         }
 
+        case OMX_IndexParamPortDefinition:
+        {
+            OMX_PARAM_PORTDEFINITIONTYPE *def =
+                (OMX_PARAM_PORTDEFINITIONTYPE *)params;
+            OMX_ERRORTYPE err = SimpleSoftOMXComponent::internalGetParameter(index, params);
+            if (OMX_ErrorNone != err) {
+                return err;
+            }
+
+            if (def->nPortIndex == 0) {
+                def->format.video.eColorFormat =
+                    (OMX_COLOR_FORMATTYPE) mVideoColorFormat;
+                if (mStoreMetaDataInBuffers) {
+                    def->format.video.eColorFormat = OMX_COLOR_FormatAndroidOpaque;
+                }
+            }
+            def->format.video.nFrameWidth = mVideoWidth;
+            def->format.video.nFrameHeight = mVideoHeight;
+
+            return OMX_ErrorNone;
+        }
+
         default:
             return SimpleSoftOMXComponent::internalGetParameter(index, params);
     }
@@ -593,6 +615,9 @@ OMX_ERRORTYPE SoftAVCEncoder::internalSetParameter(
                 mVideoHeight = def->format.video.nFrameHeight;
                 mVideoFrameRate = def->format.video.xFramerate >> 16;
                 mVideoColorFormat = def->format.video.eColorFormat;
+                if (mStoreMetaDataInBuffers) {
+                    mVideoColorFormat = OMX_COLOR_FormatYUV420SemiPlanar;
+                }
             } else {
                 mVideoBitRate = def->format.video.nBitrate;
             }
