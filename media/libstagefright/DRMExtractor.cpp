@@ -147,6 +147,8 @@ status_t DRMSource::read(MediaBuffer **buffer, const ReadOptions *options) {
             delete [] decryptedDrmBuffer.data;
             decryptedDrmBuffer.data = NULL;
         }
+        (*buffer)->release();
+        (*buffer) = NULL;
 
         return err;
     }
@@ -191,6 +193,8 @@ status_t DRMSource::read(MediaBuffer **buffer, const ReadOptions *options) {
                     delete [] decryptedDrmBuffer.data;
                     decryptedDrmBuffer.data = NULL;
                 }
+                (*buffer)->release();
+                (*buffer) = NULL;
 
                 return ERROR_MALFORMED;
             }
