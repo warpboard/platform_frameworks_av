@@ -406,6 +406,26 @@ OMX_ERRORTYPE SoftVPXEncoder::internalGetParameter(OMX_INDEXTYPE index,
             return OMX_ErrorNone;
         }
 
+        case OMX_IndexParamPortDefinition:
+        {
+            OMX_PARAM_PORTDEFINITIONTYPE *def =
+                (OMX_PARAM_PORTDEFINITIONTYPE *)param;
+            OMX_ERRORTYPE err = SimpleSoftOMXComponent::internalGetParameter(index, param);
+            if (OMX_ErrorNone != err) {
+                return err;
+            }
+
+            if (def->nPortIndex == 0) {
+                def->format.video.eColorFormat =
+                    (OMX_COLOR_FORMATTYPE) mColorFormat;
+            } else if (def->nPortIndex == 1) {
+                def->format.video.nFrameWidth = mWidth;
+                def->format.video.nFrameHeight = mHeight;
+            }
+
+            return OMX_ErrorNone;
+        }
+
         default:
             return SimpleSoftOMXComponent::internalGetParameter(index, param);
     }
