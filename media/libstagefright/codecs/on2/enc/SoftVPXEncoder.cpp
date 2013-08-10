@@ -557,7 +557,7 @@ OMX_ERRORTYPE SoftVPXEncoder::internalSetPortParams(
             return OMX_ErrorUnsupportedSetting;
         }
 
-        return OMX_ErrorNone;
+        return SimpleSoftOMXComponent::internalSetParameter(OMX_IndexParamPortDefinition, (OMX_PTR) port);
     } else if (port->nPortIndex == kOutputPortIndex) {
         mBitrate = port->format.video.nBitrate;
         return OMX_ErrorNone;
