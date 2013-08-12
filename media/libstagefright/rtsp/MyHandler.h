@@ -93,7 +93,6 @@ struct MyHandler : public AHandler {
         kWhatAccessUnit                 = 'accU',
         kWhatEOS                        = 'eos!',
         kWhatSeekDiscontinuity          = 'seeD',
-        kWhatNormalPlayTimeMapping      = 'nptM',
     };
 
     MyHandler(
@@ -1436,15 +1435,6 @@ struct MyHandler : public AHandler {
 
             ALOGV("track #%d: rtpTime=%u <=> npt=%.2f", n, rtpTime, npt1);
 
-            info->mNormalPlayTimeRTP = rtpTime;
-            info->mNormalPlayTimeUs = (int64_t)(npt1 * 1E6);
-
-            if (!mFirstAccessUnit) {
-                postNormalPlayTimeMapping(
-                        trackIndex,
-                        info->mNormalPlayTimeRTP, info->mNormalPlayTimeUs);
-            }
-
             ++n;
         }
     }
@@ -1477,9 +1467,6 @@ private:
         int64_t mNTPAnchorUs;
         int32_t mTimeScale;
         bool mEOSReceived;
-
-        uint32_t mNormalPlayTimeRTP;
-        int64_t mNormalPlayTimeUs;
 
         sp<APacketSource> mPacketSource;
 
@@ -1557,8 +1544,6 @@ private:
         info->mNewSegment = true;
         info->mRTPAnchor = 0;
         info->mNTPAnchorUs = -1;
-        info->mNormalPlayTimeRTP = 0;
-        info->mNormalPlayTimeUs = 0ll;
 
         unsigned long PT;
         AString formatDesc;
@@ -1744,16 +1729,6 @@ private:
             msg->setInt32("what", kWhatConnected);
             msg->post();
 
-            if (mSeekable) {
-                for (size_t i = 0; i < mTracks.size(); ++i) {
-                    TrackInfo *info = &mTracks.editItemAt(i);
-
-                    postNormalPlayTimeMapping(
-                            i,
-                            info->mNormalPlayTimeRTP, info->mNormalPlayTimeUs);
-                }
-            }
-
             mFirstAccessUnit = false;
         }
 
@@ -1837,16 +1812,6 @@ private:
         sp<AMessage> msg = mNotify->dup();
         msg->setInt32("what", kWhatSeekDiscontinuity);
         msg->setSize("trackIndex", trackIndex);
-        msg->post();
-    }
-
-    void postNormalPlayTimeMapping(
-            size_t trackIndex, uint32_t rtpTime, int64_t nptUs) {
-        sp<AMessage> msg = mNotify->dup();
-        msg->setInt32("what", kWhatNormalPlayTimeMapping);
-        msg->setSize("trackIndex", trackIndex);
-        msg->setInt32("rtpTime", rtpTime);
-        msg->setInt64("nptUs", nptUs);
         msg->post();
     }
 
