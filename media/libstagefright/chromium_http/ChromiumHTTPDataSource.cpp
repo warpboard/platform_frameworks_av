@@ -37,7 +37,9 @@ ChromiumHTTPDataSource::ChromiumHTTPDataSource(uint32_t flags)
       mIOResult(OK),
       mContentSize(-1),
       mDecryptHandle(NULL),
-      mDrmManagerClient(NULL) {
+      mDrmManagerClient(NULL),
+      isredirected(false)
+    {
     mDelegate->setOwner(this);
 }
 
@@ -65,6 +67,8 @@ status_t ChromiumHTTPDataSource::connect(
     if (getUID(&uid)) {
         mDelegate->setUID(uid);
     }
+
+    isredirected = false;
 
 #if defined(LOG_NDEBUG) && !LOG_NDEBUG
     LOG_PRI(ANDROID_LOG_VERBOSE, LOG_TAG, "connect on behalf of uid %d", uid);
@@ -305,8 +309,10 @@ void ChromiumHTTPDataSource::getDrmInfo(
 
 String8 ChromiumHTTPDataSource::getUri() {
     Mutex::Autolock autoLock(mLock);
-
-    return String8(mURI.c_str());
+    if (isredirected)
+        return redirect_url;
+    else
+        return String8(mURI.c_str());
 }
 
 String8 ChromiumHTTPDataSource::getMIMEType() const {
@@ -345,6 +351,15 @@ status_t ChromiumHTTPDataSource::UpdateProxyConfig(
         const char *host, int32_t port, const char *exclusionList) {
     return SfDelegate::UpdateProxyConfig(host, port, exclusionList);
 }
+//
+bool ChromiumHTTPDataSource::isRedirected() {
+    return isredirected;
+}
+void ChromiumHTTPDataSource::setRedirectedUrl(const char *newurl) {
+    redirect_url = String8(newurl);
+    isredirected = true;
+}
+
 
 }  // namespace android
 

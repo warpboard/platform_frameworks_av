@@ -55,6 +55,8 @@ struct ChromiumHTTPDataSource : public HTTPBase {
 
     static status_t UpdateProxyConfig(
             const char *host, int32_t port, const char *exclusionList);
+    void setRedirectedUrl(const char *newurl);
+    virtual bool isRedirected();
 
 protected:
     virtual ~ChromiumHTTPDataSource();
@@ -117,6 +119,9 @@ private:
     void clearDRMState_l();
 
     DISALLOW_EVIL_CONSTRUCTORS(ChromiumHTTPDataSource);
+
+    bool isredirected;
+    String8 redirect_url;
 };
 
 }  // namespace android

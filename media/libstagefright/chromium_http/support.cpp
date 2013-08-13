@@ -269,6 +269,8 @@ bool SfDelegate::getUID(uid_t *uid) const {
 void SfDelegate::OnReceivedRedirect(
             net::URLRequest *request, const GURL &new_url, bool *defer_redirect) {
     MY_LOGV("OnReceivedRedirect");
+    *defer_redirect = false;
+    mOwner->setRedirectedUrl(new_url.spec().c_str() );
 }
 
 void SfDelegate::OnAuthRequired(

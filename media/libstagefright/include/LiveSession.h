@@ -157,6 +157,8 @@ private:
 
     void signalEOS(status_t err);
 
+    String8 redirectedURI;
+    bool isredirected;
     DISALLOW_EVIL_CONSTRUCTORS(LiveSession);
 };
 

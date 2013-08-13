@@ -82,6 +82,7 @@ void LiveSession::connect(
     sp<AMessage> msg = new AMessage(kWhatConnect, id());
     msg->setString("url", url);
 
+    isredirected = false;
     if (headers != NULL) {
         msg->setPointer(
                 "headers",
@@ -174,6 +175,7 @@ void LiveSession::onConnect(const sp<AMessage> &msg) {
 
     ALOGI("onConnect <URL suppressed>");
 
+
     mMasterURL = url;
 
     bool dummy;
@@ -222,7 +224,6 @@ status_t LiveSession::fetchFile(
     *out = NULL;
 
     sp<DataSource> source;
-
     if (!strncasecmp(url, "file://", 7)) {
         source = new FileSource(url + 7);
     } else if (strncasecmp(url, "http://", 7)
@@ -310,6 +311,14 @@ status_t LiveSession::fetchFile(
         buffer->setRange(0, buffer->size() + (size_t)n);
     }
 
+    if (source == mHTTPDataSource) {
+        if (mHTTPDataSource->isRedirected()) {
+            ALOGI("URL is redirected to  ");
+            isredirected = true;
+            redirectedURI = mHTTPDataSource->getUri();
+            ALOGI("URL is redirected to %s", redirectedURI.string());
+        }
+    }
     *out = buffer;
 
     return OK;
@@ -359,8 +368,14 @@ sp<M3UParser> LiveSession::fetchPlaylist(const char *url, bool *unchanged) {
     mRefreshState = INITIAL_MINIMUM_RELOAD_DELAY;
 #endif
 
-    sp<M3UParser> playlist =
-        new M3UParser(url, buffer->data(), buffer->size());
+    sp<M3UParser> playlist;
+    if (isredirected) {
+        playlist =
+            new M3UParser(redirectedURI.string(), buffer->data(), buffer->size());
+    } else {
+        playlist =
+            new M3UParser(url, buffer->data(), buffer->size());
+    }
 
     if (playlist->initCheck() != OK) {
         ALOGE("failed to parse .m3u8 playlist");

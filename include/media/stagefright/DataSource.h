@@ -92,6 +92,9 @@ public:
     virtual String8 getUri() {
         return String8();
     }
+    virtual bool isRedirected() {
+        return false;
+    }
 
     virtual String8 getMIMEType() const;
 
@@ -104,6 +107,7 @@ private:
 
     DataSource(const DataSource &);
     DataSource &operator=(const DataSource &);
+
 };
 
 }  // namespace android
