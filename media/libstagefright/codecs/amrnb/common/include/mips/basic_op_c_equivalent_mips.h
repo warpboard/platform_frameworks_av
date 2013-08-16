@@ -47,22 +47,14 @@ terms listed above has been obtained from the copyright holder.
 /*----------------------------------------------------------------------------
 ; CONTINUE ONLY IF NOT ALREADY DEFINED
 ----------------------------------------------------------------------------*/
-#ifndef BASIC_OP_C_EQUIVALENT_H
-#define BASIC_OP_C_EQUIVALENT_H
+#ifndef BASIC_OP_C_EQUIVALENT_H_MIPS
+#define BASIC_OP_C_EQUIVALENT_H_MIPS
 
 /*----------------------------------------------------------------------------
 ; INCLUDES
 ----------------------------------------------------------------------------*/
-#include    "basicop_malloc.h"
-#if ((MIPS_DSP_R2_LE))
-#include "./mips/basic_op_c_equivalent_mips.h"
-#endif /* #if ((MIPS_DSP_R2_LE) */
 
 /*--------------------------------------------------------------------------*/
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
     /*----------------------------------------------------------------------------
     ; MACROS
@@ -96,7 +88,7 @@ extern "C"
     ; Function Prototype declaration
     ----------------------------------------------------------------------------*/
 
-#if (!(MIPS_DSP_R2_LE))
+
     /*
     ------------------------------------------------------------------------------
      FUNCTION NAME: L_add
@@ -118,21 +110,19 @@ extern "C"
      Returns:
         L_sum = 32-bit sum of L_var1 and L_var2 (Word32)
     */
+#if (MIPS_DSP_R2_LE)
+
     static inline Word32 L_add(register Word32 L_var1, register Word32 L_var2, Flag *pOverflow)
     {
         Word32 L_sum;
 
-        L_sum = L_var1 + L_var2;
+        OSCL_UNUSED_ARG(pOverflow);
 
-        if ((L_var1 ^ L_var2) >= 0)
-        {
-            if ((L_sum ^ L_var1) < 0)
-            {
-                L_sum = (L_var1 < 0) ? MIN_32 : MAX_32;
-                *pOverflow = 1;
-            }
-        }
-
+        __asm__ volatile (
+            "addq_s.w %[L_sum], %[L_var1], %[L_var2] \n\t"
+            : [L_sum] "=r" (L_sum)
+            : [L_var1] "r" (L_var1), [L_var2] "r" (L_var2)
+        );
         return (L_sum);
     }
 
@@ -162,17 +152,13 @@ extern "C"
     {
         Word32 L_diff;
 
-        L_diff = L_var1 - L_var2;
+        OSCL_UNUSED_ARG(pOverflow);
 
-        if ((L_var1 ^ L_var2) < 0)
-        {
-            if ((L_diff ^ L_var1) & MIN_32)
-            {
-                L_diff = (L_var1 < 0L) ? MIN_32 : MAX_32;
-                *pOverflow = 1;
-            }
-        }
-
+        __asm__ volatile (
+            "subq_s.w %[L_diff], %[L_var1], %[L_var2] \n\t"
+            : [L_diff] "=r" (L_diff)
+            : [L_var1] "r" (L_var1), [L_var2] "r" (L_var2)
+        );
         return (L_diff);
     }
 
@@ -202,28 +188,17 @@ extern "C"
     __inline Word32 L_mac(Word32 L_var3, Word16 var1, Word16 var2, Flag *pOverflow)
     {
         Word32 result;
-        Word32 L_sum;
-        result = (Word32) var1 * var2;
-        if (result != (Word32) 0x40000000L)
-        {
-            L_sum = (result << 1) + L_var3;
 
-            /* Check if L_sum and L_var_3 share the same sign */
-            if ((L_var3 ^ result) > 0)
-            {
-                if ((L_sum ^ L_var3) < 0)
-                {
-                    L_sum = (L_var3 < 0) ? MIN_32 : MAX_32;
-                    *pOverflow = 1;
-                }
-            }
-        }
-        else
-        {
-            *pOverflow = 1;
-            L_sum = MAX_32;
-        }
-        return (L_sum);
+        OSCL_UNUSED_ARG(pOverflow);
+
+        __asm__ volatile (
+            "muleq_s.w.phr  %[result], %[var1],    %[var2]   \n\t"
+            "addq_s.w       %[result], %[L_var3],  %[result]    \n\t"
+            : [result] "=&r" (result)
+            : [var1] "r" (var1), [var2] "r" (var2), [L_var3] "r" (L_var3)
+            : "hi", "lo"
+        );
+        return (result);
     }
 
     /*
@@ -251,17 +226,14 @@ extern "C"
     {
         register Word32 L_product;
 
-        L_product = (Word32) var1 * var2;
+        OSCL_UNUSED_ARG(pOverflow);
 
-        if (L_product != (Word32) 0x40000000L)
-        {
-            L_product <<= 1;          /* Multiply by 2 */
-        }
-        else
-        {
-            *pOverflow = 1;
-            L_product = MAX_32;
-        }
+        __asm__ volatile (
+            "muleq_s.w.phr %[L_product], %[var1], %[var2]   \n\t"
+            : [L_product] "=r" (L_product)
+            : [var1] "r" (var1), [var2] "r" (var2)
+            : "hi", "lo"
+        );
 
         return (L_product);
     }
@@ -295,9 +267,15 @@ extern "C"
     {
         Word32 result;
 
-        result = L_mult(var1, var2, pOverflow);
-        result = L_sub(L_var3, result, pOverflow);
+        OSCL_UNUSED_ARG(pOverflow);
 
+        __asm__ volatile (
+            "muleq_s.w.phr %[result], %[var1],   %[var2]      \n\t"
+            "subq_s.w      %[result], %[L_var3], %[result]    \n\t"
+            : [result] "=&r" (result)
+            : [var1] "r" (var1), [var2] "r" (var2), [L_var3] "r" (L_var3)
+            : "hi", "lo"
+        );
         return (result);
     }
 
@@ -327,51 +305,29 @@ extern "C"
                            Word16 L_var2_lo,
                            Flag   *pOverflow)
     {
-        Word32 L_product;
         Word32 L_sum;
-        Word32 product32;
+        Word32 temp0, temp1, temp2, temp3;
 
         OSCL_UNUSED_ARG(pOverflow);
-        L_product = (Word32) L_var1_hi * L_var2_hi;
 
-        if (L_product != (Word32) 0x40000000L)
-        {
-            L_product <<= 1;
-        }
-        else
-        {
-            L_product = MAX_32;
-        }
-
-        /* result = mult (L_var1_hi, L_var2_lo, pOverflow); */
-        product32 = ((Word32) L_var1_hi * L_var2_lo) >> 15;
-
-        /* L_product = L_mac (L_product, result, 1, pOverflow); */
-        L_sum = L_product + (product32 << 1);
-
-        if ((L_product ^ product32) > 0)
-        {
-            if ((L_sum ^ L_product) < 0)
-            {
-                L_sum = (L_product < 0) ? MIN_32 : MAX_32;
-            }
-        }
-
-        L_product = L_sum;
-
-        /* result = mult (L_var1_lo, L_var2_hi, pOverflow); */
-        product32 = ((Word32) L_var1_lo * L_var2_hi) >> 15;
-
-        /* L_product = L_mac (L_product, result, 1, pOverflow); */
-        L_sum = L_product + (product32 << 1);
-
-        if ((L_product ^ product32) > 0)
-        {
-            if ((L_sum ^ L_product) < 0)
-            {
-                L_sum = (L_product < 0) ? MIN_32 : MAX_32;
-            }
-        }
+        __asm__ volatile (
+            "sll        %[temp0],  %[L_var1_hi],   16             \n\t"
+            "sll        %[temp1],  %[L_var2_hi],   16             \n\t"
+            "sll        %[temp2],  %[L_var1_lo],   1              \n\t"
+            "sll        %[temp3],  %[L_var2_lo],   1              \n\t"
+            "mult       $ac0,      %[temp0],       %[temp1]       \n\t"
+            "madd       $ac0,      %[temp0],       %[temp3]       \n\t"
+            "mtlo       $0,        $ac0                           \n\t"
+            "madd       $ac0,      %[temp1],       %[temp2]       \n\t"
+            "mfhi       %[L_sum],  $ac0                           \n\t"
+            "shll_s.w   %[L_sum],  %[L_sum],       1              \n\t"
+            : [temp0] "=&r" (temp0), [temp1] "=&r" (temp1),
+              [temp2] "=&r" (temp2), [temp3] "=&r" (temp3),
+              [L_sum] "=&r" (L_sum)
+            : [L_var2_lo] "r" (L_var2_lo), [L_var1_lo] "r" (L_var1_lo),
+              [L_var1_hi] "r" (L_var1_hi), [L_var2_hi] "r" (L_var2_hi)
+            : "hi", "lo"
+        );
         return (L_sum);
     }
 
@@ -401,35 +357,25 @@ extern "C"
                               Flag *pOverflow)
     {
 
-        Word32 L_product;
         Word32 L_sum;
-        Word32 result;
-        L_product = (Word32) L_var1_hi * var2;
+        Word32 temp0, temp1, temp2;
 
-        if (L_product != (Word32) 0x40000000L)
-        {
-            L_product <<= 1;
-        }
-        else
-        {
-            *pOverflow = 1;
-            L_product = MAX_32;
-        }
+        OSCL_UNUSED_ARG(pOverflow);
 
-        result = ((Word32)L_var1_lo * var2) >> 15;
-
-        L_sum  =  L_product + (result << 1);
-
-        if ((L_product ^ result) > 0)
-        {
-            if ((L_sum ^ L_product) < 0)
-            {
-                L_sum = (L_product < 0) ? MIN_32 : MAX_32;
-                *pOverflow = 1;
-            }
-        }
+        __asm__ volatile (
+            "addiu      %[temp2],  $zero,          -2             \n\t"
+            "sll        %[temp0],  %[var2],        16             \n\t"
+            "sll        %[temp1],  %[L_var1_lo],   1              \n\t"
+            "ins        %[temp1],  %[L_var1_hi],   16, 16         \n\t"
+            "mulq_s.w   %[L_sum],  %[temp1],       %[temp0]       \n\t"
+            "and        %[L_sum],  %[L_sum],       %[temp2]       \n\t"
+            : [temp0] "=&r" (temp0), [temp1] "=&r" (temp1),
+              [L_sum] "=&r" (L_sum), [temp2] "=&r" (temp2)
+            : [var2] "r" (var2), [L_var1_lo] "r" (L_var1_lo),
+              [L_var1_hi] "r" (L_var1_hi)
+            : "hi", "lo"
+        );
         return (L_sum);
-
     }
 
     /*
@@ -457,52 +403,30 @@ extern "C"
     {
         register Word32 product;
 
-        product = ((Word32) var1 * var2) >> 15;
+        OSCL_UNUSED_ARG(pOverflow);
 
-        /* Saturate result (if necessary). */
-        /* var1 * var2 >0x00007fff is the only case */
-        /* that saturation occurs. */
-
-        if (product > 0x00007fffL)
-        {
-            *pOverflow = 1;
-            product = (Word32) MAX_16;
-        }
-
+        __asm__ volatile (
+            "muleq_s.w.phr  %[product], %[var1],    %[var2]    \n\t"
+            "sra            %[product], %[product], 16         \n\t"
+            : [product] "=r" (product)
+            : [var1] "r" (var1), [var2] "r" (var2)
+            : "hi", "lo"
+        );
 
         /* Return the product as a 16 bit value by type casting Word32 to Word16 */
 
         return ((Word16) product);
     }
 
-#endif /* if (!(MIPS_DSP_R2_LE)) */
-    static inline Word32 amrnb_fxp_mac_16_by_16bb(Word32 L_var1, Word32 L_var2, Word32 L_var3)
-    {
-        Word32 result;
-
-        result = L_var3 + L_var1 * L_var2;
-
-        return result;
-    }
-
-    static inline Word32 amrnb_fxp_msu_16_by_16bb(Word32 L_var1, Word32 L_var2, Word32 L_var3)
-    {
-        Word32 result;
-
-        result = L_var3 - L_var1 * L_var2;
-
-        return result;
-    }
-
 
     /*----------------------------------------------------------------------------
     ; END
     ----------------------------------------------------------------------------*/
-#ifdef __cplusplus
-}
-#endif
+#endif /* #ifdef FUNCTIONS_basic */
 
-#endif /* BASIC_OP_C_EQUIVALENT_H */
+/*----------------------------------------------------------------------------
+    ; END
+    ----------------------------------------------------------------------------*/
 
-
+#endif /* BASIC_OP_C_EQUIVALENT_H_MIPS */
 

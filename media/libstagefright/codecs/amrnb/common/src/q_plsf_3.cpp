@@ -104,6 +104,9 @@ terms listed above has been obtained from the copyright holder.
 #include "reorder.h"
 #include "lsfwt.h"
 
+#if ((MIPS_DSP_R2_LE) || (MIPS_DSP_R1_LE) || (MIPS32_R2_LE))
+#include "./mips/q_plsf_3_mips.h"
+#endif /* #if ((MIPS_DSP_R2_LE) || (MIPS_DSP_R1_LE) || (MIPS32_R2_LE)) */
 /*--------------------------------------------------------------------------*/
 #ifdef __cplusplus
 extern "C"
@@ -273,6 +276,7 @@ Vq_subvec4(             // o: quantization index,            Q0
 ------------------------------------------------------------------------------
 */
 
+#if !((MIPS_DSP_R2_LE) || (MIPS_DSP_R1_LE) || (MIPS32_R2_LE))
 static Word16 Vq_subvec4( /* o: quantization index,            Q0  */
     Word16 * lsf_r1,      /* i: 1st LSF residual vector,       Q15 */
     const Word16 * dico,  /* i: quantization codebook,         Q15 */
@@ -349,6 +353,7 @@ static Word16 Vq_subvec4( /* o: quantization index,            Q0  */
     return(index);
 
 }
+#endif /* #if !((MIPS_DSP_R2_LE) || (MIPS_DSP_R1_LE) || (MIPS32_R2_LE)) */
 
 /****************************************************************************/
 
@@ -599,6 +604,7 @@ Vq_subvec3(             // o: quantization index,            Q0
 ------------------------------------------------------------------------------
 */
 
+#if !((MIPS_DSP_R2_LE) || (MIPS_DSP_R1_LE) || (MIPS32_R2_LE))
 static Word16 Vq_subvec3( /* o: quantization index,            Q0  */
     Word16 * lsf_r1,      /* i: 1st LSF residual vector,       Q15 */
     const Word16 * dico,  /* i: quantization codebook,         Q15 */
@@ -681,6 +687,7 @@ static Word16 Vq_subvec3( /* o: quantization index,            Q0  */
 
     return(index);
 }
+#endif /* #if !((MIPS_DSP_R2_LE) || (MIPS_DSP_R1_LE) || (MIPS32_R2_LE)) */
 
 /****************************************************************************/
 

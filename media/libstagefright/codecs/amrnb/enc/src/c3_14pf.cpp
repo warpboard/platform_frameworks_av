@@ -88,6 +88,7 @@ terms listed above has been obtained from the copyright holder.
 ; LOCAL FUNCTION DEFINITIONS
 ; Function Prototype declaration
 ----------------------------------------------------------------------------*/
+#if !((MIPS_DSP_R2_LE) || (MIPS_DSP_R1_LE) || (MIPS32_R2_LE))
 static void search_3i40(
     Word16 dn[],        /* i : correlation between target and h[]            */
     Word16 dn2[],       /* i : maximum of corr. in each track.               */
@@ -95,6 +96,15 @@ static void search_3i40(
     Word16 codvec[],    /* o : algebraic codebook vector                     */
     Flag   * pOverflow  /* o : Flag set when overflow occurs                 */
 );
+#else
+void search_3i40(
+    Word16 dn[],        /* i : correlation between target and h[]            */
+    Word16 dn2[],       /* i : maximum of corr. in each track.               */
+    Word16 rr[][L_CODE],/* i : matrix of autocorrelation                     */
+    Word16 codvec[],    /* o : algebraic codebook vector                     */
+    Flag   * pOverflow  /* o : Flag set when overflow occurs                 */
+);
+#endif /* #if !((MIPS_DSP_R2_LE) || (MIPS_DSP_R1_LE) || (MIPS32_R2_LE)) */
 
 static Word16 build_code(
     Word16 codvec[],    /* i : algebraic codebook vector                     */
@@ -370,6 +380,7 @@ Word16 code_3i40_14bits(
 
 ------------------------------------------------------------------------------
 */
+#if !((MIPS_DSP_R2_LE) || (MIPS_DSP_R1_LE) || (MIPS32_R2_LE))
 static void search_3i40(
     Word16 dn[],         /* i : correlation between target and h[] */
     Word16 dn2[],        /* i : maximum of corr. in each track.    */
@@ -592,6 +603,7 @@ static void search_3i40(
     }
     return;
 }
+#endif /* #if !((MIPS_DSP_R2_LE) || (MIPS_DSP_R1_LE) || (MIPS32_R2_LE)) */
 
 /****************************************************************************/
 

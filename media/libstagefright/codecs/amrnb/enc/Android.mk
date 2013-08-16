@@ -3,21 +3,16 @@ include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := \
 	src/amrencode.cpp \
- 	src/autocorr.cpp \
  	src/c1035pf.cpp \
  	src/c2_11pf.cpp \
  	src/c2_9pf.cpp \
  	src/c3_14pf.cpp \
  	src/c4_17pf.cpp \
  	src/c8_31pf.cpp \
- 	src/calc_cor.cpp \
  	src/calc_en.cpp \
  	src/cbsearch.cpp \
  	src/cl_ltp.cpp \
  	src/cod_amr.cpp \
- 	src/convolve.cpp \
- 	src/cor_h.cpp \
- 	src/cor_h_x.cpp \
  	src/cor_h_x2.cpp \
  	src/corrwght_tab.cpp \
  	src/dtx_enc.cpp \
@@ -49,10 +44,7 @@ LOCAL_SRC_FILES := \
  	src/prm2bits.cpp \
  	src/q_gain_c.cpp \
  	src/q_gain_p.cpp \
- 	src/qgain475.cpp \
  	src/qgain795.cpp \
- 	src/qua_gain.cpp \
- 	src/s10_8pf.cpp \
  	src/set_sign.cpp \
  	src/sid_sync.cpp \
  	src/sp_enc.cpp \
@@ -64,10 +56,91 @@ LOCAL_C_INCLUDES := \
         frameworks/av/media/libstagefright/include \
         $(LOCAL_PATH)/src \
         $(LOCAL_PATH)/include \
-        $(LOCAL_PATH)/../common/include
+        $(LOCAL_PATH)/../common/include \
+        $(LOCAL_PATH)/../common
 
 LOCAL_CFLAGS := \
         -DOSCL_UNUSED_ARG=
+
+ifeq ($(TARGET_ARCH),mips)
+    ifneq ($(ARCH_HAS_BIGENDIAN),true)
+       ifeq ($(ARCH_MIPS_DSP_REV),2)
+            LOCAL_CFLAGS += -DMIPS_DSP_R2_LE
+            LOCAL_SRC_FILES  += src/mips/autocorr_mips.cpp \
+                                src/mips/c3_14pf_mips.cpp \
+                                src/mips/c4_17pf_mips.cpp \
+                                src/mips/calc_cor_mips.cpp \
+                                src/mips/convolve_mips.cpp \
+                                src/mips/cor_h_mips.cpp \
+                                src/mips/cor_h_x_mips.cpp \
+                                src/mips/pitch_fr_mips.cpp \
+                                src/mips/qgain475_mips.cpp \
+                                src/mips/s10_8pf_mips.cpp \
+                                src/mips/qua_gain_mips.cpp
+       else
+            ifeq ($(ARCH_MIPS_DSP_REV),1)
+                LOCAL_CFLAGS += -DMIPS_DSP_R1_LE
+                LOCAL_SRC_FILES += src/mips/autocorr_mips.cpp \
+                                   src/mips/c3_14pf_mips.cpp \
+                                   src/mips/c4_17pf_mips.cpp \
+                                   src/mips/calc_cor_mips.cpp \
+                                   src/mips/convolve_mips.cpp \
+                                   src/mips/cor_h_mips.cpp \
+                                   src/mips/cor_h_x_mips.cpp \
+                                   src/mips/pitch_fr_mips.cpp \
+                                   src/mips/qgain475_mips.cpp \
+                                   src/mips/s10_8pf_mips.cpp \
+                                   src/mips/qua_gain_mips.cpp
+            else
+                ifeq  ($(TARGET_ARCH_VARIANT),mips32r2)
+                    LOCAL_CFLAGS += -DMIPS32_R2_LE
+                    LOCAL_SRC_FILES += src/mips/autocorr_mips.cpp \
+                                       src/mips/c3_14pf_mips.cpp \
+                                       src/mips/c4_17pf_mips.cpp \
+                                       src/mips/calc_cor_mips.cpp \
+                                       src/mips/convolve_mips.cpp \
+                                       src/mips/cor_h_mips.cpp \
+                                       src/mips/cor_h_x_mips.cpp \
+                                       src/mips/pitch_fr_mips.cpp \
+                                       src/mips/qgain475_mips.cpp \
+                                       src/mips/s10_8pf_mips.cpp \
+                                       src/mips/qua_gain_mips.cpp
+                else
+                    LOCAL_CFLAGS += -DMIPS32_R2_LE
+                    LOCAL_SRC_FILES += src/mips/autocorr_mips.cpp \
+                                       src/mips/c3_14pf_mips.cpp \
+                                       src/mips/c4_17pf_mips.cpp \
+                                       src/mips/calc_cor_mips.cpp \
+                                       src/mips/convolve_mips.cpp \
+                                       src/mips/cor_h_mips.cpp \
+                                       src/mips/cor_h_x_mips.cpp \
+                                       src/mips/pitch_fr_mips.cpp \
+                                       src/qgain475.cpp \
+                                       src/mips/s10_8pf_mips.cpp \
+                                       src/qua_gain.cpp
+                endif
+            endif
+        endif
+    else
+        LOCAL_SRC_FILES += src/autocorr.cpp \
+                           src/calc_cor.cpp \
+                           src/convolve.cpp \
+                           src/cor_h.cpp \
+                           src/cor_h_x.cpp \
+                           src/s10_8pf.cpp \
+                           src/qgain475.cpp \
+                           src/qua_gain.cpp
+    endif
+else
+    LOCAL_SRC_FILES += src/autocorr.cpp \
+                       src/calc_cor.cpp \
+                       src/convolve.cpp \
+                       src/cor_h.cpp \
+                       src/cor_h_x.cpp \
+                       src/s10_8pf.cpp \
+                       src/qgain475.cpp \
+                       src/qua_gain.cpp
+endif
 
 LOCAL_MODULE := libstagefright_amrnbenc
 

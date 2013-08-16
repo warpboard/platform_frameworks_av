@@ -27,42 +27,40 @@ Permission to distribute, modify and use this file under the standard license
 terms listed above has been obtained from the copyright holder.
 ****************************************************************************************/
 /*
-------------------------------------------------------------------------------
 
-
-
- Filename: /audio/gsm_amr/c/src/include/pitch_fr.h
-
-     Date: 02/04/2002
+ Pathname: ./gsm-amr/c/include/l_negate.h
 
 ------------------------------------------------------------------------------
  REVISION HISTORY
 
- Description:  Replaced "int" and/or "char" with OSCL defined types.
+ Description: Created separate header file for L_negate function.
+
+ Description: Updated template to make it build in Symbian. Updated copyright
+              year.
 
  Description: Moved _cplusplus #ifdef after Include section.
 
+ Who:                       Date:
  Description:
 
 ------------------------------------------------------------------------------
  INCLUDE DESCRIPTION
 
-      File             : pitch_fr.h
-      Purpose          : Find the pitch period with 1/3 or 1/6 subsample
-                       : resolution (closed loop).
+ This file contains all the constant definitions and prototype definitions
+ needed by the L_negate function.
 
 ------------------------------------------------------------------------------
 */
 
-#ifndef _PITCH_FR_H_
-#define _PITCH_FR_H_
-#define pitch_fr_h "$Id $"
+/*----------------------------------------------------------------------------
+; CONTINUE ONLY IF NOT ALREADY DEFINED
+----------------------------------------------------------------------------*/
+#ifndef Q_PLSF_3_MIPS_H
+#define Q_PLSF_3_MIPS_H
 
 /*----------------------------------------------------------------------------
 ; INCLUDES
 ----------------------------------------------------------------------------*/
-#include "typedef.h"
-#include "mode.h"
 
 /*--------------------------------------------------------------------------*/
 #ifdef __cplusplus
@@ -72,17 +70,17 @@ extern "C"
 
     /*----------------------------------------------------------------------------
     ; MACROS
-    ; [Define module specific macros here]
+    ; Define module specific macros here
     ----------------------------------------------------------------------------*/
 
     /*----------------------------------------------------------------------------
     ; DEFINES
-    ; [Include all pre-processor statements here.]
+    ; Include all pre-processor statements here.
     ----------------------------------------------------------------------------*/
 
     /*----------------------------------------------------------------------------
     ; EXTERNAL VARIABLES REFERENCES
-    ; [Declare variables used in this module but defined elsewhere]
+    ; Declare variables used in this module but defined elsewhere
     ----------------------------------------------------------------------------*/
 
     /*----------------------------------------------------------------------------
@@ -96,64 +94,36 @@ extern "C"
     /*----------------------------------------------------------------------------
     ; STRUCTURES TYPEDEF'S
     ----------------------------------------------------------------------------*/
-    typedef struct
-    {
-        Word16 T0_prev_subframe;   /* integer pitch lag of previous sub-frame */
-    } Pitch_frState;
 
     /*----------------------------------------------------------------------------
     ; GLOBAL FUNCTION DEFINITIONS
-    ; [List function prototypes here]
+    ; Function Prototype declaration
     ----------------------------------------------------------------------------*/
 
-    Word16 Pitch_fr_init(Pitch_frState **st);
-    /* initialize one instance of the pre processing state.
-       Stores pointer to filter status struct in *st. This pointer has to
-       be passed to Pitch_fr in each call.
-       returns 0 on success
-     */
-
-    Word16 Pitch_fr_reset(Pitch_frState *st);
-    /* reset of pre processing state (i.e. set state memory to zero)
-       returns 0 on success
-     */
-
-    void Pitch_fr_exit(Pitch_frState **st);
-    /* de-initialize pre processing state (i.e. free status struct)
-       stores NULL in *st
-     */
-
-    Word16 Pitch_fr(         /* o   : pitch period (integer)                    */
-        Pitch_frState *st,   /* i/o : State struct                              */
-        enum Mode mode,      /* i   : codec mode                                */
-        Word16 T_op[],       /* i   : open loop pitch lags                      */
-        Word16 exc[],        /* i   : excitation buffer                         */
-        Word16 xn[],         /* i   : target vector                             */
-        Word16 h[],          /* i   : impulse response of synthesis and
-                                  weighting filters                         */
-        Word16 L_subfr,      /* i   : Length of subframe                        */
-        Word16 i_subfr,      /* i   : subframe offset                           */
-        Word16 *pit_frac,    /* o   : pitch period (fractional)                 */
-        Word16 *resu3,       /* o   : subsample resolution 1/3 (=1) or 1/6 (=0) */
-        Word16 *ana_index,   /* o   : index of encoding                         */
-        Flag   *pOverflow
+    Word16 Vq_subvec3( /* o: quantization index,            Q0  */
+    Word16 * lsf_r1,      /* i: 1st LSF residual vector,       Q15 */
+    const Word16 * dico,  /* i: quantization codebook,         Q15 */
+    Word16 * wf1,         /* i: 1st LSF weighting factors,     Q13 */
+    Word16 dico_size,     /* i: size of quantization codebook, Q0  */
+    Flag use_half,        /* i: use every second entry in codebook */
+    Flag  *pOverflow     /* o : Flag set when overflow occurs     */
     );
 
-#if ((MIPS_DSP_R2_LE) || (MIPS_DSP_R1_LE) || (MIPS32_R2_LE))
-    void Norm_Corr(Word16 exc[],
-                      Word16 xn[],
-                      Word16 h[],
-                      Word16 L_subfr,
-                      Word16 t_min,
-                      Word16 t_max,
-                      Word16 corr_norm[],
-                      Flag *pOverflow);
-#endif /* #if ((MIPS_DSP_R2_LE) || (MIPS_DSP_R1_LE) || (MIPS32_R2_LE)) */
+    Word16 Vq_subvec4( /* o: quantization index,            Q0  */
+    Word16 * lsf_r1,      /* i: 1st LSF residual vector,       Q15 */
+    const Word16 * dico,  /* i: quantization codebook,         Q15 */
+    Word16 * wf1,         /* i: 1st LSF weighting factors,     Q13 */
+    Word16 dico_size,     /* i: size of quantization codebook, Q0  */
+    Flag  *pOverflow      /* o : Flag set when overflow occurs     */
+    );
 
+    /*----------------------------------------------------------------------------
+    ; END
+    ----------------------------------------------------------------------------*/
 #ifdef __cplusplus
 }
 #endif
 
-#endif  /* _PITCH_FR_H_ */
+#endif
 
 

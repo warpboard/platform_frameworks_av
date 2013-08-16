@@ -57,55 +57,9 @@ terms listed above has been obtained from the copyright holder.
 /*----------------------------------------------------------------------------
 ; CONTINUE ONLY IF NOT ALREADY DEFINED
 ----------------------------------------------------------------------------*/
-#ifndef BASIC_OP_H
-#define BASIC_OP_H
+#ifndef BASIC_OP_MIPS_H
+#define BASIC_OP_MIPS_H
 
-/*----------------------------------------------------------------------------
-; INCLUDES
-----------------------------------------------------------------------------*/
-#include    "basicop_malloc.h"
-
-#if defined(PV_ARM_V5)
-#include "basic_op_arm_v5.h"
-
-#elif defined(PV_ARM_GCC_V5)
-#include "basic_op_arm_gcc_v5.h"
-
-#else
-#include "basic_op_c_equivalent.h"
-
-#endif
-
-
-
-#include    "add.h"
-#include    "div_s.h"
-#include    "div_32.h"
-#include    "extract_h.h"
-#include    "extract_l.h"
-#include    "l_deposit_h.h"
-#include    "l_deposit_l.h"
-#include    "l_shr_r.h"
-#include    "mult_r.h"
-#include    "norm_l.h"
-#include    "norm_s.h"
-#include    "round.h"
-#include    "shr_r.h"
-#include    "sub.h"
-#include    "shr.h"
-#include    "l_abs.h"
-#include    "l_negate.h"
-#include    "l_extract.h"
-#include    "l_abs.h"
-
-#if ((MIPS_DSP_R2_LE))
-#include "./mips/basic_op_mips.h"
-#endif /* #if ((MIPS_DSP_R2_LE) */
-/*--------------------------------------------------------------------------*/
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 
     /*----------------------------------------------------------------------------
     ; MACROS
@@ -165,23 +119,36 @@ extern "C"
         L_var3 = 32-bit result of L_var3 + (L_var1 * L_var2)(Word32)
 
     */
-#if (!(MIPS_DSP_R2_LE))
     static inline Word32 Mac_32(Word32 L_var3,
-    Word16 L_var1_hi,
-    Word16 L_var1_lo,
-    Word16 L_var2_hi,
-    Word16 L_var2_lo,
-    Flag *pOverflow)
+                                Word16 L_var1_hi,
+                                Word16 L_var1_lo,
+                                Word16 L_var2_hi,
+                                Word16 L_var2_lo,
+                                Flag *pOverflow)
     {
         Word16  product;
+        Word32  result;
 
-        L_var3 = L_mac(L_var3, L_var1_hi, L_var2_hi, pOverflow);
+        OSCL_UNUSED_ARG(pOverflow);
 
-        product = mult(L_var1_hi, L_var2_lo, pOverflow);
-        L_var3 = L_mac(L_var3, product, 1, pOverflow);
+        __asm__ volatile (
+            "muleq_s.w.phr  %[result],  %[L_var1_hi],   %[L_var2_hi]     \n\t"
+            "muleq_s.w.phr  %[product], %[L_var1_hi],   %[L_var2_lo]     \n\t"
+            "addq_s.w       %[L_var3],  %[L_var3],      %[result]        \n\t"
+            "sra            %[product], %[product],     16               \n\t"
+            "sll            %[product], %[product],     1                \n\t"
+            "addq_s.w       %[L_var3],  %[L_var3],      %[product]       \n\t"
+            "muleq_s.w.phr  %[product], %[L_var1_lo],   %[L_var2_hi]     \n\t"
+            "sra            %[product], %[product],     16               \n\t"
+            "sll            %[product], %[product],     1                \n\t"
+            "addq_s.w       %[L_var3],  %[L_var3],      %[product]       \n\t"
 
-        product = mult(L_var1_lo, L_var2_hi, pOverflow);
-        L_var3 = L_mac(L_var3, product, 1, pOverflow);
+            : [product] "=&r" (product), [L_var3] "+r" (L_var3),
+              [result] "=&r" (result)
+            : [L_var1_hi] "r" (L_var1_hi), [L_var1_lo] "r" (L_var1_lo),
+              [L_var2_hi] "r" (L_var2_hi), [L_var2_lo] "r" (L_var2_lo)
+            : "hi", "lo"
+        );
 
         return (L_var3);
     }
@@ -217,13 +184,24 @@ extern "C"
                                    Flag  *pOverflow)
     {
         Word16  product;
+        Word32  result;
 
-        L_var3 = L_mac(L_var3, L_var1_hi, var2, pOverflow);
+        OSCL_UNUSED_ARG(pOverflow);
 
-        product = mult(L_var1_lo, var2, pOverflow);
-        L_var3 = L_mac(L_var3, product, 1, pOverflow);
+        __asm__ volatile (
+            "muleq_s.w.phr  %[result],  %[L_var1_hi],   %[var2]     \n\t"
+            "muleq_s.w.phr  %[product], %[L_var1_lo],   %[var2]     \n\t"
+            "addq_s.w       %[result],  %[L_var3],      %[result]   \n\t"
+            "sra            %[product], %[product],     16          \n\t"
+            "sll            %[product], %[product],     1           \n\t"
+            "addq_s.w       %[result],  %[result],      %[product]  \n\t"
+            : [product] "=&r" (product),  [result] "=&r" (result)
+            : [L_var1_hi] "r" (L_var1_hi), [L_var1_lo] "r" (L_var1_lo),
+              [var2] "r" (var2), [L_var3] "r" (L_var3)
+            : "hi", "lo"
+        );
 
-        return (L_var3);
+        return (result);
     }
 
 
@@ -248,7 +226,16 @@ extern "C"
 
     static inline Word16 negate(Word16 var1)
     {
-        return (((var1 == MIN_16) ? MAX_16 : -var1));
+
+        Word16 var_out;
+
+        __asm__ volatile (
+            "subq_s.ph %[var_out], $0, %[var1]  \n\t"
+            : [var_out] "=r" (var_out)
+            : [var1] "r" (var1)
+        );
+
+        return (var_out);
     }
 
     /*----------------------------------------------------------------------------
@@ -290,15 +277,14 @@ extern "C"
             {
                 var_out = var1 >> var2;
             }
-
         }
         else
         {
-            var_out = var1 << var2;
-            if (var_out >> var2 != var1)
-            {
-                var_out = (var1 >> 15) ^ MAX_16;
-            }
+            __asm__ volatile (
+                "shllv_s.ph %[var_out], %[var1], %[var2]    \n\t"
+                : [var_out] "=r" (var_out)
+                : [var1] "r" (var1), [var2] "r" (var2)
+            );
         }
         return (var_out);
     }
@@ -337,11 +323,11 @@ extern "C"
 
         if (var2 > 0)
         {
-            L_var_out = L_var1 << var2;
-            if (L_var_out >> var2 != L_var1)
-            {
-                L_var_out = (L_var1 >> 31) ^ MAX_32;
-            }
+            __asm__ volatile (
+                "shllv_s.w %[L_var_out], %[L_var1], %[var2] \n\t"
+                : [L_var_out] "=r" (L_var_out)
+                : [L_var1] "r" (L_var1), [var2] "r" (var2)
+            );
         }
         else
         {
@@ -350,7 +336,6 @@ extern "C"
             {
                 L_var_out = L_var1 >> var2;
             }
-
         }
 
         return (L_var_out);
@@ -435,20 +420,21 @@ extern "C"
     static inline Word16 abs_s(Word16 var1)
     {
 
-        Word16 y = var1 - (var1 < 0);
-        y = y ^(y >> 15);
-        return (y);
+        Word16 y;
 
+        __asm__ volatile (
+            "absq_s.ph  %[y],    %[var1]  \n\t"
+            "seh        %[y],    %[y]     \n\t"
+            : [y] "=&r" (y)
+            : [var1] "r" (var1)
+        );
+
+        return (y);
     }
-#endif /* if (!(MIPS_DSP_R2_LE)) */
     /*----------------------------------------------------------------------------
     ; END
     ----------------------------------------------------------------------------*/
-#ifdef __cplusplus
-}
-#endif
 
-
-#endif /* BASIC_OP_H */
+#endif /* BASIC_OP_MIPS_H */
 
 

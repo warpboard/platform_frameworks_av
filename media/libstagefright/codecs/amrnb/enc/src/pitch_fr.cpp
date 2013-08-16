@@ -309,6 +309,7 @@ static void Norm_Corr (Word16 exc[], Word16 xn[], Word16 h[], Word16 L_subfr,
 ------------------------------------------------------------------------------
 */
 
+#if !((MIPS_DSP_R2_LE) || (MIPS_DSP_R1_LE) || (MIPS32_R2_LE))
 static void Norm_Corr(Word16 exc[],
                       Word16 xn[],
                       Word16 h[],
@@ -434,6 +435,7 @@ static void Norm_Corr(Word16 exc[],
     }
     return;
 }
+#endif /* #if !((MIPS_DSP_R2_LE) || (MIPS_DSP_R1_LE) || (MIPS32_R2_LE)) */
 
 /****************************************************************************/
 
