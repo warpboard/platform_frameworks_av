@@ -241,7 +241,6 @@ private:
             status_t        prepareAsync_l();
             status_t        getDuration_l(int *msec);
             status_t        attachNewPlayer(const sp<IMediaPlayer>& player);
-            status_t        reset_l();
             status_t        doSetRetransmitEndpoint(const sp<IMediaPlayer>& player);
 
     sp<IMediaPlayer>            mPlayer;

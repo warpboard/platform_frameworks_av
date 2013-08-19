@@ -471,28 +471,6 @@ status_t MediaPlayer::seekTo(int msec)
     return result;
 }
 
-status_t MediaPlayer::reset_l()
-{
-    mLoop = false;
-    if (mCurrentState == MEDIA_PLAYER_IDLE) return NO_ERROR;
-    mPrepareSync = false;
-    if (mPlayer != 0) {
-        status_t ret = mPlayer->reset();
-        if (ret != NO_ERROR) {
-            ALOGE("reset() failed with return code (%d)", ret);
-            mCurrentState = MEDIA_PLAYER_STATE_ERROR;
-        } else {
-            mCurrentState = MEDIA_PLAYER_IDLE;
-        }
-        // setDataSource has to be called again to create a
-        // new mediaplayer.
-        mPlayer = 0;
-        return ret;
-    }
-    clear_l();
-    return NO_ERROR;
-}
-
 status_t MediaPlayer::doSetRetransmitEndpoint(const sp<IMediaPlayer>& player) {
     Mutex::Autolock _l(mLock);
 
@@ -510,8 +488,36 @@ status_t MediaPlayer::doSetRetransmitEndpoint(const sp<IMediaPlayer>& player) {
 status_t MediaPlayer::reset()
 {
     ALOGV("reset");
-    Mutex::Autolock _l(mLock);
-    return reset_l();
+    status_t result = UNKNOWN_ERROR;
+    sp<IMediaPlayer> p = 0;
+    {
+        Mutex::Autolock _l(mLock);
+        mLoop = false;
+        if (mCurrentState == MEDIA_PLAYER_IDLE) return NO_ERROR;
+        mPrepareSync = false;
+        if (mPlayer != 0) {
+            result = mPlayer->reset();
+            if (result != NO_ERROR) {
+                ALOGE("reset() failed with return code (%d)", result);
+                mCurrentState = MEDIA_PLAYER_STATE_ERROR;
+            } else {
+                mCurrentState = MEDIA_PLAYER_IDLE;
+            }
+            // setDataSource has to be called again to create a
+            // new mediaplayer.
+            p = mPlayer;
+            mPlayer = 0;
+        } else {
+            clear_l();
+            result = OK;
+        }
+    }
+
+    if( p != 0 ) {
+        p->disconnect();
+    }
+
+    return result;
 }
 
 status_t MediaPlayer::setAudioStreamType(audio_stream_type_t type)
