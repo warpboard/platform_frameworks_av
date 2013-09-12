@@ -88,7 +88,7 @@ void Crypto::findFactoryForScheme(const uint8_t uuid[16]) {
 
     // first check cache
     Vector<uint8_t> uuidVector;
-    uuidVector.appendArray(uuid, sizeof(uuid));
+    uuidVector.appendArray(uuid, 16);
     ssize_t index = mUUIDToLibraryPathMap.indexOfKey(uuidVector);
     if (index >= 0) {
         if (loadLibraryForScheme(mUUIDToLibraryPathMap[index], uuid)) {

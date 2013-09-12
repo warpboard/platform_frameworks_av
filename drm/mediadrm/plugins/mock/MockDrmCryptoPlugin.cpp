@@ -45,7 +45,7 @@ namespace android {
     // MockDrmFactory
     bool MockDrmFactory::isCryptoSchemeSupported(const uint8_t uuid[16])
     {
-        return (!memcmp(uuid, mock_uuid, sizeof(uuid)));
+        return (!memcmp(uuid, mock_uuid, 16));
     }
 
     status_t MockDrmFactory::createDrmPlugin(const uint8_t uuid[16], DrmPlugin **plugin)
@@ -57,7 +57,7 @@ namespace android {
     // MockCryptoFactory
     bool MockCryptoFactory::isCryptoSchemeSupported(const uint8_t uuid[16]) const
     {
-        return (!memcmp(uuid, mock_uuid, sizeof(uuid)));
+        return (!memcmp(uuid, mock_uuid, 16));
     }
 
     status_t MockCryptoFactory::createPlugin(const uint8_t uuid[16], const void *data,
@@ -663,8 +663,8 @@ namespace android {
         ALOGD("MockCryptoPlugin::decrypt(secure=%d, key=%s, iv=%s, mode=%d, src=%p, "
               "subSamples=%s, dst=%p)",
               (int)secure,
-              arrayToString(key, sizeof(key)).string(),
-              arrayToString(iv, sizeof(iv)).string(),
+              arrayToString(key, 16).string(),
+              arrayToString(iv, 16).string(),
               (int)mode, srcPtr,
               subSamplesToString(subSamples, numSubSamples).string(),
               dstPtr);
