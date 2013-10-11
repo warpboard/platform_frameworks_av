@@ -1328,8 +1328,14 @@ status_t AwesomePlayer::setNativeWindow_l(const sp<ANativeWindow> &native) {
 
     bool wasPlaying = (mFlags & PLAYING) != 0;
 
-    pause_l();
+    cancelPlayerEvents(true);
     mVideoRenderer.clear();
+
+    if (wasPlaying) {
+        uint32_t params = IMediaPlayerService::kBatteryDataTrackDecoder
+                | IMediaPlayerService::kBatteryDataTrackVideo;
+        addBatteryData(params);
+    }
 
     shutdownVideoDecoder_l();
 
@@ -1341,13 +1347,22 @@ status_t AwesomePlayer::setNativeWindow_l(const sp<ANativeWindow> &native) {
     }
 
     if (mLastVideoTimeUs >= 0) {
-        mSeeking = SEEK;
+        mSeeking = SEEK_VIDEO_ONLY;
         mSeekTimeUs = mLastVideoTimeUs;
         modifyFlags((AT_EOS | AUDIO_AT_EOS | VIDEO_AT_EOS), CLEAR);
     }
 
     if (wasPlaying) {
-        play_l();
+        postVideoEvent_l();
+
+        if (mAudioSource != NULL && mVideoSource != NULL) {
+            postVideoLagEvent_l();
+        }
+
+        uint32_t params = IMediaPlayerService::kBatteryDataCodecStarted
+                | IMediaPlayerService::kBatteryDataTrackDecoder
+                | IMediaPlayerService::kBatteryDataTrackVideo;
+        addBatteryData(params);
     }
 
     return OK;
