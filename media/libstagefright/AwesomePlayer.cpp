@@ -174,6 +174,39 @@ private:
             const AwesomeNativeWindowRenderer &);
 };
 
+struct AwesomeDummyDecoder : public MediaSource {
+    AwesomeDummyDecoder(const sp<MediaSource> &source)
+    : mSource(source),
+      mFormat(new MetaData) {
+        mFormat->setCString(kKeyDecoderComponent, "OMX.android.dummy.decoder");
+        mFormat->setInt32(kKeyWidth, 0);
+        mFormat->setInt32(kKeyHeight, 0);
+    }
+
+    status_t start(MetaData *params) {
+        return mSource->start();
+    }
+
+    status_t stop() {
+        return mSource->stop();
+    }
+
+    sp<MetaData> getFormat() {
+        return mFormat;
+    }
+
+    status_t read(MediaBuffer **out, const ReadOptions *options) {
+        return mSource->read(out, options);
+    }
+
+protected:
+    ~AwesomeDummyDecoder() {};
+
+private:
+    sp<MediaSource> mSource;
+    sp<MetaData> mFormat;
+};
+
 // To collect the decoder usage
 void addBatteryData(uint32_t params) {
     sp<IBinder> binder =
@@ -508,7 +541,7 @@ void AwesomePlayer::reset_l() {
         if ((mAudioSource != NULL) && (mAudioSource != mAudioTrack)) {
             params |= IMediaPlayerService::kBatteryDataTrackAudio;
         }
-        if (mVideoSource != NULL) {
+        if (mVideoSource != NULL && mNativeWindow != NULL) {
             params |= IMediaPlayerService::kBatteryDataTrackVideo;
         }
         addBatteryData(params);
@@ -1003,7 +1036,7 @@ status_t AwesomePlayer::play_l() {
     if ((mAudioSource != NULL) && (mAudioSource != mAudioTrack)) {
         params |= IMediaPlayerService::kBatteryDataTrackAudio;
     }
-    if (mVideoSource != NULL) {
+    if (mVideoSource != NULL && mNativeWindow != NULL) {
         params |= IMediaPlayerService::kBatteryDataTrackVideo;
     }
     addBatteryData(params);
@@ -1271,7 +1304,7 @@ status_t AwesomePlayer::pause_l(bool at_eos) {
     if ((mAudioSource != NULL) && (mAudioSource != mAudioTrack)) {
         params |= IMediaPlayerService::kBatteryDataTrackAudio;
     }
-    if (mVideoSource != NULL) {
+    if (mVideoSource != NULL && mNativeWindow != NULL) {
         params |= IMediaPlayerService::kBatteryDataTrackVideo;
     }
 
@@ -1318,6 +1351,7 @@ void AwesomePlayer::shutdownVideoDecoder_l() {
 }
 
 status_t AwesomePlayer::setNativeWindow_l(const sp<ANativeWindow> &native) {
+    bool hadNativeWindow = mNativeWindow != NULL;
     mNativeWindow = native;
 
     if (mVideoSource == NULL) {
@@ -1331,7 +1365,7 @@ status_t AwesomePlayer::setNativeWindow_l(const sp<ANativeWindow> &native) {
     cancelPlayerEvents(true);
     mVideoRenderer.clear();
 
-    if (wasPlaying) {
+    if (wasPlaying && hadNativeWindow) {
         uint32_t params = IMediaPlayerService::kBatteryDataTrackDecoder
                 | IMediaPlayerService::kBatteryDataTrackVideo;
         addBatteryData(params);
@@ -1359,10 +1393,12 @@ status_t AwesomePlayer::setNativeWindow_l(const sp<ANativeWindow> &native) {
             postVideoLagEvent_l();
         }
 
-        uint32_t params = IMediaPlayerService::kBatteryDataCodecStarted
-                | IMediaPlayerService::kBatteryDataTrackDecoder
-                | IMediaPlayerService::kBatteryDataTrackVideo;
-        addBatteryData(params);
+        if (mNativeWindow != NULL) {
+            uint32_t params = IMediaPlayerService::kBatteryDataCodecStarted
+                    | IMediaPlayerService::kBatteryDataTrackDecoder
+                    | IMediaPlayerService::kBatteryDataTrackVideo;
+            addBatteryData(params);
+        }
     }
 
     return OK;
@@ -1633,11 +1669,15 @@ status_t AwesomePlayer::initVideoDecoder(uint32_t flags) {
     }
 #endif
     ALOGV("initVideoDecoder flags=0x%x", flags);
-    mVideoSource = OMXCodec::Create(
-            mClient.interface(), mVideoTrack->getFormat(),
-            false, // createEncoder
-            mVideoTrack,
-            NULL, flags, USE_SURFACE_ALLOC ? mNativeWindow : NULL);
+    if (mNativeWindow != NULL) {
+        mVideoSource = OMXCodec::Create(
+                mClient.interface(), mVideoTrack->getFormat(),
+                false, // createEncoder
+                mVideoTrack,
+                NULL, flags, USE_SURFACE_ALLOC ? mNativeWindow : NULL);
+    } else {
+        mVideoSource = new AwesomeDummyDecoder(mVideoTrack);
+    }
 
     if (mVideoSource != NULL) {
         int64_t durationUs;
