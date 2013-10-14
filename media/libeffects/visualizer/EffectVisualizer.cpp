@@ -499,7 +499,7 @@ int Visualizer_command(effect_handle_t self, uint32_t cmdCode, uint32_t cmdSize,
                 memcpy(pReplyData,
                        pContext->mCaptureBuf + CAPTURE_BUF_SIZE + capturePoint,
                        size);
-                pReplyData += size;
+                pReplyData = (char*)pReplyData + size;
                 captureSize -= size;
                 capturePoint = 0;
             }
