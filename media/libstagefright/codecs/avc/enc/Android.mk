@@ -51,6 +51,9 @@ LOCAL_C_INCLUDES := \
 LOCAL_CFLAGS := \
     -DOSCL_IMPORT_REF= -DOSCL_UNUSED_ARG= -DOSCL_EXPORT_REF=
 
+ifeq ($(TARGET_DEVICE), manta)
+    LOCAL_CFLAGS += -DSURFACE_IS_BGR32
+endif
 
 LOCAL_STATIC_LIBRARIES := \
         libstagefright_avcenc

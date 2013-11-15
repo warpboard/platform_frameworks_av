@@ -135,6 +135,53 @@ inline static void ConvertYUV420SemiPlanarToYUV420Planar(
     }
 }
 
+static void ConvertRGB32ToPlanar(
+        const uint8_t *src, uint8_t *dstY, int32_t width, int32_t height) {
+    CHECK((width & 1) == 0);
+    CHECK((height & 1) == 0);
+
+    uint8_t *dstU = dstY + width * height;
+    uint8_t *dstV = dstU + (width / 2) * (height / 2);
+
+    for (int32_t y = 0; y < height; ++y) {
+        for (int32_t x = 0; x < width; ++x) {
+#ifdef SURFACE_IS_BGR32
+            unsigned blue = src[4 * x];
+            unsigned green = src[4 * x + 1];
+            unsigned red = src[4 * x + 2];
+#else
+            unsigned red = src[4 * x];
+            unsigned green = src[4 * x + 1];
+            unsigned blue = src[4 * x + 2];
+#endif
+
+            unsigned luma =
+                ((red * 66 + green * 129 + blue * 25) >> 8) + 16;
+
+            dstY[x] = luma;
+
+            if ((x & 1) == 0 && (y & 1) == 0) {
+                unsigned U =
+                    ((-red * 38 - green * 74 + blue * 112) >> 8) + 128;
+
+                unsigned V =
+                    ((red * 112 - green * 94 - blue * 18) >> 8) + 128;
+
+                dstU[x / 2] = U;
+                dstV[x / 2] = V;
+            }
+        }
+
+        if ((y & 1) == 0) {
+            dstU += width / 2;
+            dstV += width / 2;
+        }
+
+        src += 4 * width;
+        dstY += width;
+    }
+}
+
 static void* MallocWrapper(
         void *userData, int32_t size, int32_t attrs) {
     void *ptr = malloc(size);
@@ -707,7 +754,6 @@ OMX_ERRORTYPE SoftAVCEncoder::internalSetParameter(
                     mStoreMetaDataInBuffers ? " true" : "false");
 
             if (mStoreMetaDataInBuffers) {
-                mVideoColorFormat == OMX_COLOR_FormatYUV420SemiPlanar;
                 if (mInputFrameData == NULL) {
                     mInputFrameData =
                             (uint8_t *) malloc((mVideoWidth * mVideoHeight * 3 ) >> 1);
@@ -795,7 +841,7 @@ void SoftAVCEncoder::onQueueFilled(OMX_U32 portIndex) {
             }
         }
 
-        buffer_handle_t srcBuffer; // for MetaDataMode only
+        buffer_handle_t srcBuffer = 0; // for MetaDataMode only
 
         // Get next input video frame
         if (mReadyForNextFrame) {
@@ -836,11 +882,17 @@ void SoftAVCEncoder::onQueueFilled(OMX_U32 portIndex) {
                         return;
                     }
                     // TODO: Verify/convert pixel format enum
+
+                    ConvertRGB32ToPlanar(
+                        (const uint8_t *)inputData, mInputFrameData,
+                        mVideoWidth, mVideoHeight);
+                    inputData = mInputFrameData;
+
                 } else {
                     inputData = (uint8_t *)inHeader->pBuffer + inHeader->nOffset;
                 }
 
-                if (mVideoColorFormat != OMX_COLOR_FormatYUV420Planar) {
+                if (mVideoColorFormat == OMX_COLOR_FormatYUV420SemiPlanar) {
                     ConvertYUV420SemiPlanarToYUV420Planar(
                         inputData, mInputFrameData, mVideoWidth, mVideoHeight);
                     inputData = mInputFrameData;
@@ -990,7 +1042,7 @@ uint8_t *SoftAVCEncoder::extractGrallocData(void *data, buffer_handle_t *buffer)
     const Rect rect(mVideoWidth, mVideoHeight);
     uint8_t *img;
     res = GraphicBufferMapper::get().lock(imgBuffer,
-            GRALLOC_USAGE_HW_VIDEO_ENCODER,
+            GRALLOC_USAGE_SW_READ_OFTEN | GRALLOC_USAGE_SW_WRITE_NEVER,
             rect, (void**)&img);
     if (res != OK) {
         ALOGE("%s: Unable to lock image buffer %p for access", __FUNCTION__,
@@ -1003,7 +1055,7 @@ uint8_t *SoftAVCEncoder::extractGrallocData(void *data, buffer_handle_t *buffer)
 }
 
 void SoftAVCEncoder::releaseGrallocData(buffer_handle_t buffer) {
-    if (mStoreMetaDataInBuffers) {
+    if (mStoreMetaDataInBuffers && buffer) {
         GraphicBufferMapper::get().unlock(buffer);
     }
 }
