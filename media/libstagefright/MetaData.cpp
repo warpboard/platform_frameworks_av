@@ -28,7 +28,9 @@
 
 namespace android {
 
-MetaData::MetaData() {
+MetaData::MetaData()
+    : RefBase() {
+    clear();
 }
 
 MetaData::MetaData(const MetaData &from)
@@ -41,10 +43,12 @@ MetaData::~MetaData() {
 }
 
 void MetaData::clear() {
+    Mutex::Autolock _l(mMutex);
     mItems.clear();
 }
 
 bool MetaData::remove(uint32_t key) {
+    Mutex::Autolock _l(mMutex);
     ssize_t i = mItems.indexOfKey(key);
 
     if (i < 0) {
@@ -188,6 +192,7 @@ bool MetaData::setData(
         uint32_t key, uint32_t type, const void *data, size_t size) {
     bool overwrote_existing = true;
 
+    Mutex::Autolock _l(mMutex);
     ssize_t i = mItems.indexOfKey(key);
     if (i < 0) {
         typed_data item;
@@ -205,6 +210,7 @@ bool MetaData::setData(
 
 bool MetaData::findData(uint32_t key, uint32_t *type,
                         const void **data, size_t *size) const {
+    Mutex::Autolock _l(const_cast<Mutex&>(mMutex));
     ssize_t i = mItems.indexOfKey(key);
 
     if (i < 0) {
@@ -221,6 +227,7 @@ bool MetaData::findData(uint32_t key, uint32_t *type,
 MetaData::typed_data::typed_data()
     : mType(0),
       mSize(0) {
+    u.ext_data = NULL;
 }
 
 MetaData::typed_data::~typed_data() {
@@ -230,6 +237,7 @@ MetaData::typed_data::~typed_data() {
 MetaData::typed_data::typed_data(const typed_data &from)
     : mType(from.mType),
       mSize(0) {
+    u.ext_data = NULL;
     allocateStorage(from.mSize);
     memcpy(storage(), from.storage(), mSize);
 }
@@ -276,11 +284,12 @@ void MetaData::typed_data::allocateStorage(size_t size) {
     }
 
     u.ext_data = malloc(mSize);
+    CHECK(u.ext_data != NULL);
 }
 
 void MetaData::typed_data::freeStorage() {
     if (!usesReservoir()) {
-        if (u.ext_data) {
+        if (u.ext_data != NULL) {
             free(u.ext_data);
             u.ext_data = NULL;
         }
