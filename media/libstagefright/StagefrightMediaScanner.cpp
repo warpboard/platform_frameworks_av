@@ -26,6 +26,7 @@
 
 #include <media/mediametadataretriever.h>
 #include <private/media/VideoFrame.h>
+#include <utils/SortedVector.h>
 
 // Sonivox includes
 #include <libsonivox/eas.h>
@@ -36,25 +37,37 @@ StagefrightMediaScanner::StagefrightMediaScanner() {}
 
 StagefrightMediaScanner::~StagefrightMediaScanner() {}
 
-static bool FileHasAcceptableExtension(const char *extension) {
-    static const char *kValidExtensions[] = {
-        ".mp3", ".mp4", ".m4a", ".3gp", ".3gpp", ".3g2", ".3gpp2",
-        ".mpeg", ".ogg", ".mid", ".smf", ".imy", ".wma", ".aac",
-        ".wav", ".amr", ".midi", ".xmf", ".rtttl", ".rtx", ".ota",
-        ".mkv", ".mka", ".webm", ".ts", ".fl", ".flac", ".mxmf",
-        ".avi", ".mpeg", ".mpg", ".awb", ".mpga"
-    };
-    static const size_t kNumValidExtensions =
-        sizeof(kValidExtensions) / sizeof(kValidExtensions[0]);
+class FileHasAcceptableExtension {
+    public:
+        FileHasAcceptableExtension() {
+            static const char *kValidExtensions[] = {
+                "mp3", "mp4", "m4a", "3gp", "3gpp", "3g2", "3gpp2",
+                "mpeg", "ogg", "mid", "smf", "imy", "wma", "aac",
+                "wav", "amr", "midi", "xmf", "rtttl", "rtx", "ota",
+                "mkv", "mka", "webm", "ts", "fl", "flac", "mxmf",
+                "avi", "mpeg", "mpg", "awb", "mpga"
+            };
 
-    for (size_t i = 0; i < kNumValidExtensions; ++i) {
-        if (!strcasecmp(extension, kValidExtensions[i])) {
-            return true;
+            static const size_t kNumValidExtensions =
+                sizeof(kValidExtensions) / sizeof(kValidExtensions[0]);
+
+            for (size_t i = 0; i < kNumValidExtensions; ++i) {
+                mAcceptableExtensions.add(kValidExtensions[i]);
+            }
         }
-    }
 
-    return false;
-}
+        ~FileHasAcceptableExtension() {
+            mAcceptableExtensions.clear();
+        }
+
+        bool find(const char *extension) {
+            return mAcceptableExtensions.indexOf(extension) < 0 ? false : true;
+        }
+    private:
+        SortedVector<const char *> mAcceptableExtensions;
+};
+
+static FileHasAcceptableExtension kFileHasAcceptableExtension;
 
 static MediaScanResult HandleMIDI(
         const char *filename, MediaScannerClient *client) {
@@ -125,19 +138,19 @@ MediaScanResult StagefrightMediaScanner::processFileInternal(
         return MEDIA_SCAN_RESULT_SKIPPED;
     }
 
-    if (!FileHasAcceptableExtension(extension)) {
+    if (!kFileHasAcceptableExtension.find(++extension)) {
         return MEDIA_SCAN_RESULT_SKIPPED;
     }
 
-    if (!strcasecmp(extension, ".mid")
-            || !strcasecmp(extension, ".smf")
-            || !strcasecmp(extension, ".imy")
-            || !strcasecmp(extension, ".midi")
-            || !strcasecmp(extension, ".xmf")
-            || !strcasecmp(extension, ".rtttl")
-            || !strcasecmp(extension, ".rtx")
-            || !strcasecmp(extension, ".ota")
-            || !strcasecmp(extension, ".mxmf")) {
+    if (!strcasecmp(extension, "mid")
+            || !strcasecmp(extension, "smf")
+            || !strcasecmp(extension, "imy")
+            || !strcasecmp(extension, "midi")
+            || !strcasecmp(extension, "xmf")
+            || !strcasecmp(extension, "rtttl")
+            || !strcasecmp(extension, "rtx")
+            || !strcasecmp(extension, "ota")
+            || !strcasecmp(extension, "mxmf")) {
         return HandleMIDI(path, &client);
     }
 
