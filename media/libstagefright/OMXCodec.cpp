@@ -4417,10 +4417,13 @@ void OMXCodec::initOutputFormat(const sp<MetaData> &inputFormat) {
             } else if (audio_def->eEncoding == OMX_AUDIO_CodingAAC) {
                 mOutputFormat->setCString(
                         kKeyMIMEType, MEDIA_MIMETYPE_AUDIO_AAC);
-                int32_t numChannels, sampleRate, bitRate;
+                int32_t numChannels, sampleRate, bitRate, aacProfile;
                 inputFormat->findInt32(kKeyChannelCount, &numChannels);
                 inputFormat->findInt32(kKeySampleRate, &sampleRate);
                 inputFormat->findInt32(kKeyBitRate, &bitRate);
+                if (inputFormat->findInt32(kKeyAACProfile, &aacProfile)) {
+                    mOutputFormat->setInt32(kKeyAACProfile, aacProfile);
+                }
                 mOutputFormat->setInt32(kKeyChannelCount, numChannels);
                 mOutputFormat->setInt32(kKeySampleRate, sampleRate);
                 mOutputFormat->setInt32(kKeyBitRate, bitRate);
