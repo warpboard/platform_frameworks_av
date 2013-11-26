@@ -123,6 +123,7 @@ class StreamingProcessor:
     size_t mRecordingHeapCount;
     Vector<BufferItemConsumer::BufferItem> mRecordingBuffers;
     size_t mRecordingHeapHead, mRecordingHeapFree;
+    int32_t *mpHeapStatus;
 
     virtual bool threadLoop();
 
