@@ -44,6 +44,7 @@ namespace android {
 
 // static
 const AString WifiDisplaySource::sUserAgent = MakeUserAgent();
+const int64_t WifiDisplaySource::kPlaybackSessionTimeoutUs;
 
 WifiDisplaySource::WifiDisplaySource(
         const sp<ANetworkSession> &netSession,
