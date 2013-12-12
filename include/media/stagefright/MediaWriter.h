@@ -18,6 +18,7 @@
 
 #define MEDIA_WRITER_H_
 
+#include "foundation/ABase.h" // for DISALLOW_EVIL_CONSTRUCTORS
 #include <utils/RefBase.h>
 #include <media/IMediaRecorderClient.h>
 

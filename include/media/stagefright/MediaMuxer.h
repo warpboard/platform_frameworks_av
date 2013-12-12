@@ -17,6 +17,7 @@
 #ifndef MEDIA_MUXER_H_
 #define MEDIA_MUXER_H_
 
+#include "foundation/ABase.h" // for DISALLOW_EVIL_CONSTRUCTORS
 #include <utils/Errors.h>
 #include <utils/RefBase.h>
 #include <utils/Vector.h>
