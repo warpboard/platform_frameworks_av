@@ -163,7 +163,7 @@ status_t MediaMuxer::writeSampleData(const sp<ABuffer> &buffer, size_t trackInde
 
     MediaBuffer* mediaBuffer = new MediaBuffer(buffer);
 
-    mediaBuffer->add_ref(); // Released in MediaAdapter::signalBufferReturned().
+    //mediaBuffer->add_ref(); // Released in MediaAdapter::signalBufferReturned().
     mediaBuffer->set_range(buffer->offset(), buffer->size());
 
     sp<MetaData> sampleMetaData = mediaBuffer->meta_data();

@@ -97,6 +97,7 @@ status_t MediaAdapter::read(
 
     *buffer = mCurrentMediaBuffer;
     mCurrentMediaBuffer = NULL;
+    (*buffer)->add_ref();
     (*buffer)->setObserver(this);
 
     return OK;
