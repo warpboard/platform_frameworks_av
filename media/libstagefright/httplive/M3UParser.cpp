@@ -238,6 +238,13 @@ M3UParser::M3UParser(
       mIsComplete(false),
       mIsEvent(false),
       mSelectedIndex(-1) {
+    ssize_t queryStart = mBaseURI.find("?");
+
+    if (queryStart >= 0) {
+        // Trim query string
+        mBaseURI.erase(queryStart, mBaseURI.size() - queryStart);
+    }
+
     mInitCheck = parse(data, size);
 }
 
