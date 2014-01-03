@@ -1123,7 +1123,7 @@ void Intra16x16PlanePrediction(u8 *data, u8 *above, u8 *left)
     a = 16 * (above[15] + left[15]);
 
     for (i = 0, b = 0; i < 8; i++)
-        b += ((i32)i + 1) * (above[8+i] - above[6-i]);
+        b += ((i32)i + 1) * (above[8+i] - above[(i32)(6-i)]);
     b = (5 * b + 32) >> 6;
 
     for (i = 0, c = 0; i < 7; i++)
