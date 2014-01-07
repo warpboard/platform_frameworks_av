@@ -39,6 +39,9 @@ MediaScanner::~MediaScanner() {
 
 void MediaScanner::setLocale(const char *locale) {
     if (mLocale) {
+        if (locale && strcmp(mLocale, locale) == 0) {
+            return;
+        }
         free(mLocale);
         mLocale = NULL;
     }
