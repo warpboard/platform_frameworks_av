@@ -1226,12 +1226,17 @@ status_t OMXCodec::setVideoOutputFormat(
                 && colorFormat != OMX_COLOR_FormatUnused
                 && colorFormat != format.eColorFormat) {
 
-            while (OMX_ErrorNoMore != err) {
-                format.nIndex++;
+            OMX_U32 index = 1; // Index 0 is retrieved above.
+            while (err == OK) {
+                format.nIndex = index++;
                 err = mOMX->getParameter(
                         mNode, OMX_IndexParamVideoPortFormat,
                             &format, sizeof(format));
                 if (format.eColorFormat == colorFormat) {
+                    break;
+                }
+
+                if (index >= kMaxColorFormatSupported) {
                     break;
                 }
             }
