@@ -311,7 +311,7 @@ private:
 
     StreamInfo& getStreamInfo(int streamId);
 
-    friend class CameraBase;
+    friend class CameraBase<ProCamera>;
 };
 
 }; // namespace android

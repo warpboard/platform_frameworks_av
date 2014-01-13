@@ -54,7 +54,8 @@ Camera2Client::Camera2Client(const sp<CameraService>& cameraService,
         uid_t clientUid,
         int servicePid,
         int deviceVersion):
-        Camera2ClientBase(cameraService, cameraClient, clientPackageName,
+        Camera2ClientBase<CameraService::Client>(
+                cameraService, cameraClient, clientPackageName,
                 cameraId, cameraFacing, clientPid, clientUid, servicePid),
         mParameters(cameraId, cameraFacing),
         mDeviceVersion(deviceVersion)
@@ -71,7 +72,7 @@ status_t Camera2Client::initialize(camera_module_t *module)
     ALOGV("%s: Initializing client for camera %d", __FUNCTION__, mCameraId);
     status_t res;
 
-    res = Camera2ClientBase::initialize(module);
+    res = Camera2ClientBase<CameraService::Client>::initialize(module);
     if (res != OK) {
         return res;
     }

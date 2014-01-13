@@ -166,7 +166,7 @@ protected:
 
     sp<ICameraRecordingProxyListener>  mRecordingProxyListener;
 
-    friend class        CameraBase;
+    friend class        CameraBase<Camera>;
 };
 
 }; // namespace android

@@ -42,7 +42,7 @@ sp<ProCamera> ProCamera::connect(int cameraId)
 }
 
 ProCamera::ProCamera(int cameraId)
-    : CameraBase(cameraId)
+    : CameraBase<ProCamera>(cameraId)
 {
 }
 

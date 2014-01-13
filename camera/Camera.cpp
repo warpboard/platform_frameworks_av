@@ -35,7 +35,7 @@
 namespace android {
 
 Camera::Camera(int cameraId)
-    : CameraBase(cameraId)
+    : CameraBase<Camera>(cameraId)
 {
 }
 

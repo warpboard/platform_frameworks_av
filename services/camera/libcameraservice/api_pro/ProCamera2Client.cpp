@@ -41,7 +41,8 @@ ProCamera2Client::ProCamera2Client(const sp<CameraService>& cameraService,
                                    int clientPid,
                                    uid_t clientUid,
                                    int servicePid) :
-    Camera2ClientBase(cameraService, remoteCallback, clientPackageName,
+    Camera2ClientBase<CameraService::ProClient>(
+                cameraService, remoteCallback, clientPackageName,
                 cameraId, cameraFacing, clientPid, clientUid, servicePid)
 {
     ATRACE_CALL();
@@ -55,7 +56,7 @@ status_t ProCamera2Client::initialize(camera_module_t *module)
     ATRACE_CALL();
     status_t res;
 
-    res = Camera2ClientBase::initialize(module);
+    res = Camera2ClientBase<CameraService::ProClient>::initialize(module);
     if (res != OK) {
         return res;
     }
@@ -370,7 +371,7 @@ void ProCamera2Client::detachDevice() {
         }
     }
 
-    Camera2ClientBase::detachDevice();
+    Camera2ClientBase<CameraService::ProClient>::detachDevice();
 }
 
 /** Device-related methods */
