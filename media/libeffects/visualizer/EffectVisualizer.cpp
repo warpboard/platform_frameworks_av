@@ -559,6 +559,7 @@ int Visualizer_command(effect_handle_t self, uint32_t cmdCode, uint32_t cmdSize,
             }
             const uint32_t deltaSmpl = pContext->mConfig.inputCfg.samplingRate * latencyMs / 1000;
 
+            char* pReplyDataTmp = (char*)pReplyData;
             int32_t capturePoint = pContext->mCaptureIdx - pContext->mCaptureSize - deltaSmpl;
             int32_t captureSize = pContext->mCaptureSize;
             if (capturePoint < 0) {
@@ -566,14 +567,14 @@ int Visualizer_command(effect_handle_t self, uint32_t cmdCode, uint32_t cmdSize,
                 if (size > captureSize) {
                     size = captureSize;
                 }
-                memcpy(pReplyData,
+                memcpy(pReplyDataTmp,
                        pContext->mCaptureBuf + CAPTURE_BUF_SIZE + capturePoint,
                        size);
-                pReplyData = (char *)pReplyData + size;
+                pReplyDataTmp = (char*)pReplyDataTmp + size;
                 captureSize -= size;
                 capturePoint = 0;
             }
-            memcpy(pReplyData,
+            memcpy(pReplyDataTmp,
                    pContext->mCaptureBuf + capturePoint,
                    captureSize);
 
