@@ -126,8 +126,8 @@ public:
 
     // returns plain pointer of client. Note that mClientLock should be acquired to
     // prevent the client from destruction. The result can be NULL.
-    virtual BasicClient* getClientByIdUnsafe(int cameraId);
-    virtual Mutex*      getClientLockById(int cameraId);
+    virtual BasicClient* getClientByIdUnsafe(intptr_t cameraId);
+    virtual Mutex*       getClientLockById(intptr_t cameraId);
 
     class BasicClient : public virtual RefBase {
     public:

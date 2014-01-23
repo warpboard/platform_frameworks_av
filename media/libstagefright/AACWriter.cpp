@@ -171,7 +171,7 @@ status_t AACWriter::reset() {
     void *dummy;
     pthread_join(mThread, &dummy);
 
-    status_t err = (status_t) dummy;
+    status_t err = static_cast<status_t>(reinterpret_cast<uintptr_t>(dummy));
     {
         status_t status = mSource->stop();
         if (err == OK &&

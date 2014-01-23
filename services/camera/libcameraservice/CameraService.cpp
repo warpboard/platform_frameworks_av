@@ -793,12 +793,12 @@ sp<CameraService::BasicClient> CameraService::findClientUnsafe(
     return NULL;
 }
 
-CameraService::BasicClient* CameraService::getClientByIdUnsafe(int cameraId) {
+CameraService::BasicClient* CameraService::getClientByIdUnsafe(intptr_t cameraId) {
     if (cameraId < 0 || cameraId >= mNumberOfCameras) return NULL;
     return mClient[cameraId].unsafe_get();
 }
 
-Mutex* CameraService::getClientLockById(int cameraId) {
+Mutex* CameraService::getClientLockById(intptr_t cameraId) {
     if (cameraId < 0 || cameraId >= mNumberOfCameras) return NULL;
     return &mClientLock[cameraId];
 }
@@ -1042,13 +1042,13 @@ void CameraService::BasicClient::opChanged(int32_t op, const String16& packageNa
 // ----------------------------------------------------------------------------
 
 Mutex* CameraService::Client::getClientLockFromCookie(void* user) {
-    return gCameraService->getClientLockById((int) user);
+    return gCameraService->getClientLockById((intptr_t) user);
 }
 
 // Provide client pointer for callbacks. Client lock returned from getClientLockFromCookie should
 // be acquired for this to be safe
 CameraService::Client* CameraService::Client::getClientFromCookie(void* user) {
-    BasicClient *basicClient = gCameraService->getClientByIdUnsafe((int) user);
+    BasicClient *basicClient = gCameraService->getClientByIdUnsafe((intptr_t) user);
     // OK: only CameraClient calls this, and they already cast anyway.
     Client* client = static_cast<Client*>(basicClient);
 

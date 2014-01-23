@@ -909,7 +909,7 @@ status_t AudioTrack::createTrack_l(
             // More than 2 channels does not require stronger alignment than stereo
             alignment <<= 1;
         }
-        if (((size_t)sharedBuffer->pointer() & (alignment - 1)) != 0) {
+        if (((uintptr_t)sharedBuffer->pointer() & (alignment - 1)) != 0) {
             ALOGE("Invalid buffer alignment: address %p, channel count %u",
                     sharedBuffer->pointer(), mChannelCount);
             return BAD_VALUE;
@@ -1238,7 +1238,7 @@ ssize_t AudioTrack::write(const void* buffer, size_t userSize)
     if (ssize_t(userSize) < 0 || (buffer == NULL && userSize != 0)) {
         // Sanity-check: user is most-likely passing an error code, and it would
         // make the return value ambiguous (actualSize vs error).
-        ALOGE("AudioTrack::write(buffer=%p, size=%u (%d)", buffer, userSize, userSize);
+        ALOGE("AudioTrack::write(buffer=%p, size=%zu (%zd)", buffer, userSize, userSize);
         return BAD_VALUE;
     }
 
