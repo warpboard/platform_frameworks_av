@@ -1736,7 +1736,11 @@ status_t AudioFlinger::PlaybackThread::getRenderPosition(size_t *halFrames, size
         *dspFrames = framesWritten >= latencyFrames ? framesWritten - latencyFrames : 0;
         return NO_ERROR;
     } else {
-        return mOutput->stream->get_render_position(mOutput->stream, dspFrames);
+        status_t status;
+        unsigned int frames;
+         status = mOutput->stream->get_render_position(mOutput->stream, &frames);
+        *dspFrames = frames;
+        return status;
     }
 }
 

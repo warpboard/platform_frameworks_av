@@ -148,7 +148,7 @@ int  Virtualizer_getParameter  (EffectContext *pContext,
 int  Equalizer_setParameter    (EffectContext *pContext, void *pParam, void *pValue);
 int  Equalizer_getParameter    (EffectContext *pContext,
                                 void          *pParam,
-                                size_t        *pValueSize,
+                                uint32_t      *pValueSize,
                                 void          *pValue);
 int  Volume_setParameter       (EffectContext *pContext, void *pParam, void *pValue);
 int  Volume_getParameter       (EffectContext *pContext,
@@ -1994,7 +1994,7 @@ int Virtualizer_setParameter (EffectContext *pContext, void *pParam, void *pValu
 //----------------------------------------------------------------------------
 int Equalizer_getParameter(EffectContext     *pContext,
                            void              *pParam,
-                           size_t            *pValueSize,
+                           uint32_t          *pValueSize,
                            void              *pValue){
     int status = 0;
     int bMute = 0;
