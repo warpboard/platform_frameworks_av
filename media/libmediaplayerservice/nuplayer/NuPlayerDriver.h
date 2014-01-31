@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-#include <media/MediaPlayerInterface.h>
+#ifndef NU_PLAYER_DRIVER_H_
+#define NU_PLAYER_DRIVER_H_
 
+#include <media/MediaPlayerInterface.h>
 #include <media/stagefright/foundation/ABase.h>
 
 namespace android {
@@ -119,4 +121,4 @@ private:
 
 }  // namespace android
 
-
+#endif // NU_PLAYER_DRIVER_H_

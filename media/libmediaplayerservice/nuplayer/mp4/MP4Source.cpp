@@ -58,7 +58,7 @@ struct StreamSource : public FragmentedMP4Parser::Source {
                 break;
             }
 
-            ALOGV("skipped %ld bytes at offset %lld", n, mPosition);
+            ALOGV("skipped %zd bytes at offset %lld", n, mPosition);
 
             if (n < 0) {
                 return n;
@@ -86,7 +86,7 @@ struct StreamSource : public FragmentedMP4Parser::Source {
             total += n;
         }
 
-        ALOGV("read %ld bytes at offset %lld", n, mPosition);
+        ALOGV("read %zu bytes at offset %lld", total, mPosition);
 
         mPosition += total;
 
