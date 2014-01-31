@@ -1404,7 +1404,7 @@ void MPEG4Writer::Track::addOneSttsTableEntry(
         size_t sampleCount, int32_t duration) {
 
     if (duration == 0) {
-        ALOGW("0-duration samples found: %d", sampleCount);
+        ALOGW("0-duration samples found: %zu", sampleCount);
     }
     mSttsTableEntries->add(htonl(sampleCount));
     mSttsTableEntries->add(htonl(duration));
@@ -1584,7 +1584,7 @@ void MPEG4Writer::writeAllChunks() {
     sendSessionSummary();
 
     mChunkInfos.clear();
-    ALOGD("%d chunks are written in the last batch", outstandingChunks);
+    ALOGD("%zu chunks are written in the last batch", outstandingChunks);
 }
 
 bool MPEG4Writer::findChunkToWrite(Chunk *chunk) {
@@ -1774,7 +1774,7 @@ status_t MPEG4Writer::Track::stop() {
     void *dummy;
     pthread_join(mThread, &dummy);
 
-    status_t err = (status_t) dummy;
+    status_t err = static_cast<status_t>(reinterpret_cast<uintptr_t>(dummy));
 
     ALOGD("Stopping %s track source", mIsAudio? "Audio": "Video");
     {
@@ -1869,7 +1869,7 @@ status_t MPEG4Writer::Track::copyAVCCodecSpecificData(
     // 2 bytes for each of the parameter set length field
     // plus the 7 bytes for the header
     if (size < 4 + 7) {
-        ALOGE("Codec specific data length too short: %d", size);
+        ALOGE("Codec specific data length too short: %zu", size);
         return ERROR_MALFORMED;
     }
 
@@ -1938,7 +1938,7 @@ status_t MPEG4Writer::Track::parseAVCCodecSpecificData(
         }
 
         if (nSeqParamSets > 0x1F) {
-            ALOGE("Too many seq parameter sets (%d) found", nSeqParamSets);
+            ALOGE("Too many seq parameter sets (%zu) found", nSeqParamSets);
             return ERROR_MALFORMED;
         }
     }
@@ -1951,7 +1951,7 @@ status_t MPEG4Writer::Track::parseAVCCodecSpecificData(
             return ERROR_MALFORMED;
         }
         if (nPicParamSets > 0xFF) {
-            ALOGE("Too many pic parameter sets (%d) found", nPicParamSets);
+            ALOGE("Too many pic parameter sets (%zd) found", nPicParamSets);
             return ERROR_MALFORMED;
         }
     }
@@ -1981,7 +1981,7 @@ status_t MPEG4Writer::Track::makeAVCCodecSpecificData(
     }
 
     if (size < 4) {
-        ALOGE("Codec specific data length too short: %d", size);
+        ALOGE("Codec specific data length too short: %zu", size);
         return ERROR_MALFORMED;
     }
 
