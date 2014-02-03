@@ -501,8 +501,8 @@ void AudioFlinger::PlaybackThread::Track::dump(char* buffer, size_t size)
             20.0 * log10((vlr & 0xFFFF) / 4096.0),
             20.0 * log10((vlr >> 16) / 4096.0),
             mCblk->mServer,
-            (int)mMainBuffer,
-            (int)mAuxBuffer,
+            (uintptr_t)mMainBuffer,
+            (uintptr_t)mAuxBuffer,
             mCblk->mFlags,
             mAudioTrackServerProxy->getUnderrunFrames(),
             nowInUnderrun);

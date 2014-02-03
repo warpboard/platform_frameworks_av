@@ -138,22 +138,22 @@ void Effect_getConfig          (EffectContext *pContext, effect_config_t *pConfi
 int  BassBoost_setParameter    (EffectContext *pContext, void *pParam, void *pValue);
 int  BassBoost_getParameter    (EffectContext *pContext,
                                void           *pParam,
-                               size_t         *pValueSize,
+                               uint32_t       *pValueSize,
                                void           *pValue);
 int  Virtualizer_setParameter  (EffectContext *pContext, void *pParam, void *pValue);
 int  Virtualizer_getParameter  (EffectContext *pContext,
                                void           *pParam,
-                               size_t         *pValueSize,
+                               uint32_t       *pValueSize,
                                void           *pValue);
 int  Equalizer_setParameter    (EffectContext *pContext, void *pParam, void *pValue);
 int  Equalizer_getParameter    (EffectContext *pContext,
                                 void          *pParam,
-                                size_t        *pValueSize,
+                                uint32_t      *pValueSize,
                                 void          *pValue);
 int  Volume_setParameter       (EffectContext *pContext, void *pParam, void *pValue);
 int  Volume_getParameter       (EffectContext *pContext,
                                 void          *pParam,
-                                size_t        *pValueSize,
+                                uint32_t      *pValueSize,
                                 void          *pValue);
 int Effect_setEnabled(EffectContext *pContext, bool enabled);
 
@@ -1758,7 +1758,7 @@ int32_t VolumeEnableStereoPosition(EffectContext *pContext, uint32_t enabled){
 
 int BassBoost_getParameter(EffectContext     *pContext,
                            void              *pParam,
-                           size_t            *pValueSize,
+                           uint32_t          *pValueSize,
                            void              *pValue){
     int status = 0;
     int32_t *pParamTemp = (int32_t *)pParam;
@@ -1876,7 +1876,7 @@ int BassBoost_setParameter (EffectContext *pContext, void *pParam, void *pValue)
 
 int Virtualizer_getParameter(EffectContext        *pContext,
                              void                 *pParam,
-                             size_t               *pValueSize,
+                             uint32_t             *pValueSize,
                              void                 *pValue){
     int status = 0;
     int32_t *pParamTemp = (int32_t *)pParam;
@@ -1994,7 +1994,7 @@ int Virtualizer_setParameter (EffectContext *pContext, void *pParam, void *pValu
 //----------------------------------------------------------------------------
 int Equalizer_getParameter(EffectContext     *pContext,
                            void              *pParam,
-                           size_t            *pValueSize,
+                           uint32_t          *pValueSize,
                            void              *pValue){
     int status = 0;
     int bMute = 0;
@@ -2252,7 +2252,7 @@ int Equalizer_setParameter (EffectContext *pContext, void *pParam, void *pValue)
 
 int Volume_getParameter(EffectContext     *pContext,
                         void              *pParam,
-                        size_t            *pValueSize,
+                        uint32_t          *pValueSize,
                         void              *pValue){
     int status = 0;
     int bMute = 0;
