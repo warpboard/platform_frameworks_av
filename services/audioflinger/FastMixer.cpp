@@ -323,10 +323,10 @@ bool FastMixer::threadLoop()
                         // newly allocated track names default to full scale volume
                         if (fastTrack->mSampleRate != 0 && fastTrack->mSampleRate != sampleRate) {
                             mixer->setParameter(name, AudioMixer::RESAMPLE,
-                                    AudioMixer::SAMPLE_RATE, (void*) fastTrack->mSampleRate);
+                                    AudioMixer::SAMPLE_RATE, (void*)(uintptr_t)fastTrack->mSampleRate);
                         }
                         mixer->setParameter(name, AudioMixer::TRACK, AudioMixer::CHANNEL_MASK,
-                                (void *) fastTrack->mChannelMask);
+                                (void *)(uintptr_t)fastTrack->mChannelMask);
                         mixer->enable(name);
                     }
                     generations[i] = fastTrack->mGeneration;
@@ -356,13 +356,13 @@ bool FastMixer::threadLoop()
                             if (fastTrack->mSampleRate != 0 &&
                                     fastTrack->mSampleRate != sampleRate) {
                                 mixer->setParameter(name, AudioMixer::RESAMPLE,
-                                        AudioMixer::SAMPLE_RATE, (void*) fastTrack->mSampleRate);
+                                        AudioMixer::SAMPLE_RATE, (void*)(uintptr_t) fastTrack->mSampleRate);
                             } else {
                                 mixer->setParameter(name, AudioMixer::RESAMPLE,
                                         AudioMixer::REMOVE, NULL);
                             }
                             mixer->setParameter(name, AudioMixer::TRACK, AudioMixer::CHANNEL_MASK,
-                                    (void *) fastTrack->mChannelMask);
+                                    (void *)(uintptr_t) fastTrack->mChannelMask);
                             // already enabled
                         }
                         generations[i] = fastTrack->mGeneration;
@@ -419,9 +419,9 @@ bool FastMixer::threadLoop()
                 if (fastTrack->mVolumeProvider != NULL) {
                     uint32_t vlr = fastTrack->mVolumeProvider->getVolumeLR();
                     mixer->setParameter(name, AudioMixer::VOLUME, AudioMixer::VOLUME0,
-                            (void *)(vlr & 0xFFFF));
+                            (void *)(uintptr_t)(vlr & 0xFFFF));
                     mixer->setParameter(name, AudioMixer::VOLUME, AudioMixer::VOLUME1,
-                            (void *)(vlr >> 16));
+                            (void *)(uintptr_t)(vlr >> 16));
                 }
                 // FIXME The current implementation of framesReady() for fast tracks
                 // takes a tryLock, which can block
@@ -750,7 +750,7 @@ void FastMixerDumpState::dump(int fd) const
     double mixPeriodSec = (double) mFrameCount / (double) mSampleRate;
     fdprintf(fd, "FastMixer command=%s writeSequence=%u framesWritten=%u\n"
                  "          numTracks=%u writeErrors=%u underruns=%u overruns=%u\n"
-                 "          sampleRate=%u frameCount=%u measuredWarmup=%.3g ms, warmupCycles=%u\n"
+                 "          sampleRate=%u frameCount=%zu measuredWarmup=%.3g ms, warmupCycles=%u\n"
                  "          mixPeriod=%.2f ms\n",
                  string, mWriteSequence, mFramesWritten,
                  mNumTracks, mWriteErrors, mUnderruns, mOverruns,
@@ -864,7 +864,7 @@ void FastMixerDumpState::dump(int fd) const
             mostRecent = "?";
             break;
         }
-        fdprintf(fd, "%5u %6s %4u %7u %5u %7s %5u\n", i, isActive ? "yes" : "no",
+        fdprintf(fd, "%5u %6s %4u %7u %5u %7s %5zu\n", i, isActive ? "yes" : "no",
                 (underruns.mBitFields.mFull) & UNDERRUN_MASK,
                 (underruns.mBitFields.mPartial) & UNDERRUN_MASK,
                 (underruns.mBitFields.mEmpty) & UNDERRUN_MASK,
