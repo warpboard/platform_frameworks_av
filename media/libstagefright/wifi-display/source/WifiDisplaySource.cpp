@@ -1029,6 +1029,8 @@ void WifiDisplaySource::scheduleReaper() {
 void WifiDisplaySource::scheduleKeepAlive(int32_t sessionID) {
     // We need to send updates at least 5 secs before the timeout is set to
     // expire, make sure the timeout is greater than 5 secs to begin with.
+    static const int64_t kPlaybackSessionTimeoutUs =
+        kPlaybackSessionTimeoutSecs * 1000000ll;
     CHECK_GT(kPlaybackSessionTimeoutUs, 5000000ll);
 
     sp<AMessage> msg = new AMessage(kWhatKeepAlive, id());
