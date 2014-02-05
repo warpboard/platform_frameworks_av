@@ -108,7 +108,7 @@ private:
 
     static const int64_t kPlaybackSessionTimeoutSecs = 30;
 
-    static const int64_t kPlaybackSessionTimeoutUs =
+    const int64_t kPlaybackSessionTimeoutUs =
         kPlaybackSessionTimeoutSecs * 1000000ll;
 
     static const AString sUserAgent;
