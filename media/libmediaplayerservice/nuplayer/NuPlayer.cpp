@@ -1265,6 +1265,10 @@ void NuPlayer::performSeek(int64_t seekTimeUs) {
           seekTimeUs,
           seekTimeUs / 1E6);
 
+    if (mSource == NULL) {
+        return;
+    }
+
     mSource->seekTo(seekTimeUs);
 
     if (mDriver != NULL) {
