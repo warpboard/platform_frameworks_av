@@ -57,7 +57,6 @@ static LevelConversion ConversionTable[] = {
     { OMX_VIDEO_AVCLevel12, AVC_LEVEL1_2 },
     { OMX_VIDEO_AVCLevel13, AVC_LEVEL1_3 },
     { OMX_VIDEO_AVCLevel2,  AVC_LEVEL2 },
-#if 0
     // encoding speed is very poor if video
     // resolution is higher than CIF
     { OMX_VIDEO_AVCLevel21, AVC_LEVEL2_1 },
@@ -70,7 +69,6 @@ static LevelConversion ConversionTable[] = {
     { OMX_VIDEO_AVCLevel42, AVC_LEVEL4_2 },
     { OMX_VIDEO_AVCLevel5,  AVC_LEVEL5   },
     { OMX_VIDEO_AVCLevel51, AVC_LEVEL5_1 },
-#endif
 };
 
 static status_t ConvertOmxAvcLevelToAvcSpecLevel(
