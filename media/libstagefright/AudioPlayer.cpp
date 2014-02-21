@@ -382,8 +382,6 @@ bool AudioPlayer::isSeeking() {
 }
 
 bool AudioPlayer::reachedEOS(status_t *finalStatus) {
-    *finalStatus = OK;
-
     Mutex::Autolock autoLock(mLock);
     *finalStatus = mFinalStatus;
     return mReachedEOS;
