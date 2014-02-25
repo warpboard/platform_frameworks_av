@@ -628,6 +628,8 @@ void NuPlayer::RTSPSource::onSDPLoaded(const sp<AMessage> &msg) {
 
         if (mDisconnectReplyID != 0) {
             finishDisconnectIfPossible();
+        } else {
+            notifyError(err);
         }
     }
 }
@@ -655,6 +657,8 @@ void NuPlayer::RTSPSource::onDisconnected(const sp<AMessage> &msg) {
 
     if (mDisconnectReplyID != 0) {
         finishDisconnectIfPossible();
+    } else {
+        notifyError(err);
     }
 }
 

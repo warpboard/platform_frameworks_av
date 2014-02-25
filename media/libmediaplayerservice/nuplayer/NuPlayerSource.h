@@ -44,6 +44,7 @@ struct NuPlayer::Source : public AHandler {
         kWhatBufferingEnd,
         kWhatSubtitleData,
         kWhatQueueDecoderShutdown,
+        kWhatError,
     };
 
     // The provides message is used to notify the player about various
@@ -100,6 +101,7 @@ protected:
     void notifyFlagsChanged(uint32_t flags);
     void notifyVideoSizeChanged(int32_t width, int32_t height);
     void notifyPrepared(status_t err = OK);
+    void notifyError(status_t err = OK);
 
 private:
     sp<AMessage> mNotify;

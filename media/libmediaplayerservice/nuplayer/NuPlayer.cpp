@@ -1495,6 +1495,14 @@ void NuPlayer::onSourceNotify(const sp<AMessage> &msg) {
             break;
         }
 
+        case Source::kWhatError:
+        {
+            int32_t err;
+            CHECK(msg->findInt32("err", &err));
+            notifyListener(MEDIA_ERROR, MEDIA_ERROR_UNKNOWN, err);
+            break;
+        }
+
         default:
             TRESPASS();
     }
@@ -1520,6 +1528,13 @@ void NuPlayer::Source::notifyVideoSizeChanged(int32_t width, int32_t height) {
 void NuPlayer::Source::notifyPrepared(status_t err) {
     sp<AMessage> notify = dupNotify();
     notify->setInt32("what", kWhatPrepared);
+    notify->setInt32("err", err);
+    notify->post();
+}
+
+void NuPlayer::Source::notifyError(status_t err) {
+    sp<AMessage> notify = dupNotify();
+    notify->setInt32("what", kWhatError);
     notify->setInt32("err", err);
     notify->post();
 }
