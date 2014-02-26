@@ -701,8 +701,8 @@ size_t VideoEditorAudioPlayer::fillBuffer(void *data, size_t size) {
                              mBGAudioPCMFileOriginalSeekPoint <=
                               (mBGAudioPCMFileTrimmedLength - len)) {
 
-                            ALOGV("Checking mBGAudioPCMFileHandle %d",
-                                (unsigned int)mBGAudioPCMFileHandle);
+                            ALOGV("Checking mBGAudioPCMFileHandle %u",
+                                (unsigned int)(uintptr_t)mBGAudioPCMFileHandle);
 
                             if (mBGAudioPCMFileHandle != M4OSA_NULL) {
                                 ALOGV("fillBuffer seeking file to %lld",
