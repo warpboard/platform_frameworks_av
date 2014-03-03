@@ -1005,6 +1005,7 @@ status_t AudioTrack::createTrack_l(
     }
     // invariant that mAudioTrack != 0 is true only after set() returns successfully
     if (mAudioTrack != 0) {
+        mAudioTrack->stop();
         mAudioTrack->asBinder()->unlinkToDeath(mDeathNotifier, this);
         mDeathNotifier.clear();
     }
