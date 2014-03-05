@@ -670,7 +670,8 @@ size_t AudioPlayer::fillBuffer(void *data, size_t size) {
         mNumFramesPlayed += size_done / mFrameSize;
         mNumFramesPlayedSysTimeUs = ALooper::GetNowUs();
 
-        if (mReachedEOS) {
+        if (mReachedEOS || !mPlaying) {
+            // set the anchor time when paused or reached EOS.
             mPinnedTimeUs = mNumFramesPlayedSysTimeUs;
         } else {
             mPinnedTimeUs = -1ll;
