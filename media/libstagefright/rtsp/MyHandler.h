@@ -93,7 +93,6 @@ struct MyHandler : public AHandler {
         kWhatAccessUnit                 = 'accU',
         kWhatEOS                        = 'eos!',
         kWhatSeekDiscontinuity          = 'seeD',
-        kWhatNormalPlayTimeMapping      = 'nptM',
     };
 
     MyHandler(
@@ -121,14 +120,14 @@ struct MyHandler : public AHandler {
           mCheckTimeoutGeneration(0),
           mTryTCPInterleaving(false),
           mTryFakeRTCP(false),
-          mReceivedFirstRTCPPacket(false),
-          mReceivedFirstRTPPacket(false),
           mSeekable(true),
           mKeepAliveTimeoutUs(kDefaultKeepAliveTimeoutUs),
           mKeepAliveGeneration(0),
           mPausing(false),
           mPauseGeneration(0),
-          mPlayResponseParsed(false) {
+          mPlayResponseParsed(false),
+          mNtpAnchorAdjusted(false),
+          mReceivedRTPTime(false) {
         mNetLooper->setName("rtsp net");
         mNetLooper->start(false /* runOnCallingThread */,
                           false /* canCallJava */,
@@ -866,10 +865,10 @@ struct MyHandler : public AHandler {
                 mNTPAnchorUs = -1;
                 mMediaAnchorUs = -1;
                 mNumAccessUnitsReceived = 0;
-                mReceivedFirstRTCPPacket = false;
-                mReceivedFirstRTPPacket = false;
                 mPausing = false;
                 mSeekable = true;
+                mNtpAnchorAdjusted = false;
+                mReceivedRTPTime = false;
 
                 sp<AMessage> reply = new AMessage('tear', id());
 
@@ -959,18 +958,18 @@ struct MyHandler : public AHandler {
                     CHECK(msg->findInt32("rtp-time", (int32_t *)&rtpTime));
                     CHECK(msg->findInt64("ntp-time", (int64_t *)&ntpTime));
 
-                    onTimeUpdate(trackIndex, rtpTime, ntpTime);
+                    if (!mTryFakeRTCP && !mPausing) {
+                        onTimeUpdate(trackIndex, rtpTime, ntpTime);
+                    }
                     break;
                 }
 
                 int32_t first;
                 if (msg->findInt32("first-rtcp", &first)) {
-                    mReceivedFirstRTCPPacket = true;
                     break;
                 }
 
                 if (msg->findInt32("first-rtp", &first)) {
-                    mReceivedFirstRTPPacket = true;
                     break;
                 }
 
@@ -995,7 +994,6 @@ struct MyHandler : public AHandler {
 
                         track->mEOSReceived = true;
                         mTryFakeRTCP = true;
-                        mReceivedFirstRTCPPacket = true;
                         fakeTimestamps();
                     } else {
                         postQueueEOS(trackIndex, ERROR_END_OF_STREAM);
@@ -1081,6 +1079,26 @@ struct MyHandler : public AHandler {
                     // Dont send PLAY if we have not paused
                     break;
                 }
+                for (size_t i = 0; i < mTracks.size(); ++i) {
+                    TrackInfo *info = &mTracks.editItemAt(i);
+
+                    info->mPackets.clear();
+                    if (!mTryFakeRTCP) {
+                       info->mRTPAnchor = 0;
+                       info->mNTPAnchorUs = -1;
+                    }
+                }
+
+                if (!mTryFakeRTCP) {
+                   mNTPAnchorUs = -1;
+                   mNtpAnchorAdjusted = false;
+                   mAllTracksHaveTime = false;
+                }
+
+                mPausing = false;
+                mReceivedRTPTime = false;
+                mMediaAnchorUs = -1;
+
                 AString request = "PLAY ";
                 request.append(mControlURL);
                 request.append(" RTSP/1.0\r\n");
@@ -1187,14 +1205,20 @@ struct MyHandler : public AHandler {
                     TrackInfo *info = &mTracks.editItemAt(i);
 
                     postQueueSeekDiscontinuity(i);
+                    info->mPackets.clear();
                     info->mEOSReceived = false;
 
-                    info->mRTPAnchor = 0;
-                    info->mNTPAnchorUs = -1;
+                    if (!mTryFakeRTCP) {
+                       info->mRTPAnchor = 0;
+                       info->mNTPAnchorUs = -1;
+                    }
                 }
 
-                mAllTracksHaveTime = false;
-                mNTPAnchorUs = -1;
+                if (!mTryFakeRTCP) {
+                    mNTPAnchorUs = -1;
+                    mNtpAnchorAdjusted = false;
+                    mAllTracksHaveTime = false;
+                }
 
                 // Start new timeoutgeneration to avoid getting timeout
                 // before PLAY response arrive
@@ -1205,6 +1229,11 @@ struct MyHandler : public AHandler {
 
                 int64_t timeUs;
                 CHECK(msg->findInt64("time", &timeUs));
+
+                mLastMediaTimeUs = timeUs;
+                mMediaAnchorUs = timeUs;
+                mPausing = false;
+                mReceivedRTPTime = false;
 
                 AString request = "PLAY ";
                 request.append(mControlURL);
@@ -1305,17 +1334,15 @@ struct MyHandler : public AHandler {
                     // posted at seek as well.
                     break;
                 }
-                if (!mReceivedFirstRTCPPacket) {
+                if (!mAllTracksHaveTime) {
                     if (dataReceivedOnAllChannels() && !mTryFakeRTCP) {
                         ALOGW("We received RTP packets but no RTCP packets, "
                              "using fake timestamps.");
 
                         mTryFakeRTCP = true;
 
-                        mReceivedFirstRTCPPacket = true;
-
                         fakeTimestamps();
-                    } else if (!mReceivedFirstRTPPacket && !mTryTCPInterleaving) {
+                    } else if (mFirstAccessUnit && !mTryTCPInterleaving) {
                         ALOGW("Never received any data, switching transports.");
 
                         mTryTCPInterleaving = true;
@@ -1326,14 +1353,6 @@ struct MyHandler : public AHandler {
                     } else {
                         ALOGW("Never received any data, disconnecting.");
                         (new AMessage('abor', id()))->post();
-                    }
-                } else {
-                    if (!mAllTracksHaveTime) {
-                        ALOGW("We received some RTCP packets, but time "
-                              "could not be established on all tracks, now "
-                              "using fake timestamps");
-
-                        fakeTimestamps();
                     }
                 }
                 break;
@@ -1444,13 +1463,20 @@ struct MyHandler : public AHandler {
 
             ALOGV("track #%d: rtpTime=%u <=> npt=%.2f", n, rtpTime, npt1);
 
-            info->mNormalPlayTimeRTP = rtpTime;
-            info->mNormalPlayTimeUs = (int64_t)(npt1 * 1E6);
+            info->mRTPAnchor = rtpTime;
+            mLastMediaTimeUs = (int64_t)(npt1 * 1E6);
+            mMediaAnchorUs = mLastMediaTimeUs;
+            mReceivedRTPTime = true;
 
-            if (!mFirstAccessUnit) {
-                postNormalPlayTimeMapping(
-                        trackIndex,
-                        info->mNormalPlayTimeRTP, info->mNormalPlayTimeUs);
+            // Removing packets with old RTP timestamps
+            while (!info->mPackets.empty()) {
+                sp<ABuffer> accessUnit = *info->mPackets.begin();
+                uint32_t firstRtpTime;
+                CHECK(accessUnit->meta()->findInt32("rtp-time", (int32_t *)&firstRtpTime));
+                if (firstRtpTime == rtpTime) {
+                    break;
+                }
+                info->mPackets.erase(info->mPackets.begin());
             }
 
             ++n;
@@ -1485,9 +1511,6 @@ private:
         int64_t mNTPAnchorUs;
         int32_t mTimeScale;
         bool mEOSReceived;
-
-        uint32_t mNormalPlayTimeRTP;
-        int64_t mNormalPlayTimeUs;
 
         sp<APacketSource> mPacketSource;
 
@@ -1524,13 +1547,13 @@ private:
     int32_t mCheckTimeoutGeneration;
     bool mTryTCPInterleaving;
     bool mTryFakeRTCP;
-    bool mReceivedFirstRTCPPacket;
-    bool mReceivedFirstRTPPacket;
     bool mSeekable;
     int64_t mKeepAliveTimeoutUs;
     int32_t mKeepAliveGeneration;
     bool mPausing;
     int32_t mPauseGeneration;
+    bool mNtpAnchorAdjusted;
+    bool mReceivedRTPTime;
 
     Vector<TrackInfo> mTracks;
 
@@ -1567,8 +1590,6 @@ private:
         info->mRTCPSocket = -1;
         info->mRTPAnchor = 0;
         info->mNTPAnchorUs = -1;
-        info->mNormalPlayTimeRTP = 0;
-        info->mNormalPlayTimeUs = 0ll;
 
         unsigned long PT;
         AString formatDesc;
@@ -1670,10 +1691,48 @@ private:
     }
 
     void fakeTimestamps() {
-        mNTPAnchorUs = -1ll;
+        TrackInfo* track;
         for (size_t i = 0; i < mTracks.size(); ++i) {
-            onTimeUpdate(i, 0, 0ll);
+            track = &mTracks.editItemAt(i);
+            track->mNTPAnchorUs = 0;
+
+            if (!mReceivedRTPTime || mNTPAnchorUs >= 0) {
+                uint32_t rtpTime;
+                sp<ABuffer> accessUnit = *track->mPackets.begin();
+                CHECK(accessUnit->meta()->findInt32("rtp-time", (int32_t *)&rtpTime));
+                track->mRTPAnchor = rtpTime;
+            }
         }
+        mNTPAnchorUs = -1ll;
+        onTimeUpdate(0, mTracks.editItemAt(0).mRTPAnchor, 0ll);
+    }
+
+    int64_t getNtpTimeUs(TrackInfo *track, const sp<ABuffer> &accessUnit) const {
+        uint32_t rtpTime;
+        CHECK(accessUnit->meta()->findInt32(
+                    "rtp-time", (int32_t *)&rtpTime));
+        int64_t relRtpTimeUs =
+            (((int64_t)rtpTime - (int64_t)track->mRTPAnchor) * 1000000ll)
+                / track->mTimeScale;
+        return track->mNTPAnchorUs + relRtpTimeUs;
+    }
+
+    void adjustNtpAnchor(const int64_t ntpTimeUs) {
+        int64_t minNtpTimeUs = ntpTimeUs;
+        for (size_t i = 0; i < mTracks.size(); ++i) {
+            TrackInfo *track = &mTracks.editItemAt(i);
+            if (!track->mPackets.empty()) {
+                sp<ABuffer> accessUnit = *track->mPackets.begin();
+                int64_t tmpNtpTimeUs = getNtpTimeUs(track, accessUnit);
+                if (tmpNtpTimeUs < minNtpTimeUs || minNtpTimeUs == 0) {
+                    minNtpTimeUs = tmpNtpTimeUs;
+                }
+            }
+        }
+        ALOGV("NTP Anchor adjusted to %lld", minNtpTimeUs);
+        mNTPAnchorUs = minNtpTimeUs;
+
+        mNtpAnchorAdjusted = true;
     }
 
     bool dataReceivedOnAllChannels() {
@@ -1692,16 +1751,6 @@ private:
             sp<AMessage> msg = mNotify->dup();
             msg->setInt32("what", kWhatConnected);
             msg->post();
-
-            if (mSeekable) {
-                for (size_t i = 0; i < mTracks.size(); ++i) {
-                    TrackInfo *info = &mTracks.editItemAt(i);
-
-                    postNormalPlayTimeMapping(
-                            i,
-                            info->mNormalPlayTimeRTP, info->mNormalPlayTimeUs);
-                }
-            }
 
             mFirstAccessUnit = false;
         }
@@ -1737,10 +1786,11 @@ private:
                 ALOGI("Time now established for all tracks.");
             }
         }
-        if (mAllTracksHaveTime && dataReceivedOnAllChannels()) {
+        if (mAllTracksHaveTime && !mNtpAnchorAdjusted && dataReceivedOnAllChannels()) {
             handleFirstAccessUnit();
 
             // Time is now established, lets start timestamping immediately
+            adjustNtpAnchor(0);
             for (size_t i = 0; i < mTracks.size(); ++i) {
                 TrackInfo *trackInfo = &mTracks.editItemAt(i);
                 while (!trackInfo->mPackets.empty()) {
@@ -1777,10 +1827,14 @@ private:
 
         TrackInfo *track = &mTracks.editItemAt(trackIndex);
 
-        if (!mAllTracksHaveTime) {
+        if (!mAllTracksHaveTime
+                || (!mNtpAnchorAdjusted && !dataReceivedOnAllChannels())) {
             ALOGV("storing accessUnit, no time established yet");
             track->mPackets.push_back(accessUnit);
             return;
+        }
+        if (!mNtpAnchorAdjusted) {
+            adjustNtpAnchor(getNtpTimeUs(track, accessUnit));
         }
 
         while (!track->mPackets.empty()) {
@@ -1855,16 +1909,6 @@ private:
         sp<AMessage> msg = mNotify->dup();
         msg->setInt32("what", kWhatSeekDiscontinuity);
         msg->setSize("trackIndex", trackIndex);
-        msg->post();
-    }
-
-    void postNormalPlayTimeMapping(
-            size_t trackIndex, uint32_t rtpTime, int64_t nptUs) {
-        sp<AMessage> msg = mNotify->dup();
-        msg->setInt32("what", kWhatNormalPlayTimeMapping);
-        msg->setSize("trackIndex", trackIndex);
-        msg->setInt32("rtpTime", rtpTime);
-        msg->setInt64("nptUs", nptUs);
         msg->post();
     }
 
