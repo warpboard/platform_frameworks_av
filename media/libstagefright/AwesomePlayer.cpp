@@ -382,6 +382,9 @@ status_t AwesomePlayer::setDataSource_l(const sp<MediaExtractor> &extractor) {
     for (size_t i = 0; i < extractor->countTracks(); ++i) {
         sp<MetaData> meta = extractor->getTrackMetaData(i);
 
+        if (meta == NULL)
+            continue;
+
         int32_t bitrate;
         if (!meta->findInt32(kKeyBitRate, &bitrate)) {
             const char *mime;
@@ -411,6 +414,9 @@ status_t AwesomePlayer::setDataSource_l(const sp<MediaExtractor> &extractor) {
     bool haveVideo = false;
     for (size_t i = 0; i < extractor->countTracks(); ++i) {
         sp<MetaData> meta = extractor->getTrackMetaData(i);
+
+        if (meta == NULL)
+            continue;
 
         const char *_mime;
         CHECK(meta->findCString(kKeyMIMEType, &_mime));
@@ -1407,6 +1413,7 @@ status_t AwesomePlayer::seekTo(int64_t timeUs) {
         Mutex::Autolock autoLock(mLock);
         return seekTo_l(timeUs);
     }
+    notifyListener_l(MEDIA_SEEK_COMPLETE);
 
     return OK;
 }
@@ -1624,6 +1631,17 @@ status_t AwesomePlayer::initVideoDecoder(uint32_t flags) {
             false, // createEncoder
             mVideoTrack,
             NULL, flags, USE_SURFACE_ALLOC ? mNativeWindow : NULL);
+
+    if(mVideoSource == NULL)
+    {
+        ALOGE("Creating HW decoder failed,fallback to SW decoder");
+        flags |= OMXCodec::kPreferSoftwareCodecs;
+        mVideoSource = OMXCodec::Create(
+            mClient.interface(), mVideoTrack->getFormat(),
+            false, // createEncoder
+            mVideoTrack,
+            NULL, flags, USE_SURFACE_ALLOC ? mNativeWindow : NULL);
+    }
 
     if (mVideoSource != NULL) {
         int64_t durationUs;

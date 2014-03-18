@@ -2120,7 +2120,6 @@ status_t MPEG4Writer::Track::threadEntry() {
         int32_t isCodecConfig;
         if (buffer->meta_data()->findInt32(kKeyIsCodecConfig, &isCodecConfig)
                 && isCodecConfig) {
-            CHECK(!mGotAllCodecSpecificData);
 
             if (mIsAvc) {
                 status_t err = makeAVCCodecSpecificData(
