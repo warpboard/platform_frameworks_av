@@ -44,14 +44,14 @@ struct SampleTable::CompositionDeltaLookup {
     CompositionDeltaLookup();
 
     void setEntries(
-            const uint32_t *deltaEntries, size_t numDeltaEntries);
+            const int32_t *deltaEntries, size_t numDeltaEntries);
 
-    uint32_t getCompositionTimeOffset(uint32_t sampleIndex);
+    int32_t getCompositionTimeOffset(uint32_t sampleIndex);
 
 private:
     Mutex mLock;
 
-    const uint32_t *mDeltaEntries;
+    const int32_t *mDeltaEntries;
     size_t mNumDeltaEntries;
 
     size_t mCurrentDeltaEntry;
@@ -68,7 +68,7 @@ SampleTable::CompositionDeltaLookup::CompositionDeltaLookup()
 }
 
 void SampleTable::CompositionDeltaLookup::setEntries(
-        const uint32_t *deltaEntries, size_t numDeltaEntries) {
+        const int32_t *deltaEntries, size_t numDeltaEntries) {
     Mutex::Autolock autolock(mLock);
 
     mDeltaEntries = deltaEntries;
@@ -77,7 +77,7 @@ void SampleTable::CompositionDeltaLookup::setEntries(
     mCurrentEntrySampleIndex = 0;
 }
 
-uint32_t SampleTable::CompositionDeltaLookup::getCompositionTimeOffset(
+int32_t SampleTable::CompositionDeltaLookup::getCompositionTimeOffset(
         uint32_t sampleIndex) {
     Mutex::Autolock autolock(mLock);
 
@@ -372,7 +372,7 @@ status_t SampleTable::setCompositionTimeToSampleParams(
     }
 
     mNumCompositionTimeDeltaEntries = numEntries;
-    mCompositionTimeDeltaEntries = new uint32_t[2 * numEntries];
+    mCompositionTimeDeltaEntries = new int32_t[2 * numEntries];
 
     if (mDataSource->readAt(
                 data_offset + 8, mCompositionTimeDeltaEntries, numEntries * 8)
@@ -502,7 +502,7 @@ void SampleTable::buildSampleEntriesTable() {
 
                 mSampleTimeEntries[sampleIndex].mSampleIndex = sampleIndex;
 
-                uint32_t compTimeDelta =
+                int32_t compTimeDelta =
                     mCompositionDeltaLookup->getCompositionTimeOffset(
                             sampleIndex);
 
@@ -823,7 +823,7 @@ status_t SampleTable::getMetaDataForSample(
     return OK;
 }
 
-uint32_t SampleTable::getCompositionTimeOffset(uint32_t sampleIndex) {
+int32_t SampleTable::getCompositionTimeOffset(uint32_t sampleIndex) {
     return mCompositionDeltaLookup->getCompositionTimeOffset(sampleIndex);
 }
 

@@ -117,7 +117,7 @@ private:
     };
     SampleTimeEntry *mSampleTimeEntries;
 
-    uint32_t *mCompositionTimeDeltaEntries;
+    int32_t *mCompositionTimeDeltaEntries;
     size_t mNumCompositionTimeDeltaEntries;
     CompositionDeltaLookup *mCompositionDeltaLookup;
 
@@ -138,7 +138,7 @@ private:
     friend struct SampleIterator;
 
     status_t getSampleSize_l(uint32_t sample_index, size_t *sample_size);
-    uint32_t getCompositionTimeOffset(uint32_t sampleIndex);
+    int32_t getCompositionTimeOffset(uint32_t sampleIndex);
 
     static int CompareIncreasingTime(const void *, const void *);
 
