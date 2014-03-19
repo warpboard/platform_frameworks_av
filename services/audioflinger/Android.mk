@@ -19,11 +19,9 @@ LOCAL_SRC_FILES:=               \
     Tracks.cpp                  \
     Effects.cpp                 \
     AudioMixer.cpp.arm          \
-    AudioResampler.cpp.arm      \
     AudioPolicyService.cpp      \
     ServiceUtilities.cpp        \
-    AudioResamplerCubic.cpp.arm \
-    AudioResamplerSinc.cpp.arm
+
 
 LOCAL_SRC_FILES += StateQueue.cpp
 
@@ -32,6 +30,7 @@ LOCAL_C_INCLUDES := \
     $(call include-path-for, audio-utils)
 
 LOCAL_SHARED_LIBRARIES := \
+    libaudio-resampler \
     libaudioutils \
     libcommon_time_client \
     libcutils \
@@ -74,11 +73,11 @@ include $(BUILD_SHARED_LIBRARY)
 #
 include $(CLEAR_VARS)
 
-LOCAL_SRC_FILES:=               \
-	test-resample.cpp 			\
-    AudioResampler.cpp.arm      \
-	AudioResamplerCubic.cpp.arm \
-    AudioResamplerSinc.cpp.arm
+LOCAL_SRC_FILES:= \
+    test-resample.cpp \
+    audio-resampler/AudioResampler.cpp.arm \
+    audio-resampler/AudioResamplerCubic.cpp.arm \
+    audio-resampler/AudioResamplerSinc.cpp.arm
 
 LOCAL_SHARED_LIBRARIES := \
     libdl \

@@ -24,7 +24,7 @@
 #include <utils/threads.h>
 
 #include <media/AudioBufferProvider.h>
-#include "AudioResampler.h"
+#include "audio-resampler/AudioResampler.h"
 
 #include <audio_effects/effect_downmix.h>
 #include <system/audio.h>
