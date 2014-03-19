@@ -46,7 +46,7 @@ LOCAL_STATIC_LIBRARIES := \
 
 
 LOCAL_SHARED_LIBRARIES :=     \
-    libaudioflinger           \
+    libaudio-resampler        \
     libaudioutils             \
     libbinder                 \
     libcutils                 \
@@ -78,10 +78,9 @@ LOCAL_C_INCLUDES += \
     $(TOP)/frameworks/av/libvideoeditor/vss/inc \
     $(TOP)/frameworks/av/libvideoeditor/vss/stagefrightshells/inc \
     $(TOP)/frameworks/av/libvideoeditor/lvpp \
-    $(TOP)/frameworks/av/services/audioflinger \
+    $(TOP)/frameworks/av/services/audioflinger/audio-resampler \
     $(TOP)/frameworks/native/include/media/editor \
     $(TOP)/frameworks/native/include/media/openmax \
-    $(TOP)/frameworks/native/services/audioflinger
 
 
 LOCAL_SHARED_LIBRARIES += libdl
@@ -99,8 +98,6 @@ LOCAL_CFLAGS += -Wno-multichar \
     -DUSE_STAGEFRIGHT_VIDEOENC \
     -DUSE_STAGEFRIGHT_READERS \
     -DUSE_STAGEFRIGHT_3GPP_READER
-
-LOCAL_32_BIT_ONLY := true
 
 include $(BUILD_SHARED_LIBRARY)
 
