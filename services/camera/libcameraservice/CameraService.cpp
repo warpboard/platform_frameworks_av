@@ -430,7 +430,7 @@ status_t CameraService::connect(
                               cameraClient->asBinder(),
                               /*out*/clientTmp)) {
             return -EBUSY;
-        } else if (client.get() != NULL) {
+        } else if (clientTmp.get() != NULL) {
             device = static_cast<Client*>(clientTmp.get());
             return OK;
         }
