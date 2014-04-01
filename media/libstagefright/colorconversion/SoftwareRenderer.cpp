@@ -33,6 +33,18 @@ static bool runningInEmulator() {
     return (property_get("ro.kernel.qemu", prop, NULL) > 0);
 }
 
+static bool needColorConverter()
+{
+    char value[PROPERTY_VALUE_MAX];
+    if (property_get("sys.media.color_converter", value, NULL) > 0) {
+        if (atoi(value) > 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 SoftwareRenderer::SoftwareRenderer(
         const sp<ANativeWindow> &nativeWindow, const sp<MetaData> &meta)
     : mConverter(NULL),
@@ -68,7 +80,7 @@ SoftwareRenderer::SoftwareRenderer(
         case OMX_COLOR_FormatYUV420Planar:
         case OMX_TI_COLOR_FormatYUV420PackedSemiPlanar:
         {
-            if (!runningInEmulator()) {
+            if (!runningInEmulator() && !needColorConverter()) {
                 halFormat = HAL_PIXEL_FORMAT_YV12;
                 bufWidth = (mCropWidth + 1) & ~1;
                 bufHeight = (mCropHeight + 1) & ~1;
